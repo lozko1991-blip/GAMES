@@ -1403,18 +1403,21 @@ class PenaltyMasterGame {
             render: () => this.goalkeeper.render(this.ctx, this.camera, width, height)
         });
 
+        // Обчислюємо ballProj ДО того, як використовуємо його в шлейфі
+        const ballProj = this.camera.project(this.ball.position, width, height);
+
         // Малювання шлейфу м'яча (Ball Trail rendering)
-        if (this.ball.isKicked && this.ball.trailPositions.length > 1) {
+        if (this.ball.isKicked && this.ball.trailPositions && this.ball.trailPositions.length > 1) {
             this.ctx.save();
             this.ctx.lineWidth = 4 * (ballProj ? ballProj.scale / 300 : 1);
             this.ctx.strokeStyle = 'rgba(0, 255, 204, 0.4)';
             this.ctx.beginPath();
-            
+
             let firstTrailProj = this.camera.project(this.ball.trailPositions[0], width, height);
             if (firstTrailProj) {
                 this.ctx.moveTo(firstTrailProj.x, firstTrailProj.y);
             }
-            
+
             for (let i = 1; i < this.ball.trailPositions.length; i++) {
                 let trailProj = this.camera.project(this.ball.trailPositions[i], width, height);
                 if (trailProj) {
@@ -1425,7 +1428,6 @@ class PenaltyMasterGame {
             this.ctx.restore();
         }
 
-        const ballProj = this.camera.project(this.ball.position, width, height);
         if (ballProj) {
             // Додаємо красивий неоновий ореол (Halo) навколо м'яча при швидкому польоті
             const ballSpeed = this.ball.velocity.length();
