@@ -587,6 +587,24 @@ class ParticleSystemManager {
         }
     }
 
+    spawnTargetHitExplosion(targetPos) {
+        const colors = ['#00ffcc', '#ffffff', '#ffff00', '#ff00ff'];
+        const particleCount = 40;
+        for (let cellIndex = 0; cellIndex < particleCount; cellIndex++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 4.0 + Math.random() * 7.0;
+            const velocity = new Vector3(
+                Math.cos(angle) * speed,
+                (Math.random() - 0.5) * speed,
+                (Math.random() - 0.2) * speed * 0.5
+            );
+            const size = 4.0 + Math.random() * 6.0;
+            const life = 0.8 + Math.random() * 1.0;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            this.spawn(targetPos, velocity, color, size, life, 'confetti');
+        }
+    }
+
     update(deltaTime) {
         this.particles.forEach(p => {
             if (p.life > 0) p.update(deltaTime);
@@ -644,6 +662,7 @@ class Ball3D {
         this.isKicked = false;
         this.isStatic = true;
         this.hitPostCount = 0;
+        this.didHitTarget = false;
     }
 
     reset() {
@@ -658,6 +677,7 @@ class Ball3D {
         this.isKicked = false;
         this.isStatic = true;
         this.hitPostCount = 0;
+        this.didHitTarget = false;
     }
 
     kick(kickPower, targetAngleX, targetAngleY, sideSpin, topSpin) {

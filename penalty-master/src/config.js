@@ -14,6 +14,7 @@ const GOAL_WIDTH = 7.32; // метри
 const GOAL_HEIGHT = 2.44; // метри
 const GOAL_POST_RADIUS = 0.06; // товщина штанги (метри)
 const GOAL_DEPTH = 1.5; // глибина сітки (метри)
+const TARGET_RADIUS = 0.35; // радіус мішені у кутах воріт
 
 // Позиції
 const PENALTY_SPOT_Z = 11.0; // відстань пенальті до воріт в метрах

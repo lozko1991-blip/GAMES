@@ -153,6 +153,13 @@ class PenaltyMasterGame {
         this.windX = 0;
         this.windZ = 0;
 
+        // Targets configuration in 3D (x, y, z)
+        this.targets = [
+            { id: 'top-left',  position: new Vector3(-GOAL_WIDTH/2 + 0.5, GOAL_HEIGHT - 0.5, 0), active: true },
+            { id: 'top-right', position: new Vector3(GOAL_WIDTH/2 - 0.5, GOAL_HEIGHT - 0.5, 0), active: true }
+        ];
+        this.targetHits = 0;
+
         // FIFA-style cinematic cutscene state
         this.cutsceneActive = false;
         this.cutsceneStage = 0;
@@ -519,6 +526,29 @@ class PenaltyMasterGame {
                     }
                 }
 
+                // Check collision with interactive targets in the corners of the goal
+                if (isLocalOrStriker && !this.ball.didHitTarget && this.ball.position.coordinateZ <= 0.8 && this.ball.position.coordinateZ >= -0.2) {
+                    this.targets.forEach(target => {
+                        if (target.active) {
+                            const distanceVec = this.ball.position.subtract(target.position);
+                            // Ігноруємо глибину Z для плоского перерізу мішені у створі воріт
+                            const dist2D = Math.sqrt(distanceVec.coordinateX*distanceVec.coordinateX + distanceVec.coordinateY*distanceVec.coordinateY);
+                            if (dist2D < (TARGET_RADIUS + BALL_RADIUS)) {
+                                target.active = false;
+                                this.ball.didHitTarget = true;
+                                this.targetHits++;
+                                
+                                // Гучний звук та вибух часток
+                                gameAudio.playGoalCheer();
+                                gameVFX.spawnTargetHitExplosion(target.position);
+                                
+                                // Тряска камери для соковитості
+                                this.camera.triggerShake(0.85);
+                            }
+                        }
+                    });
+                }
+
                 if (isLocalOrStriker) {
                     if (this.ball.position.coordinateZ <= 0.05 && this.ball.position.coordinateZ >= -0.2) {
                         const inGoalX = Math.abs(this.ball.position.coordinateX) < (GOAL_WIDTH / 2 - 0.03);
@@ -728,6 +758,9 @@ class PenaltyMasterGame {
         this.ball.reset();
         this.goalkeeperAI.reset();
         gameControls.reset();
+
+        // Reactivate goal targets
+        this.targets.forEach(t => t.active = true);
 
         this.camera.position.set(0, 1.8, PENALTY_SPOT_Z + 4.2);
         this.camera.target.set(0, 1.0, 0);
@@ -996,6 +1029,43 @@ class PenaltyMasterGame {
         }
 
         this.goalNet.render(this.ctx, this.camera, width, height);
+
+        // Малювання інтерактивних мішеней у створі воріт
+        this.targets.forEach(target => {
+            if (target.active) {
+                const proj = this.camera.project(target.position, width, height);
+                if (proj) {
+                    const radius = TARGET_RADIUS * proj.scale;
+                    
+                    // Золотисте неонове коло
+                    this.ctx.save();
+                    this.ctx.shadowBlur = 15;
+                    this.ctx.shadowColor = '#00ffcc';
+                    
+                    // Зовнішнє коло
+                    this.ctx.strokeStyle = '#00ffcc';
+                    this.ctx.lineWidth = 3.5 * (proj.scale / 300);
+                    this.ctx.beginPath();
+                    this.ctx.arc(proj.x, proj.y, radius, 0, Math.PI * 2);
+                    this.ctx.stroke();
+
+                    // Друге коло
+                    this.ctx.strokeStyle = '#ffffff';
+                    this.ctx.lineWidth = 1.5 * (proj.scale / 300);
+                    this.ctx.beginPath();
+                    this.ctx.arc(proj.x, proj.y, radius * 0.65, 0, Math.PI * 2);
+                    this.ctx.stroke();
+
+                    // Червоний центр мішені
+                    this.ctx.fillStyle = '#ff007f';
+                    this.ctx.beginPath();
+                    this.ctx.arc(proj.x, proj.y, radius * 0.3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    this.ctx.restore();
+                }
+            }
+        });
 
         const postLeftBase = new Vector3(-GOAL_WIDTH / 2, 0, 0);
         const postLeftTop = new Vector3(-GOAL_WIDTH / 2, GOAL_HEIGHT, 0);
