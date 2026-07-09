@@ -541,7 +541,8 @@ class PenaltyMasterGame {
 
                     this.goalkeeperAI.onBallKicked(this.ball);
                     this.gameState = 'flight';
-                    this.runupProgress = 0; 
+                    this._flightTimer = 0; // скидаємо таймер антизависання
+                    this.runupProgress = 0;
                 }
                 break;
 
@@ -591,7 +592,9 @@ class PenaltyMasterGame {
 
                         const newVelX = bv.coordinateX + impulseMag * n.coordinateX + kv.coordinateX * 0.45;
                         const newVelY = bv.coordinateY + impulseMag * n.coordinateY + Math.abs(kv.coordinateY) * 0.3 + 1.5;
-                        const newVelZ = Math.abs(bv.coordinateZ) * restitution + 3.5; 
+                        // М'яч відбивається вперед і в бік, а не до камери
+                        const punchSideX = (Math.random() - 0.5) * 4.0;
+                        const newVelZ = -(Math.abs(bv.coordinateZ) * restitution + 2.0); // від'ємний = від камери
 
                         this.ball.velocity = new Vector3(newVelX, newVelY, newVelZ);
                         this.ball.angularVelocity = new Vector3(
@@ -629,6 +632,7 @@ class PenaltyMasterGame {
                 }
 
                 if (isLocalOrStriker) {
+                    // --- ДЕТЕКТОР ГОЛУ ---
                     if (this.ball.position.coordinateZ <= 0.05 && this.ball.position.coordinateZ >= -0.2) {
                         const inGoalX = Math.abs(this.ball.position.coordinateX) < (GOAL_WIDTH / 2 - 0.03);
                         const inGoalY = this.ball.position.coordinateY < (GOAL_HEIGHT - 0.03) && this.ball.position.coordinateY > 0.05;
@@ -645,14 +649,28 @@ class PenaltyMasterGame {
                         }
                     }
 
-                    if (this.ball.position.coordinateZ < -0.3) {
+                    // --- ДЕТЕКТОР ПРОМАХУ / М'ЯЧ ЗА ПОЛЕМ ---
+                    const bx = this.ball.position.coordinateX;
+                    const by = this.ball.position.coordinateY;
+                    const bz = this.ball.position.coordinateZ;
+
+                    // За лінією воріт
+                    const missedGoal = bz < -0.3;
+                    // Далеко в бік або вверх
+                    const wideOrHigh = Math.abs(bx) > GOAL_WIDTH / 2 + 1.8 || by > GOAL_HEIGHT + 1.2;
+                    // М'яч летить назад до камери (відбито воротарем або не потрапив)
+                    const flyingTowardCamera = bz > 12.0;
+                    // М'яч зупинився на землі далеко від воріт (після відбиття)
+                    const stoppedOnGround = by <= BALL_RADIUS + 0.05 && this.ball.velocity.length() < 0.5 && bz > 1.5;
+
+                    // --- ТАЙМАУТ: якщо польот тривав > 6 секунд → примусово завершити ---
+                    this._flightTimer = (this._flightTimer || 0) + scaledDeltaTime;
+                    const flightTimeout = this._flightTimer > 6.0;
+
+                    if (missedGoal || wideOrHigh || flyingTowardCamera || stoppedOnGround || flightTimeout) {
                         this.gameState = 'result';
                         this.timeScale = 1.0;
-                        gameAudio.playMissGroan();
-                        this.triggerShotResult(false, 'Палажченко гуска');
-                    } else if (Math.abs(this.ball.position.coordinateX) > GOAL_WIDTH / 2 + 1.8 || this.ball.position.coordinateY > GOAL_HEIGHT + 1.2) {
-                        this.gameState = 'result';
-                        this.timeScale = 1.0;
+                        this._flightTimer = 0;
                         gameAudio.playMissGroan();
                         this.triggerShotResult(false, 'Палажченко гуска');
                     }
