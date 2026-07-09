@@ -1371,6 +1371,14 @@ document.getElementById('btn-role-keeper').addEventListener('click', () => {
     selectRole('keeper');
 });
 
+// Додаємо обробку кліків на швидкі публічні лобі
+document.querySelectorAll('.btn-quick-lobby').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const lobbyCode = e.target.getAttribute('data-lobby');
+        connectToQuickLobby(lobbyCode);
+    });
+});
+
 const setDifficultyPreset = (diffName) => {
     const preset = DIFFICULTY_PRESETS[diffName];
     safeStorage.setItem('pm_difficulty', diffName);

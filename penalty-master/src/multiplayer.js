@@ -104,6 +104,69 @@ function joinRoom() {
     });
 }
 
+function connectToQuickLobby(lobbyCode) {
+    resetOnlineState();
+    multiplayerState.isOnline = true;
+    multiplayerState.roomCode = lobbyCode;
+
+    updateOnlineStatus(`Підключення до ${lobbyCode}...`);
+    
+    // Спробуємо спочатку підключитися як гість
+    multiplayerState.peer = new Peer();
+    
+    multiplayerState.peer.on('open', (id) => {
+        const hostPeerId = 'pm-' + lobbyCode;
+        updateOnlineStatus(`Спроба входу в лобі ${lobbyCode}...`);
+        
+        // Робимо спробу з'єднання з хостом
+        const checkConn = multiplayerState.peer.connect(hostPeerId);
+        
+        let connected = false;
+        checkConn.on('open', () => {
+            connected = true;
+            multiplayerState.isHost = false;
+            multiplayerState.conn = checkConn;
+            setupConnection();
+        });
+
+        // Якщо за 1.5 секунди не з'єднались - стаємо хостом цього публічного лобі
+        setTimeout(() => {
+            if (!connected) {
+                checkConn.close();
+                multiplayerState.peer.destroy();
+                
+                // Створюємо кімнату з цим ID
+                multiplayerState.isHost = true;
+                multiplayerState.peer = new Peer('pm-' + lobbyCode);
+                
+                multiplayerState.peer.on('open', () => {
+                    updateOnlineStatus(`Ви заснували Лобі ${lobbyCode}. Очікуємо суперника...`);
+                });
+
+                multiplayerState.peer.on('connection', (connection) => {
+                    multiplayerState.conn = connection;
+                    setupConnection();
+                });
+
+                multiplayerState.peer.on('error', (err) => {
+                    if (err.type === 'unavailable-id') {
+                        // Якщо ID вже зайнятий - спробуємо ще раз підключитись
+                        connectToQuickLobby(lobbyCode);
+                    } else {
+                        console.error("Lobby peer error:", err);
+                        updateOnlineStatus("Помилка лобі.");
+                    }
+                });
+            }
+        }, 1500);
+    });
+
+    multiplayerState.peer.on('error', (err) => {
+        console.error(err);
+        updateOnlineStatus("Помилка підключення до лобі.");
+    });
+}
+
 function setupConnection() {
     multiplayerState.conn.on('open', () => {
         updateOnlineStatus("Підключено! Оберіть роль...");
