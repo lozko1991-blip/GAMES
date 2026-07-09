@@ -285,6 +285,14 @@ class PenaltyMasterGame {
             this.frameCount = 0;
             this.fpsTimer = 0;
             document.getElementById('hud-fps').innerText = this.fps;
+
+            // Адаптивний оптимізатор продуктивності під слабкі ноутбуки
+            if (this.fps < 45) {
+                // Якщо лагає - зменшуємо максимальну кількість часток вдвічі для плавності
+                gameVFX.maxParticlesScale = 0.5;
+            } else {
+                gameVFX.maxParticlesScale = 1.0;
+            }
         }
 
         this.update(scaledDeltaTime, deltaTime);
@@ -1395,8 +1403,43 @@ class PenaltyMasterGame {
             render: () => this.goalkeeper.render(this.ctx, this.camera, width, height)
         });
 
+        // Малювання шлейфу м'яча (Ball Trail rendering)
+        if (this.ball.isKicked && this.ball.trailPositions.length > 1) {
+            this.ctx.save();
+            this.ctx.lineWidth = 4 * (ballProj ? ballProj.scale / 300 : 1);
+            this.ctx.strokeStyle = 'rgba(0, 255, 204, 0.4)';
+            this.ctx.beginPath();
+            
+            let firstTrailProj = this.camera.project(this.ball.trailPositions[0], width, height);
+            if (firstTrailProj) {
+                this.ctx.moveTo(firstTrailProj.x, firstTrailProj.y);
+            }
+            
+            for (let i = 1; i < this.ball.trailPositions.length; i++) {
+                let trailProj = this.camera.project(this.ball.trailPositions[i], width, height);
+                if (trailProj) {
+                    this.ctx.lineTo(trailProj.x, trailProj.y);
+                }
+            }
+            this.ctx.stroke();
+            this.ctx.restore();
+        }
+
         const ballProj = this.camera.project(this.ball.position, width, height);
         if (ballProj) {
+            // Додаємо красивий неоновий ореол (Halo) навколо м'яча при швидкому польоті
+            const ballSpeed = this.ball.velocity.length();
+            if (ballSpeed > 5) {
+                this.ctx.save();
+                this.ctx.shadowBlur = Math.min(25, ballSpeed * 1.5);
+                this.ctx.shadowColor = '#00ffcc';
+                this.ctx.beginPath();
+                this.ctx.arc(ballProj.x, ballProj.y, BALL_RADIUS * ballProj.scale * 1.15, 0, Math.PI * 2);
+                this.ctx.fillStyle = 'rgba(0, 255, 204, 0.12)';
+                this.ctx.fill();
+                this.ctx.restore();
+            }
+
             renderQueue.push({
                 depth: this.ball.position.coordinateZ,
                 render: () => this.ball.render(this.ctx, ballProj.x, ballProj.y, ballProj.scale)

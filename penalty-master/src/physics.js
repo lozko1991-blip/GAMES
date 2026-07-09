@@ -524,6 +524,7 @@ class ParticleSystemManager {
     constructor() {
         this.poolSize = 400;
         this.particles = [];
+        this.maxParticlesScale = 1.0; // Значення масштабування для слабких ПК
         for (let cellIndex = 0; cellIndex < this.poolSize; cellIndex++) {
             this.particles.push(new Particle());
         }
@@ -539,7 +540,7 @@ class ParticleSystemManager {
     }
 
     spawnGrassExplosion(position) {
-        const particleCount = 25;
+        const particleCount = Math.round(25 * this.maxParticlesScale);
         for (let cellIndex = 0; cellIndex < particleCount; cellIndex++) {
             const angle = Math.random() * Math.PI * 2;
             const speed = 1.5 + Math.random() * 3.5;
@@ -568,7 +569,7 @@ class ParticleSystemManager {
 
     spawnConfettiRain(goalPos) {
         const colors = ['#ff007f', '#00ffcc', '#ffcc00', '#ff00ff', '#00ffff', '#ffffff'];
-        const particleCount = 120;
+        const particleCount = Math.round(120 * this.maxParticlesScale);
 
         for (let cellIndex = 0; cellIndex < particleCount; cellIndex++) {
             const angle = (Math.random() - 0.5) * Math.PI * 0.6 - Math.PI / 2;
@@ -590,7 +591,7 @@ class ParticleSystemManager {
 
     spawnTargetHitExplosion(targetPos) {
         const colors = ['#00ffcc', '#ffffff', '#ffff00', '#ff00ff'];
-        const particleCount = 40;
+        const particleCount = Math.round(40 * this.maxParticlesScale);
         for (let cellIndex = 0; cellIndex < particleCount; cellIndex++) {
             const angle = Math.random() * Math.PI * 2;
             const speed = 4.0 + Math.random() * 7.0;
@@ -664,6 +665,7 @@ class Ball3D {
         this.isStatic = true;
         this.hitPostCount = 0;
         this.didHitTarget = false;
+        this.trailPositions = [];
     }
 
     reset() {
@@ -679,6 +681,7 @@ class Ball3D {
         this.isStatic = true;
         this.hitPostCount = 0;
         this.didHitTarget = false;
+        this.trailPositions = [];
     }
 
     kick(kickPower, targetAngleX, targetAngleY, sideSpin, topSpin) {
@@ -733,6 +736,12 @@ class Ball3D {
 
         this.velocity.coordinateY -= PHYSICS_GRAVITY * deltaTime;
         this.position = this.position.add(this.velocity.scale(deltaTime));
+
+        // Додаємо поточну позицію до історії шлейфу
+        this.trailPositions.push(this.position.clone());
+        if (this.trailPositions.length > 15) {
+            this.trailPositions.shift();
+        }
 
         this.updateRotationMatrix(deltaTime);
         this.handleCollisions();
