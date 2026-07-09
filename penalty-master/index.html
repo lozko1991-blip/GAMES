@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penalty Master - Симулятор Пенальті</title>
+    <!-- Google Fonts for premium visuals -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Canvas for 3D game rendering -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Dynamic Game Banners (GOAL, SAVE, OUT) -->
+        <div id="banner-overlay">
+            <span id="banner-text" class="banner-text">ГОЛ!</span>
+        </div>
+
+        <!-- Gameplay HUD overlay -->
+        <div id="hud-container">
+            <div class="hud-header">
+                <div class="hud-panel">
+                    <div class="hud-score-board">
+                        РАХУНОК: <span id="hud-goals" class="score-val">0</span> / <span id="hud-shots" class="score-val">0</span>
+                    </div>
+                    <div class="hud-score-board">
+                        СЕРІЯ: <span id="hud-streak" class="streak-val">0</span>
+                    </div>
+                </div>
+                <div class="hud-panel" style="text-align:center;">
+                    <div style="font-size:0.75rem; font-weight:700; letter-spacing:2px; color:#ffd700; text-transform:uppercase;" id="hud-level">Рівень 1: Шкільний Двір</div>
+                    <div style="font-size:0.7rem; color:rgba(255,255,150,0.8); margin-top:2px;" id="hud-level-progress">Голі: 0/3</div>
+                </div>
+                <div class="hud-panel">
+                    <div class="hud-stats-small">
+                        ТОЧНІСТЬ: <span id="hud-accuracy">0%</span> | FPS: <span id="hud-fps">60</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hud-footer">
+                <div class="hud-panel">
+                    <div class="controls-overlay">
+                        <div class="power-label">СИЛА УДАРУ</div>
+                        <div class="power-bar-container">
+                            <div id="hud-power-fill" class="power-bar-fill"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hud-panel">
+                    <div class="hud-stats-small" style="text-align: right;">
+                        СКЛАДНІСТЬ: <span id="hud-difficulty" style="color: var(--primary-glow); font-weight: bold;">EASY</span><br>
+                        КЕРУВАННЯ: <span class="key-bind">SPACE</span> - УДАР | <span class="key-bind">ESC</span> - МЕНЮ
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN MENU -->
+        <div id="screen-main-menu" class="overlay-screen active">
+            <div class="menu-card">
+                <h1>PENALTY MASTER</h1>
+                <p style="margin-bottom: 25px; color: rgba(255,255,255,0.6); text-transform: uppercase; font-size: 0.9rem; letter-spacing: 2px;">
+                    Справжній 3D симулятор пенальті
+                </p>
+                <button class="menu-button" id="btn-start-game">Грати</button>
+                <button class="menu-button" id="btn-difficulty-menu">Складність</button>
+                <button class="menu-button" id="btn-stats-menu">Статистика</button>
+                <button class="menu-button" id="btn-settings-menu">Налаштування</button>
+                <button class="menu-button" id="btn-instructions-menu">Інструкція</button>
+                <button class="menu-button" id="btn-toggle-fullscreen">Повний екран</button>
+            </div>
+        </div>
+
+        <!-- LEVEL UP SCREEN -->
+        <div id="screen-level-up" class="overlay-screen" style="z-index:20;">
+            <div class="menu-card" style="max-width:480px; border-color:rgba(255,215,0,0.6); box-shadow:0 0 60px rgba(255,215,0,0.3);">
+                <div style="font-size:0.85rem; font-weight:700; letter-spacing:4px; color:#ffd700; text-transform:uppercase; margin-bottom:8px;">🏆 РІВЕНЬ ПРОЙДЕНО!</div>
+                <h2 id="levelup-title" style="font-size:2.5rem; color:#ffd700; margin-bottom:4px;">Рівень 2</h2>
+                <div id="levelup-name" style="font-size:1.4rem; font-weight:800; color:#ffffff; text-transform:uppercase; letter-spacing:3px; margin-bottom:6px;">Міський Стадіон</div>
+                <div id="levelup-subtitle" style="font-size:0.9rem; color:rgba(255,215,0,0.7); letter-spacing:2px; text-transform:uppercase; margin-bottom:24px;">Аматор</div>
+                <div style="display:flex; gap:20px; justify-content:center; margin-bottom:24px;">
+                    <div style="background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.3); border-radius:12px; padding:12px 20px;">
+                        <div style="font-size:0.7rem; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:4px;">Наступний воротар</div>
+                        <div id="levelup-next-keeper" style="font-size:0.95rem; color:#ffd700; font-weight:700;">Воротар: Палажченко</div>
+                    </div>
+                </div>
+                <div style="font-size:0.8rem; color:rgba(255,255,255,0.4); margin-bottom:20px;">Воротар стає сильнішим. Бийте точніше!</div>
+                <button class="menu-button" id="btn-levelup-continue" style="border-color:#ffd700; color:#ffd700; font-size:1.1rem;">⚽ Продовжити</button>
+            </div>
+        </div>
+
+        <!-- DIFFICULTY SCREEN -->
+        <div id="screen-difficulty" class="overlay-screen">
+            <div class="menu-card">
+                <h2>Оберіть Складність</h2>
+                <button class="menu-button" id="btn-diff-easy" style="border-color: #00ff66;">Легко (Easy)</button>
+                <button class="menu-button" id="btn-diff-medium" style="border-color: #00ccff;">Середньо (Medium)</button>
+                <button class="menu-button" id="btn-diff-hard" style="border-color: #ff9900;">Важко (Hard)</button>
+                <button class="menu-button" id="btn-diff-legend" style="border-color: #ff0055;">Легенда (Legend)</button>
+                <button class="menu-button btn-back" style="margin-top: 25px; border-color: rgba(255,255,255,0.3);">Назад</button>
+            </div>
+        </div>
+
+        <!-- SETTINGS SCREEN -->
+        <div id="screen-settings" class="overlay-screen">
+            <div class="menu-card">
+                <h2>Налаштування</h2>
+                
+                <div class="settings-row">
+                    <span class="settings-label">Звукові Ефекти</span>
+                    <label class="switch">
+                        <input type="checkbox" id="setting-sound" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-row">
+                    <span class="settings-label">Атмосфера Стадіону</span>
+                    <label class="switch">
+                        <input type="checkbox" id="setting-ambient" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-row">
+                    <span class="settings-label">Ефекти Повільного Руху (Slow Motion)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="setting-slowmo" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <button class="menu-button btn-back" style="margin-top: 25px; border-color: rgba(255,255,255,0.3);">Назад</button>
+            </div>
+        </div>
+
+        <!-- STATISTICS SCREEN -->
+        <div id="screen-stats" class="overlay-screen">
+            <div class="menu-card">
+                <h2>Ваша Статистика</h2>
+                
+                <div class="stats-grid">
+                    <div class="stats-item">
+                        <div class="stats-label">Удари</div>
+                        <div id="stat-total-shots" class="stats-value">0</div>
+                    </div>
+                    <div class="stats-item">
+                        <div class="stats-label">Голи</div>
+                        <div id="stat-total-goals" class="stats-value">0</div>
+                    </div>
+                    <div class="stats-item">
+                        <div class="stats-label">Сейви Воротаря</div>
+                        <div id="stat-goalkeeper-saves" class="stats-value">0</div>
+                    </div>
+                    <div class="stats-item">
+                        <div class="stats-label">Точність</div>
+                        <div id="stat-accuracy" class="stats-value">0%</div>
+                    </div>
+                    <div class="stats-item">
+                        <div class="stats-label">Макс. серія голів</div>
+                        <div id="stat-max-streak" class="stats-value">0</div>
+                    </div>
+                    <div class="stats-item">
+                        <div class="stats-label">Удари в каркас</div>
+                        <div id="stat-post-hits" class="stats-value">0</div>
+                    </div>
+                </div>
+
+                <button class="menu-button" id="btn-reset-stats" style="border-color: rgba(255,0,0,0.4); font-size: 0.9rem; margin-bottom: 10px;">Скинути Статистику</button>
+                <button class="menu-button btn-back" style="border-color: rgba(255,255,255,0.3);">Назад</button>
+            </div>
+        </div>
+
+        <!-- INSTRUCTIONS SCREEN -->
+        <div id="screen-instructions" class="overlay-screen">
+            <div class="menu-card" style="max-width: 600px;">
+                <h2>Як Грати</h2>
+                
+                <div class="tutorial-text">
+                    <p>Ласкаво просимо до <strong>Penalty Master</strong> — професійного 3D симулятора футбольних пенальті!</p>
+                    <p><strong>1. Позиція перед ударом:</strong> Ви можете змінити початкову позицію розбігу гравця за допомогою стрілок вліво <span class="key-bind">←</span> та вправо <span class="key-bind">→</span> до того, як почнете розбіг.</p>
+                    <p><strong>2. Розбіг та Прицілювання:</strong> Натисніть та утримуйте кнопку <span class="key-bind">SPACE</span> (Пробіг). Гравець почне розбігатися, а на екрані з'явиться шкала сили. Поки гравець біжить, використовуйте стрілки <span class="key-bind">←</span> <span class="key-bind">→</span> <span class="key-bind">↑</span> <span class="key-bind">↓</span>, щоб керувати прицілом у воротах.</p>
+                    <p><strong>3. Модифікатори удару:</strong></p>
+                    <ul>
+                        <li>Утримуйте <span class="key-bind">SHIFT</span> під час удару для додаткової сили.</li>
+                        <li>Утримуйте <span class="key-bind">CTRL</span>, щоб виконати низький удар низом.</li>
+                    </ul>
+                    <p><strong>4. Обертання м'яча (Ефект Магнуса):</strong> Щоб підкрутити м'яч у повітрі, використовуйте стрілки вліво або вправо в момент самого удару. М'яч відхилятиметься по кривій траєкторії, що дозволить обійти руки воротаря!</p>
+                    <p><strong>5. Воротарський AI:</strong> На легендарній складності воротар аналізує ваші рухи, силу удару і кут розбігу практично миттєво, роблячи неймовірні сейви.</p>
+                </div>
+
+                <button class="menu-button btn-back" style="border-color: rgba(255,255,255,0.3);">Назад</button>
+            </div>
+        </div>
+
+        <!-- PAUSE SCREEN -->
+        <div id="screen-pause" class="overlay-screen">
+            <div class="menu-card">
+                <h2>Гра Призупинена</h2>
+                <button class="menu-button" id="btn-resume-game">Продовжити</button>
+                <button class="menu-button" id="btn-restart-game">Почати спочатку</button>
+                <button class="menu-button" id="btn-quit-main-menu">Вийти в меню</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript code split files -->
+    <script src="./src/config.js"></script>
+    <script src="./src/audio.js"></script>
+    <script src="./src/physics.js"></script>
+    <script src="./src/characters.js"></script>
+    <script src="./src/main.js"></script>
+</body>
+</html>

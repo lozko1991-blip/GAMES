@@ -1,0 +1,417 @@
+/*
+====================================================
+CSS DESIGN SYSTEM & LAYOUT
+====================================================
+*/
+:root {
+    --primary-glow: #00ffcc;
+    --secondary-glow: #ff007f;
+    --background-dark: #0a0a16;
+    --panel-bg: rgba(15, 15, 35, 0.75);
+    --border-glow: rgba(0, 255, 204, 0.3);
+    --font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--background-dark);
+    font-family: var(--font-family);
+    color: #ffffff;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#game-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, #1b1b3a 0%, #050510 100%);
+}
+
+/* Glassmorphic Screens */
+.overlay-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(5, 5, 15, 0.85);
+    backdrop-filter: blur(12px);
+    z-index: 10;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.overlay-screen.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.menu-card {
+    background: var(--panel-bg);
+    border: 2px solid var(--border-glow);
+    box-shadow: 0 0 30px rgba(0, 255, 204, 0.15), inset 0 0 15px rgba(255, 255, 255, 0.05);
+    border-radius: 24px;
+    padding: 40px;
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.overlay-screen.active .menu-card {
+    transform: scale(1);
+}
+
+h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    margin-bottom: 30px;
+    background: linear-gradient(135deg, #00ffcc 0%, #ff007f 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+}
+
+h2 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: var(--primary-glow);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.menu-button {
+    display: block;
+    width: 100%;
+    padding: 15px 25px;
+    margin: 12px 0;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(0, 255, 204, 0.2);
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.menu-button:hover {
+    background: linear-gradient(90deg, rgba(0, 255, 204, 0.2) 0%, rgba(255, 0, 127, 0.1) 100%);
+    border-color: var(--primary-glow);
+    box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+    transform: translateY(-2px);
+}
+
+.menu-button:active {
+    transform: translateY(1px);
+}
+
+/* HUD Overlay */
+#hud-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+    box-sizing: border-box;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+#hud-container.active {
+    opacity: 1;
+}
+
+.hud-header {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.hud-panel {
+    background: rgba(10, 10, 25, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    padding: 12px 20px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    pointer-events: auto;
+}
+
+.hud-score-board {
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: #ffffff;
+    letter-spacing: 1px;
+}
+
+.score-val {
+    color: var(--primary-glow);
+    font-size: 1.6rem;
+    text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+}
+
+.streak-val {
+    color: var(--secondary-glow);
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(255, 0, 127, 0.5);
+}
+
+.hud-stats-small {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.hud-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 100%;
+}
+
+/* Power Bar & Spin Indicator */
+.controls-overlay {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.power-bar-container {
+    width: 250px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.power-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00ffcc 0%, #ffcc00 70%, #ff007f 100%);
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+    transition: width 0.05s linear;
+}
+
+.power-label {
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #ffffff;
+}
+
+/* Stats & Settings Layouts */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.stats-item {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.stats-label {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+}
+
+.stats-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--primary-glow);
+}
+
+.settings-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0;
+    text-align: left;
+}
+
+.settings-label {
+    font-weight: 600;
+}
+
+/* Toggle Switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: .4s;
+    border-radius: 34px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--primary-glow);
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+}
+
+input:checked + .slider:before {
+    transform: translateX(24px);
+}
+
+/* Instructions Text */
+.tutorial-text {
+    text-align: left;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 25px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.tutorial-text p {
+    margin-bottom: 10px;
+}
+
+.key-bind {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: monospace;
+    font-weight: bold;
+    color: var(--primary-glow);
+}
+
+/* Big Banner overlay for Goals / Saves */
+#banner-overlay {
+    position: absolute;
+    top: 35%;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    pointer-events: none;
+    z-index: 4;
+    transform: scale(0.5);
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#banner-overlay.active {
+    transform: scale(1.3);
+    opacity: 1;
+}
+
+.banner-text {
+    font-size: 5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 8px;
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+}
+
+.banner-goal {
+    background: linear-gradient(to bottom, #00ffcc, #0088ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 40px rgba(0, 255, 204, 0.6);
+}
+
+.banner-save {
+    background: linear-gradient(to bottom, #ffcc00, #ff5500);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 40px rgba(255, 204, 0, 0.6);
+}
+
+.banner-miss {
+    background: linear-gradient(to bottom, #ff0055, #880022);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 40px rgba(255, 0, 85, 0.6);
+}
+
+/* Custom Scrollbar */
+.tutorial-text::-webkit-scrollbar {
+    width: 6px;
+}
+.tutorial-text::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+.tutorial-text::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 204, 0.3);
+    border-radius: 3px;
+}
+.tutorial-text::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-glow);
+}
