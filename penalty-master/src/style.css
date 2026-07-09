@@ -547,7 +547,7 @@ input:checked + .slider:before {
 .ut-card-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: x;
+    gap: 4px;
     font-size: 0.65rem;
     font-weight: 800;
     width: 90%;
