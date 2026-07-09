@@ -438,6 +438,106 @@ class SkeletalCharacter {
             j.footL.set(-0.16, 0.02, 0);
             j.footR.set(0.16, 0.02, 0);
         }
+        // === НОВІ СМІШНІ ПОЗИ ВОРОТАРЯ ===
+        else if (this.pose === 'taunt') {
+            // Воротар насміхається - бедра хитаються, руки дражняться
+            const taunPhase = Math.sin(this.animationTimer * 5.5);
+            const hipSway = Math.sin(this.animationTimer * 2.8) * 0.12;
+            j.pelvis.set(hipSway, 0.9, 0);
+            j.spine.set(hipSway * 0.5, 1.25, -0.02);
+            j.head.set(hipSway * 0.3, 1.62, 0);
+            j.shoulderL.set(-0.3, 1.35, 0);
+            j.shoulderR.set(0.3, 1.35, 0);
+            j.elbowL.set(-0.65, 1.25, 0.3 + taunPhase * 0.1);
+            j.elbowR.set(0.65, 1.25, 0.3 - taunPhase * 0.1);
+            j.handL.set(-0.75, 1.45, 0.4 + taunPhase * 0.15);
+            j.handR.set(0.75, 1.45, 0.4 - taunPhase * 0.15);
+            j.hipL.set(-0.18, 0.8, 0);
+            j.hipR.set(0.18, 0.8, 0);
+            j.kneeL.set(-0.25, 0.42, 0.08);
+            j.kneeR.set(0.25, 0.42, 0.08);
+            j.footL.set(-0.24, 0.02, 0.1);
+            j.footR.set(0.24, 0.02, 0.1);
+        }
+        else if (this.pose === 'stare_down') {
+            // Воротар пильно дивиться - нерухомий як скеля, тільки голова ледве хитається
+            const eyePhase = Math.sin(this.animationTimer * 1.2) * 0.02;
+            j.pelvis.set(0, 0.88, 0);
+            j.spine.set(0, 1.22, -0.12);
+            j.head.set(eyePhase, 1.58, -0.18);
+            j.shoulderL.set(-0.32, 1.35, -0.05);
+            j.shoulderR.set(0.32, 1.35, -0.05);
+            j.elbowL.set(-0.62, 1.12, 0.15);
+            j.elbowR.set(0.62, 1.12, 0.15);
+            j.handL.set(-0.72, 0.95, 0.25);
+            j.handR.set(0.72, 0.95, 0.25);
+            j.hipL.set(-0.22, 0.78, 0);
+            j.hipR.set(0.22, 0.78, 0);
+            j.kneeL.set(-0.30, 0.38, 0.12);
+            j.kneeR.set(0.30, 0.38, 0.12);
+            j.footL.set(-0.28, 0.02, 0.15);
+            j.footR.set(0.28, 0.02, 0.15);
+        }
+        else if (this.pose === 'nervous_shuffle') {
+            // Нервово переступає з ноги на ногу - дуже смішно виглядає
+            const shufflePhase = Math.sin(this.animationTimer * 8.0);
+            const bodyTilt = shufflePhase * 0.05;
+            j.pelvis.set(shufflePhase * 0.1, 0.88, 0);
+            j.spine.set(bodyTilt, 1.22, 0);
+            j.head.set(bodyTilt * 1.5, 1.58, 0);
+            j.shoulderL.set(-0.26, 1.33, 0);
+            j.shoulderR.set(0.26, 1.33, 0);
+            j.elbowL.set(-0.55, 1.08 + shufflePhase * 0.05, 0.2);
+            j.elbowR.set(0.55, 1.08 - shufflePhase * 0.05, 0.2);
+            j.handL.set(-0.68, 0.92, 0.3);
+            j.handR.set(0.68, 0.92, 0.3);
+            j.hipL.set(-0.18, 0.8, 0);
+            j.hipR.set(0.18, 0.8, 0);
+            j.kneeL.set(-0.2, 0.42 + Math.max(0, shufflePhase) * 0.12, 0.06);
+            j.kneeR.set(0.2, 0.42 + Math.max(0, -shufflePhase) * 0.12, 0.06);
+            j.footL.set(-0.2, 0.02 + Math.max(0, shufflePhase) * 0.1, 0.08);
+            j.footR.set(0.2, 0.02 + Math.max(0, -shufflePhase) * 0.1, 0.08);
+        }
+        else if (this.pose === 'headstand') {
+            // Воротар стоїть на голові - абсурдна поза, гарантований сміх
+            const wobble = Math.sin(this.animationTimer * 3.0) * 0.04;
+            j.head.set(wobble, 0.18, 0.05);
+            j.spine.set(wobble * 0.5, 0.55, 0.02);
+            j.pelvis.set(0, 0.95, 0);
+            j.shoulderL.set(-0.25, 0.38, 0);
+            j.shoulderR.set(0.25, 0.38, 0);
+            j.elbowL.set(-0.18, 0.22, 0.12);
+            j.elbowR.set(0.18, 0.22, 0.12);
+            j.handL.set(-0.1, 0.08, 0.18);
+            j.handR.set(0.1, 0.08, 0.18);
+            j.hipL.set(-0.16, 1.15, 0);
+            j.hipR.set(0.16, 1.15, 0);
+            j.kneeL.set(-0.18, 1.58 + wobble, 0.12);
+            j.kneeR.set(0.18, 1.58 - wobble, 0.12);
+            j.footL.set(-0.16, 1.95 + wobble * 1.5, 0.18);
+            j.footR.set(0.16, 1.95 - wobble * 1.5, 0.18);
+        }
+        else if (this.pose === 'handclap') {
+            // Воротар оплескує після сейву - підстрибує і б'є в долоні
+            const clapPhase = Math.abs(Math.sin(this.animationTimer * 10.0));
+            const jumpBounce = Math.max(0, Math.sin(this.animationTimer * 7.0)) * 0.15;
+            j.pelvis.set(0, 0.9 + jumpBounce, 0);
+            j.spine.set(0, 1.26 + jumpBounce, -0.05);
+            j.head.set(0, 1.63 + jumpBounce, -0.05);
+            const clapX = clapPhase * 0.22;
+            j.shoulderL.set(-0.25, 1.45 + jumpBounce, 0);
+            j.shoulderR.set(0.25, 1.45 + jumpBounce, 0);
+            j.elbowL.set(-0.18, 1.62 + jumpBounce, 0.18);
+            j.elbowR.set(0.18, 1.62 + jumpBounce, 0.18);
+            j.handL.set(-clapX, 1.72 + jumpBounce, 0.35);
+            j.handR.set(clapX, 1.72 + jumpBounce, 0.35);
+            j.hipL.set(-0.16, 0.82 + jumpBounce, 0);
+            j.hipR.set(0.16, 0.82 + jumpBounce, 0);
+            j.kneeL.set(-0.18, jumpBounce > 0.05 ? 0.55 : 0.43, jumpBounce > 0.05 ? 0.12 : 0);
+            j.kneeR.set(0.18, jumpBounce > 0.05 ? 0.55 : 0.43, jumpBounce > 0.05 ? 0.12 : 0);
+            j.footL.set(-0.16, jumpBounce > 0.05 ? 0.28 : 0.02, jumpBounce > 0.05 ? 0.18 : 0);
+            j.footR.set(0.16, jumpBounce > 0.05 ? 0.28 : 0.02, jumpBounce > 0.05 ? 0.18 : 0);
+        }
     }
 
     render(ctx, camera, canvasWidth, canvasHeight) {
@@ -454,7 +554,7 @@ class SkeletalCharacter {
             const worldZ = this.position.coordinateZ + (-localJ.coordinateX * sinAngle + localJ.coordinateZ * cosAngle);
 
             const projected = camera.project(new Vector3(worldX, worldY, worldZ), canvasWidth, canvasHeight);
-            if (!projected) return;
+            if (!projected) continue; // пропускаємо тільки цей суглоб, а не весь рендер!
             projectedJoints[jointKey] = projected;
         }
 
@@ -487,6 +587,7 @@ class SkeletalCharacter {
         const drawSegment = (j1Name, j2Name, color, width) => {
             const p1 = projectedJoints[j1Name];
             const p2 = projectedJoints[j2Name];
+            if (!p1 || !p2) return; // суглоб поза камерою - пропускаємо сегмент
             ctx.strokeStyle = color;
             ctx.lineWidth = width;
             ctx.beginPath();
@@ -524,17 +625,19 @@ class SkeletalCharacter {
 
         drawSegment('spine', 'head', this.skinColor, thicknessLimb * 1.1);
         
-        ctx.fillStyle = this.skinColor;
-        ctx.beginPath();
-        ctx.arc(projectedJoints.head.x, projectedJoints.head.y, thicknessHead, 0, Math.PI * 2);
-        ctx.fill();
+        if (projectedJoints.head) {
+            ctx.fillStyle = this.skinColor;
+            ctx.beginPath();
+            ctx.arc(projectedJoints.head.x, projectedJoints.head.y, thicknessHead, 0, Math.PI * 2);
+            ctx.fill();
 
-        ctx.fillStyle = this.isGoalkeeper ? '#111111' : '#ff9900';
-        ctx.beginPath();
-        ctx.arc(projectedJoints.head.x, projectedJoints.head.y - thicknessHead * 0.3, thicknessHead * 0.85, Math.PI, 0);
-        ctx.fill();
+            ctx.fillStyle = this.isGoalkeeper ? '#111111' : '#ff9900';
+            ctx.beginPath();
+            ctx.arc(projectedJoints.head.x, projectedJoints.head.y - thicknessHead * 0.3, thicknessHead * 0.85, Math.PI, 0);
+            ctx.fill();
+        }
 
-        if (this.isGoalkeeper) {
+        if (this.isGoalkeeper && projectedJoints.handL && projectedJoints.handR) {
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(projectedJoints.handL.x, projectedJoints.handL.y, thicknessLimb * 1.4, 0, Math.PI * 2);
