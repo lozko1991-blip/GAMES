@@ -159,6 +159,7 @@ class PenaltyMasterGame {
             { id: 'top-right', position: new Vector3(GOAL_WIDTH/2 - 0.5, GOAL_HEIGHT - 0.5, 0), active: true }
         ];
         this.targetHits = 0;
+        this.coins = 0;
 
         // FIFA-style cinematic cutscene state
         this.cutsceneActive = false;
@@ -373,18 +374,42 @@ class PenaltyMasterGame {
                 this.player.headingAngle = Math.atan2(-startX, -3.0);
                 this.player.setPose('idle');
 
+                // Воротар підстрибує перед ударом (для синглплеєра)
+                if (!multiplayerState.isOnline) {
+                    this.goalkeeper.setPose('goalkeeper_bounce');
+                }
+
                 // Якщо гра онлайн і ми воротар - ми не можемо бити
                 if (multiplayerState.isOnline && multiplayerState.role === 'keeper') {
-                    // Воротар може виконувати провокативні пози перед ударом
+                    // Воротар може виконувати провокативні пози або підстрибування перед ударом
                     if (gameControls.keys['KeyW']) {
                         this.goalkeeper.setPose('hang_bar');
                         sendNetData({ type: 'keeper_antic', pose: 'hang_bar' });
                     } else if (gameControls.keys['KeyS']) {
                         this.goalkeeper.setPose('walk_bar');
                         sendNetData({ type: 'keeper_antic', pose: 'walk_bar' });
+                    } else if (gameControls.keys['KeyF']) {
+                        this.goalkeeper.setPose('goalkeeper_bounce');
+                        sendNetData({ type: 'keeper_antic', pose: 'goalkeeper_bounce' });
                     } else if (gameControls.keys['KeyA'] || gameControls.keys['KeyD']) {
                         this.goalkeeper.setPose('idle');
                         sendNetData({ type: 'keeper_antic', pose: 'idle' });
+                    }
+                }
+
+                // Обманний рух (замах): якщо натиснути кнопку F перед розбігом
+                if (gameControls.keys['KeyF'] && (multiplayerState.role !== 'keeper')) {
+                    this.gameState = 'fake_swing';
+                    this.runupProgress = 0;
+                    this.player.setPose('fake_kick');
+                    if (multiplayerState.isOnline) {
+                        sendNetData({ type: 'keeper_antic', pose: 'fake_kick' });
+                    }
+                    // Воротар-ШІ реагує на обманку і стрибає раніше!
+                    if (!multiplayerState.isOnline) {
+                        setTimeout(() => {
+                            this.goalkeeperAI.onBallKicked(this.ball);
+                        }, 150);
                     }
                 }
 
@@ -404,6 +429,15 @@ class PenaltyMasterGame {
                         aimY: gameControls.aimY,
                         power: gameControls.power
                     });
+                }
+                break;
+
+            case 'fake_swing':
+                this.runupProgress += scaledDeltaTime * 4.0;
+                if (this.runupProgress >= 1.0) {
+                    this.gameState = 'aiming';
+                    this.runupProgress = 0;
+                    gameControls.reset();
                 }
                 break;
 
@@ -697,6 +731,13 @@ class PenaltyMasterGame {
                 this.maxStreak = this.streakCount;
             }
             this.totalGoals++;
+
+            // Нараховуємо монети за гол (+10) та за мішень (+25 якщо збили)
+            let earned = 10;
+            if (this.ball.didHitTarget) {
+                earned += 25;
+            }
+            this.coins += earned;
 
             this.levelGoalsScored++;
             const lvl = this.currentLevel || LEVEL_PRESETS[0];
@@ -1259,6 +1300,10 @@ class PenaltyMasterGame {
         document.getElementById('hud-accuracy').innerText = accuracy + '%';
 
         document.getElementById('hud-difficulty').innerText = this.goalkeeperAI.difficulty ? this.goalkeeperAI.difficulty.name : 'EASY';
+
+        // Оновлюємо монетки в HUD
+        const coinsEl = document.getElementById('hud-coins');
+        if (coinsEl) coinsEl.innerText = this.coins;
     }
 
     loadStatsFromStorage() {
@@ -1288,6 +1333,8 @@ class PenaltyMasterGame {
             document.getElementById('setting-slowmo').checked = this.slowMoEnabled;
         }
 
+        this.coins = parseInt(safeStorage.getItem('pm_coins')) || 0;
+
         const savedDiff = safeStorage.getItem('pm_difficulty');
         if (savedDiff && DIFFICULTY_PRESETS[savedDiff]) {
             this.goalkeeperAI.setDifficulty(DIFFICULTY_PRESETS[savedDiff]);
@@ -1300,6 +1347,7 @@ class PenaltyMasterGame {
         safeStorage.setItem('pm_goalkeeper_saves', this.goalkeeperSaves);
         safeStorage.setItem('pm_max_streak', this.maxStreak);
         safeStorage.setItem('pm_post_hits', this.postHits);
+        safeStorage.setItem('pm_coins', this.coins);
     }
 
     resetAllStats() {
@@ -1416,6 +1464,165 @@ document.querySelectorAll('.btn-back').forEach(btn => {
         resetOnlineState(); // Скидаємо онлайн стан при виході в головне меню
         showScreen('screen-main-menu');
     });
+});
+
+/*
+====================================================
+SHOP MANAGEMENT SYSTEM
+====================================================
+*/
+let shopCurrentTab = 'balls'; // 'balls' або 'boots'
+
+function getPlayerCoins() {
+    if (activeGameInstance) return activeGameInstance.coins;
+    return parseInt(safeStorage.getItem('pm_coins')) || 0;
+}
+
+function addPlayerCoins(amount) {
+    if (activeGameInstance) {
+        activeGameInstance.coins += amount;
+        activeGameInstance.saveStatsToStorage();
+        activeGameInstance.updateHUD();
+    } else {
+        const c = (parseInt(safeStorage.getItem('pm_coins')) || 0) + amount;
+        safeStorage.setItem('pm_coins', c);
+    }
+    updateShopCoinsDisplay();
+}
+
+function updateShopCoinsDisplay() {
+    const balance = getPlayerCoins();
+    document.getElementById('shop-coins-display').innerText = balance;
+    const hudCoins = document.getElementById('hud-coins');
+    if (hudCoins) hudCoins.innerText = balance;
+}
+
+function renderShopItems() {
+    const container = document.getElementById('shop-items-container');
+    container.innerHTML = '';
+
+    const items = SHOP_ITEMS[shopCurrentTab];
+    const ownedKey = shopCurrentTab === 'balls' ? 'pm_owned_balls' : 'pm_owned_boots';
+    const equippedKey = shopCurrentTab === 'balls' ? 'pm_equipped_ball' : 'pm_equipped_boot';
+    const defaultEquipped = shopCurrentTab === 'balls' ? 'classic' : 'black';
+
+    // Отримуємо список куплених товарів
+    let owned = JSON.parse(safeStorage.getItem(ownedKey));
+    if (!owned || !Array.isArray(owned)) {
+        owned = [defaultEquipped];
+        safeStorage.setItem(ownedKey, JSON.stringify(owned));
+    }
+
+    const equipped = safeStorage.getItem(equippedKey) || defaultEquipped;
+
+    items.forEach(item => {
+        const isOwned = owned.includes(item.id);
+        const isEquipped = equipped === item.id;
+
+        const card = document.createElement('div');
+        card.className = `shop-card ${isEquipped ? 'active' : ''}`;
+
+        // Додаємо маленьке прев'ю скіна
+        let previewHTML = '';
+        if (shopCurrentTab === 'balls') {
+            let ballStyle = `background: ${item.color};`;
+            if (item.glowColor) {
+                ballStyle += `box-shadow: 0 0 10px ${item.glowColor}; border-color: ${item.glowColor};`;
+            }
+            previewHTML = `<div class="shop-card-preview-ball" style="${ballStyle}"></div>`;
+        } else {
+            previewHTML = `<div class="shop-card-preview-boots" style="background: ${item.color};"></div>`;
+        }
+
+        let buttonText = 'Вибрати';
+        let buttonStyle = 'border-color: var(--primary-glow);';
+        
+        if (isEquipped) {
+            buttonText = 'Екіпіровано';
+            buttonStyle = 'border-color: #ffd700; color: #ffd700; background: rgba(255,215,0,0.1);';
+        } else if (!isOwned) {
+            buttonText = `Купити: 🪙 ${item.price}`;
+            buttonStyle = 'border-color: #ff9900; color: #ff9900;';
+        }
+
+        card.innerHTML = `
+            <div class="shop-card-title">${item.name}</div>
+            ${previewHTML}
+            <button class="menu-button shop-buy-btn" data-id="${item.id}" style="margin: 5px 0 0 0; padding: 6px 12px; font-size: 0.85rem; ${buttonStyle}">${buttonText}</button>
+        `;
+
+        // Обробник кліку на покупку/вибір
+        card.querySelector('.shop-buy-btn').addEventListener('click', () => {
+            handleShopItemClick(item, isOwned, isEquipped, ownedKey, equippedKey);
+        });
+
+        container.appendChild(card);
+    });
+}
+
+function handleShopItemClick(item, isOwned, isEquipped, ownedKey, equippedKey) {
+    if (isEquipped) return;
+
+    if (isOwned) {
+        // Просто екіпіруємо
+        safeStorage.setItem(equippedKey, item.id);
+        renderShopItems();
+        if (activeGameInstance) {
+            activeGameInstance.updateHUD();
+        }
+    } else {
+        // Покупка
+        const coins = getPlayerCoins();
+        if (coins >= item.price) {
+            // Зменшуємо баланс
+            if (activeGameInstance) {
+                activeGameInstance.coins -= item.price;
+                activeGameInstance.saveStatsToStorage();
+                activeGameInstance.updateHUD();
+            } else {
+                safeStorage.setItem('pm_coins', coins - item.price);
+            }
+
+            // Додаємо в список куплених
+            let owned = JSON.parse(safeStorage.getItem(ownedKey)) || [];
+            owned.push(item.id);
+            safeStorage.setItem(ownedKey, JSON.stringify(owned));
+
+            // Автоматично екіпіруємо
+            safeStorage.setItem(equippedKey, item.id);
+
+            updateShopCoinsDisplay();
+            renderShopItems();
+            gameAudio.playGoalCheer(); // Звук успішної покупки
+        } else {
+            alert('Недостатньо монет! Забивайте голи та збивайте мішені, щоб заробити більше.');
+        }
+    }
+}
+
+document.getElementById('btn-shop-menu').addEventListener('click', () => {
+    gameAudio.init();
+    updateShopCoinsDisplay();
+    renderShopItems();
+    showScreen('screen-shop');
+});
+
+document.getElementById('tab-shop-balls').addEventListener('click', (e) => {
+    shopCurrentTab = 'balls';
+    document.getElementById('tab-shop-balls').style.borderColor = 'var(--primary-glow)';
+    document.getElementById('tab-shop-balls').style.background = 'rgba(0, 255, 204, 0.1)';
+    document.getElementById('tab-shop-boots').style.borderColor = 'rgba(255,255,255,0.2)';
+    document.getElementById('tab-shop-boots').style.background = 'transparent';
+    renderShopItems();
+});
+
+document.getElementById('tab-shop-boots').addEventListener('click', (e) => {
+    shopCurrentTab = 'boots';
+    document.getElementById('tab-shop-boots').style.borderColor = 'var(--primary-glow)';
+    document.getElementById('tab-shop-boots').style.background = 'rgba(0, 255, 204, 0.1)';
+    document.getElementById('tab-shop-balls').style.borderColor = 'rgba(255,255,255,0.2)';
+    document.getElementById('tab-shop-balls').style.background = 'transparent';
+    renderShopItems();
 });
 
 // MULTIPLAYER INTERACTIVE BINDINGS

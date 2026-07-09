@@ -128,6 +128,53 @@ class SkeletalCharacter {
                 j.footR.set(0.16, 0.02, 0);
             }
         }
+        else if (this.pose === 'goalkeeper_bounce') {
+            const bouncePhase = Math.sin(this.animationTimer * 14.0);
+            const crouch = Math.max(0, -bouncePhase) * 0.08;
+
+            j.pelvis.set(0, 0.85 - crouch, 0);
+            j.spine.set(0, 1.2 - crouch, 0.05);
+            j.head.set(0, 1.55 - crouch, 0.08);
+
+            j.shoulderL.set(-0.25, 1.3 - crouch, 0);
+            j.shoulderR.set(0.25, 1.3 - crouch, 0);
+            j.elbowL.set(-0.52, 1.1 - crouch * 0.5, 0.22);
+            j.elbowR.set(0.52, 1.1 - crouch * 0.5, 0.22);
+            j.handL.set(-0.62, 1.0, 0.35);
+            j.handR.set(0.62, 1.0, 0.35);
+
+            j.hipL.set(-0.18, 0.78, 0);
+            j.hipR.set(0.18, 0.78, 0);
+            j.kneeL.set(-0.22, 0.38 - crouch, 0.1);
+            j.kneeR.set(0.22, 0.38 - crouch, 0.1);
+            j.footL.set(-0.22, 0.02 + Math.max(0, bouncePhase) * 0.06, 0.1);
+            j.footR.set(0.22, 0.02 + Math.max(0, bouncePhase) * 0.06, 0.1);
+        }
+        else if (this.pose === 'fake_kick') {
+            const fakeTime = Math.min(1.0, this.animationTimer * 4.0);
+            const fakeInv = 1.0 - fakeTime;
+            
+            // Нахил тулуба для замаху, але повернення назад
+            j.pelvis.set(-0.06 * fakeInv, 0.85, 0);
+            j.spine.set(-0.08 * fakeInv, 1.2, -0.15 * fakeInv);
+            j.head.set(-0.08 * fakeInv, 1.55, -0.12 * fakeInv);
+
+            j.shoulderL.set(-0.26, 1.3, 0.04);
+            j.shoulderR.set(0.26, 1.3, -0.04);
+            j.elbowL.set(-0.55, 1.12, 0.1);
+            j.elbowR.set(0.52, 1.0, -0.15);
+            j.handL.set(-0.68, 1.02, 0.15);
+            j.handR.set(0.62, 0.82, -0.22);
+
+            j.hipL.set(-0.16, 0.78, 0.1);
+            j.kneeL.set(-0.18, 0.38, 0.18);
+            j.footL.set(-0.18, 0.02, 0.2);
+
+            // Права нога робить замах назад, але зупиняється без торкання м'яча
+            j.hipR.set(0.16, 0.78, -0.08);
+            j.kneeR.set(0.22, 0.52 - 0.12 * fakeInv, -0.45 * fakeInv);
+            j.footR.set(0.25, 0.28 - 0.15 * fakeInv, -0.68 * fakeInv);
+        }
         else if (this.pose === 'run') {
             const frequency = 12.0 * runSpeedMultiplier;
             const amplitude = 0.32;
@@ -431,8 +478,17 @@ class SkeletalCharacter {
         drawSegment('kneeL', 'footL', this.socksColor, thicknessLimb);
         drawSegment('kneeR', 'footR', this.socksColor, thicknessLimb);
 
-        drawSegment('footL', 'footL', '#ffffff', thicknessFoot);
-        drawSegment('footR', 'footR', '#ffffff', thicknessFoot);
+        // Отримуємо активний колір бутс для нашого гравця
+        let bootColor = '#111111'; // Дефолтний чорний
+        if (!this.isGoalkeeper) {
+            const activeBootId = safeStorage.getItem('pm_equipped_boot') || 'black';
+            if (activeBootId === 'neon_green') bootColor = '#39ff14';
+            else if (activeBootId === 'cyan') bootColor = '#00ffff';
+            else if (activeBootId === 'gold_boots') bootColor = '#ffd700';
+        }
+
+        drawSegment('footL', 'footL', bootColor, thicknessFoot);
+        drawSegment('footR', 'footR', bootColor, thicknessFoot);
 
         drawSegment('pelvis', 'spine', this.jerseyColor, thicknessTorso);
         drawSegment('shoulderL', 'shoulderR', this.jerseyColor, thicknessLimb * 1.4);

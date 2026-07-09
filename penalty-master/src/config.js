@@ -211,3 +211,23 @@ const safeStorage = {
         }
     }
 };
+
+/*
+====================================================
+SHOP PRESETS
+====================================================
+*/
+const SHOP_ITEMS = {
+    balls: [
+        { id: 'classic', name: 'Класичний', price: 0, color: '#ffffff', glowColor: null, effect: null },
+        { id: 'fire', name: 'Вогняний', price: 200, color: '#ff6600', glowColor: '#ff2200', effect: 'fire' },
+        { id: 'neon', name: 'Неоновий', price: 350, color: '#39ff14', glowColor: '#39ff14', effect: 'neon' },
+        { id: 'gold', name: 'Золотий', price: 600, color: '#ffd700', glowColor: '#ffaa00', effect: 'gold' }
+    ],
+    boots: [
+        { id: 'black', name: 'Чорні класичні', price: 0, color: '#111111' },
+        { id: 'neon_green', name: 'Салатові неонові', price: 150, color: '#39ff14' },
+        { id: 'cyan', name: 'Бірюзові', price: 250, color: '#00ffff' },
+        { id: 'gold_boots', name: 'Золоті бутси', price: 500, color: '#ffd700' }
+    ]
+};

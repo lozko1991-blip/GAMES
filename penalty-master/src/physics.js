@@ -841,14 +841,52 @@ class Ball3D {
         const currentRadius = BALL_RADIUS * scale;
         if (currentRadius <= 0.5) return;
 
+        // Отримуємо активний скін м'яча зі сховища або використовуємо дефолтний
+        const activeBallId = safeStorage.getItem('pm_equipped_ball') || 'classic';
+        const isFire = activeBallId === 'fire';
+        const isNeon = activeBallId === 'neon';
+        const isGold = activeBallId === 'gold';
+
         ctx.save();
+
+        // Неонове або вогняне свічення
+        if (isNeon) {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#39ff14';
+        } else if (isFire) {
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#ff3300';
+            
+            // Якщо м'яч летить, створюємо вогняні іскри
+            if (!this.isStatic && Math.random() < 0.32) {
+                gameVFX.spawn(
+                    this.position.clone(),
+                    new Vector3((Math.random()-0.5)*1.2, 0.4 + Math.random()*1.5, 0.8),
+                    '#ff5500', 
+                    2.0 + Math.random()*3.0, 
+                    0.5 + Math.random()*0.5, 
+                    'confetti'
+                );
+            }
+        }
+
         ctx.translate(screenX, screenY);
         
         ctx.beginPath();
         ctx.arc(0, 0, currentRadius, 0, Math.PI * 2);
         ctx.clip();
 
-        ctx.fillStyle = '#f5f5f5';
+        // Базовий колір м'яча залежно від скіна
+        if (isGold) {
+            ctx.fillStyle = '#ffd700'; // Золотий
+        } else if (isFire) {
+            ctx.fillStyle = '#ff4400'; // Червоно-вогняний
+        } else if (isNeon) {
+            ctx.fillStyle = '#111111'; // Темно-неоновий для контрасту
+        } else {
+            ctx.fillStyle = '#f5f5f5'; // Класичний білий
+        }
+        
         ctx.beginPath();
         ctx.arc(0, 0, currentRadius, 0, Math.PI * 2);
         ctx.fill();
@@ -864,7 +902,17 @@ class Ball3D {
             new Vector3(0.2, -0.2, 0.9)
         ];
 
-        ctx.fillStyle = '#111115';
+        // Колір панелей м'яча
+        if (isGold) {
+            ctx.fillStyle = '#b8860b'; // Темно-золоті панелі
+        } else if (isFire) {
+            ctx.fillStyle = '#ffff00'; // Жовте пекло
+        } else if (isNeon) {
+            ctx.fillStyle = '#39ff14'; // Салатові неонові лінії
+        } else {
+            ctx.fillStyle = '#111115'; // Класичні чорні панелі
+        }
+
         localPanels.forEach(p => {
             const mat = this.rotationMatrix;
             const rotatedX = p.coordinateX * mat[0] + p.coordinateY * mat[1] + p.coordinateZ * mat[2];
@@ -892,13 +940,29 @@ class Ball3D {
             }
         });
 
+        // Градієнт об'єму для 3D вигляду
         const volumeGradient = ctx.createRadialGradient(
             -currentRadius * 0.25, -currentRadius * 0.25, currentRadius * 0.1,
             0, 0, currentRadius
         );
-        volumeGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
-        volumeGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.05)');
-        volumeGradient.addColorStop(1, 'rgba(0, 0, 0, 0.65)');
+        
+        if (isGold) {
+            volumeGradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+            volumeGradient.addColorStop(0.5, 'rgba(218, 165, 32, 0.2)');
+            volumeGradient.addColorStop(1, 'rgba(139, 69, 19, 0.7)');
+        } else if (isFire) {
+            volumeGradient.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+            volumeGradient.addColorStop(0.4, 'rgba(255, 102, 0, 0.1)');
+            volumeGradient.addColorStop(1, 'rgba(100, 0, 0, 0.8)');
+        } else if (isNeon) {
+            volumeGradient.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+            volumeGradient.addColorStop(0.6, 'rgba(57, 255, 20, 0.05)');
+            volumeGradient.addColorStop(1, 'rgba(0, 50, 0, 0.85)');
+        } else {
+            volumeGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+            volumeGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.05)');
+            volumeGradient.addColorStop(1, 'rgba(0, 0, 0, 0.65)');
+        }
 
         ctx.fillStyle = volumeGradient;
         ctx.beginPath();
