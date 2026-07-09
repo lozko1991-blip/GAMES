@@ -292,7 +292,67 @@ class PenaltyMasterGame {
             this.goalNet.handleBallCollision(this.ball);
         }
 
-        this.goalkeeperAI.update(scaledDeltaTime, this.ball);
+        // Якщо ми граємо онлайн і ми є воротарем, дозволимо керувати ним вручну
+        if (multiplayerState.isOnline && multiplayerState.role === 'keeper') {
+            const moveSpeed = 4.0;
+            if (gameControls.keys['ArrowLeft'] || gameControls.keys['KeyA']) {
+                this.goalkeeper.position.coordinateX = Math.max(-GOAL_WIDTH/2 - 0.7, this.goalkeeper.position.coordinateX - moveSpeed * scaledDeltaTime);
+            }
+            if (gameControls.keys['ArrowRight'] || gameControls.keys['KeyD']) {
+                this.goalkeeper.position.coordinateX = Math.min(GOAL_WIDTH/2 + 0.7, this.goalkeeper.position.coordinateX + moveSpeed * scaledDeltaTime);
+            }
+
+            // Робимо сейв (стрибок) при натисканні пробілу
+            if (gameControls.keys['Space'] && this.gameState === 'flight' && !this.goalkeeperAI.hasJumped) {
+                // Визначаємо куди кидатися на основі натиснутої стрілки
+                const isLeft = gameControls.keys['ArrowLeft'] || gameControls.keys['KeyA'];
+                const isRight = gameControls.keys['ArrowRight'] || gameControls.keys['KeyD'];
+                const isHigh = gameControls.keys['ArrowUp'] || gameControls.keys['KeyW'];
+                
+                this.goalkeeperAI.hasJumped = true;
+                this.goalkeeperAI.predictedTargetX = this.goalkeeper.position.coordinateX + (isLeft ? -1.8 : (isRight ? 1.8 : 0));
+                this.goalkeeperAI.predictedTargetY = isHigh ? 1.6 : 0.4;
+                
+                const isAcrobaticDiff = Math.random() < 0.50; // 50% сальто
+                if (isAcrobaticDiff) {
+                    this.goalkeeper.setPose(isLeft ? 'somersault_left' : 'somersault_right');
+                } else {
+                    this.goalkeeper.setPose(isLeft ? (isHigh ? 'dive_high_left' : 'dive_low_left') : (isHigh ? 'dive_high_right' : 'dive_low_right'));
+                }
+                this.goalkeeperAI.divePhase = 1;
+                this.goalkeeperAI.diveVelocityY = Math.sqrt(2.2 * PHYSICS_GRAVITY * this.goalkeeperAI.predictedTargetY);
+            }
+
+            // Відправляємо координати нашого воротаря супернику
+            sendNetData({
+                type: 'keeper_move',
+                x: this.goalkeeper.position.coordinateX,
+                y: this.goalkeeper.position.coordinateY,
+                pose: this.goalkeeper.pose
+            });
+        }
+
+        // Оновлюємо воротаря: для воротаря-гравця фізику стрибків рахує ШІ-клас (для спрощення), але без вибору рішень ШІ
+        if (multiplayerState.isOnline && multiplayerState.role === 'keeper') {
+            // Ручне оновлення падіння воротаря
+            if (this.goalkeeperAI.divePhase >= 1) {
+                const deltaX = this.goalkeeperAI.predictedTargetX - this.goalkeeper.position.coordinateX;
+                const maxStep = 8.2 * scaledDeltaTime;
+                this.goalkeeper.position.coordinateX += Math.sign(deltaX) * Math.min(Math.abs(deltaX), maxStep);
+
+                this.goalkeeperAI.diveVelocityY -= PHYSICS_GRAVITY * 1.4 * scaledDeltaTime;
+                this.goalkeeper.position.coordinateY += this.goalkeeperAI.diveVelocityY * scaledDeltaTime;
+
+                if (this.goalkeeper.position.coordinateY <= 0.0) {
+                    this.goalkeeper.position.coordinateY = 0.0;
+                    this.goalkeeperAI.diveVelocityY = 0;
+                    this.goalkeeperAI.divePhase = 3;
+                }
+            }
+        } else {
+            this.goalkeeperAI.update(scaledDeltaTime, this.ball);
+        }
+        
         this.goalkeeper.update(scaledDeltaTime);
 
         const playerMultiplier = this.gameState === 'runup' ? 1.2 : 1.0;
@@ -306,10 +366,37 @@ class PenaltyMasterGame {
                 this.player.headingAngle = Math.atan2(-startX, -3.0);
                 this.player.setPose('idle');
 
+                // Якщо гра онлайн і ми воротар - ми не можемо бити
+                if (multiplayerState.isOnline && multiplayerState.role === 'keeper') {
+                    // Воротар може виконувати провокативні пози перед ударом
+                    if (gameControls.keys['KeyW']) {
+                        this.goalkeeper.setPose('hang_bar');
+                        sendNetData({ type: 'keeper_antic', pose: 'hang_bar' });
+                    } else if (gameControls.keys['KeyS']) {
+                        this.goalkeeper.setPose('walk_bar');
+                        sendNetData({ type: 'keeper_antic', pose: 'walk_bar' });
+                    } else if (gameControls.keys['KeyA'] || gameControls.keys['KeyD']) {
+                        this.goalkeeper.setPose('idle');
+                        sendNetData({ type: 'keeper_antic', pose: 'idle' });
+                    }
+                }
+
                 if (!gameControls.isChargingPower && gameControls.power > 5) {
-                    this.gameState = 'runup';
-                    this.runupProgress = 0;
-                    gameAudio.playWhistle();
+                    if (multiplayerState.isOnline && multiplayerState.role === 'keeper') {
+                        // Воротар очікує удар від б'ючого
+                    } else {
+                        this.gameState = 'runup';
+                        this.runupProgress = 0;
+                        gameAudio.playWhistle();
+                    }
+                } else if (multiplayerState.isOnline && multiplayerState.role === 'striker') {
+                    // Надсилаємо приціл супернику-воротарю
+                    sendNetData({
+                        type: 'sync_aim',
+                        aimX: gameControls.aimX,
+                        aimY: gameControls.aimY,
+                        power: gameControls.power
+                    });
                 }
                 break;
 
@@ -361,6 +448,17 @@ class PenaltyMasterGame {
                         gameControls.topSpin
                     );
 
+                    if (multiplayerState.isOnline && multiplayerState.role === 'striker') {
+                        sendNetData({
+                            type: 'kick',
+                            power: gameControls.power,
+                            aimX: gameControls.aimX,
+                            aimY: gameControls.aimY,
+                            sideSpin: gameControls.sideSpin,
+                            topSpin: gameControls.topSpin
+                        });
+                    }
+
                     this.goalkeeperAI.onBallKicked(this.ball);
                     this.gameState = 'flight';
                     this.runupProgress = 0; 
@@ -376,7 +474,9 @@ class PenaltyMasterGame {
                 }
                 this.trackCameraToBall(scaledDeltaTime);
 
-                const saveResult = this.goalkeeperAI.checkSaveCollision(this.ball);
+                // В мережевій грі колізії розраховує тільки striker (б'ючий), а воротар отримує пакет result
+                const isLocalOrStriker = !multiplayerState.isOnline || multiplayerState.role === 'striker';
+                const saveResult = isLocalOrStriker ? this.goalkeeperAI.checkSaveCollision(this.ball) : null;
                 if (saveResult) {
                     this.gameState = 'result';
                     this.timeScale = 1.0;
@@ -419,32 +519,34 @@ class PenaltyMasterGame {
                     }
                 }
 
-                if (this.ball.position.coordinateZ <= 0.05 && this.ball.position.coordinateZ >= -0.2) {
-                    const inGoalX = Math.abs(this.ball.position.coordinateX) < (GOAL_WIDTH / 2 - 0.03);
-                    const inGoalY = this.ball.position.coordinateY < (GOAL_HEIGHT - 0.03) && this.ball.position.coordinateY > 0.05;
+                if (isLocalOrStriker) {
+                    if (this.ball.position.coordinateZ <= 0.05 && this.ball.position.coordinateZ >= -0.2) {
+                        const inGoalX = Math.abs(this.ball.position.coordinateX) < (GOAL_WIDTH / 2 - 0.03);
+                        const inGoalY = this.ball.position.coordinateY < (GOAL_HEIGHT - 0.03) && this.ball.position.coordinateY > 0.05;
 
-                    if (inGoalX && inGoalY) {
+                        if (inGoalX && inGoalY) {
+                            this.gameState = 'result';
+                            this.timeScale = 1.0;
+                            this.ball.velocity = this.ball.velocity.scale(0.12);
+                            this.ball.angularVelocity = this.ball.angularVelocity.scale(0.1);
+                            gameAudio.playNetRustle();
+                            gameAudio.playGoalCheer();
+                            gameVFX.spawnConfettiRain(this.ball.position);
+                            this.triggerShotResult(true, 'Лозко молодець');
+                        }
+                    }
+
+                    if (this.ball.position.coordinateZ < -0.3) {
                         this.gameState = 'result';
                         this.timeScale = 1.0;
-                        this.ball.velocity = this.ball.velocity.scale(0.12);
-                        this.ball.angularVelocity = this.ball.angularVelocity.scale(0.1);
-                        gameAudio.playNetRustle();
-                        gameAudio.playGoalCheer();
-                        gameVFX.spawnConfettiRain(this.ball.position);
-                        this.triggerShotResult(true, 'Лозко молодець');
+                        gameAudio.playMissGroan();
+                        this.triggerShotResult(false, 'Палажченко гуска');
+                    } else if (Math.abs(this.ball.position.coordinateX) > GOAL_WIDTH / 2 + 1.8 || this.ball.position.coordinateY > GOAL_HEIGHT + 1.2) {
+                        this.gameState = 'result';
+                        this.timeScale = 1.0;
+                        gameAudio.playMissGroan();
+                        this.triggerShotResult(false, 'Палажченко гуска');
                     }
-                }
-
-                if (this.ball.position.coordinateZ < -0.3) {
-                    this.gameState = 'result';
-                    this.timeScale = 1.0;
-                    gameAudio.playMissGroan();
-                    this.triggerShotResult(false, 'Палажченко гуска');
-                } else if (Math.abs(this.ball.position.coordinateX) > GOAL_WIDTH / 2 + 1.8 || this.ball.position.coordinateY > GOAL_HEIGHT + 1.2) {
-                    this.gameState = 'result';
-                    this.timeScale = 1.0;
-                    gameAudio.playMissGroan();
-                    this.triggerShotResult(false, 'Палажченко гуска');
                 }
 
                 if (this.slowMoEnabled && this.ball.position.coordinateZ < 3.2 && this.ball.position.coordinateZ > 0.4) {
@@ -548,6 +650,15 @@ class PenaltyMasterGame {
     triggerShotResult(isGoal, messageText) {
         this.shotsCount++;
         this.lastShotIsGoal = isGoal;
+
+        // Надсилаємо результат супернику, якщо ми б'ючий (він розраховує колізії першим)
+        if (multiplayerState.isOnline && multiplayerState.role === 'striker') {
+            sendNetData({
+                type: 'result',
+                isGoal: isGoal,
+                message: messageText
+            });
+        }
         
         if (isGoal) {
             this.goalsCount++;
@@ -1232,8 +1343,32 @@ document.getElementById('btn-instructions-menu').addEventListener('click', () =>
 
 document.querySelectorAll('.btn-back').forEach(btn => {
     btn.addEventListener('click', () => {
+        resetOnlineState(); // Скидаємо онлайн стан при виході в головне меню
         showScreen('screen-main-menu');
     });
+});
+
+// MULTIPLAYER INTERACTIVE BINDINGS
+document.getElementById('btn-online-menu').addEventListener('click', () => {
+    gameAudio.init();
+    resetOnlineState();
+    showScreen('screen-online-lobby');
+});
+
+document.getElementById('btn-host-room').addEventListener('click', () => {
+    hostRoom();
+});
+
+document.getElementById('btn-join-room').addEventListener('click', () => {
+    joinRoom();
+});
+
+document.getElementById('btn-role-striker').addEventListener('click', () => {
+    selectRole('striker');
+});
+
+document.getElementById('btn-role-keeper').addEventListener('click', () => {
+    selectRole('keeper');
 });
 
 const setDifficultyPreset = (diffName) => {

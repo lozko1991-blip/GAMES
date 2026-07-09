@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <link rel="stylesheet" href="./src/style.css">
 </head>
 <body>
@@ -67,12 +68,51 @@
                 <p style="margin-bottom: 25px; color: rgba(255,255,255,0.6); text-transform: uppercase; font-size: 0.9rem; letter-spacing: 2px;">
                     Справжній 3D симулятор пенальті
                 </p>
-                <button class="menu-button" id="btn-start-game">Грати</button>
+                </p>
+                <button class="menu-button" id="btn-start-game">Одиночна гра</button>
+                <button class="menu-button" id="btn-online-menu">Грати Онлайн (PvP)</button>
                 <button class="menu-button" id="btn-difficulty-menu">Складність</button>
                 <button class="menu-button" id="btn-stats-menu">Статистика</button>
                 <button class="menu-button" id="btn-settings-menu">Налаштування</button>
                 <button class="menu-button" id="btn-instructions-menu">Інструкція</button>
                 <button class="menu-button" id="btn-toggle-fullscreen">Повний екран</button>
+            </div>
+        </div>
+
+        <!-- ONLINE MULTIPLAYER LOBBY SCREEN -->
+        <div id="screen-online-lobby" class="overlay-screen">
+            <div class="menu-card">
+                <h2>Мережева гра (PeerJS)</h2>
+                <div style="border: 1px dashed rgba(0,255,204,0.4); padding: 15px; border-radius: 12px; background: rgba(0,255,204,0.03); margin-bottom: 15px;">
+                    <span style="font-size: 0.95rem; font-weight: bold; color: var(--primary-glow); display: block; margin-bottom: 10px;">СТВОРИТИ КІМНАТУ</span>
+                    <button class="menu-button" id="btn-host-room" style="margin: 0; padding: 10px;">Створити кімнату</button>
+                    <div id="host-info" class="hidden" style="margin-top: 10px;">
+                        <span style="font-size: 0.85rem; color: #ccc;">Код вашої кімнати (натисніть, щоб скопіювати):</span>
+                        <div id="room-id-display" style="font-size: 1.5rem; font-weight: bold; color: var(--primary-glow); background: rgba(0,0,0,0.5); padding: 8px; margin: 5px 0; border: 1px dashed var(--primary-glow); text-align: center; cursor: pointer; border-radius: 8px;">Завантаження...</div>
+                    </div>
+                </div>
+
+                <div style="border: 1px dashed rgba(255,0,127,0.4); padding: 15px; border-radius: 12px; background: rgba(255,0,127,0.03); margin-bottom: 20px;">
+                    <span style="font-size: 0.95rem; font-weight: bold; color: var(--secondary-glow); display: block; margin-bottom: 10px;">ПРИЄДНАТИСЯ ДО КІМНАТИ</span>
+                    <input type="text" id="join-room-id" placeholder="Введіть 5-значний код" style="padding: 12px; width: 100%; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid rgba(255,0,127,0.4); border-radius: 8px; margin-bottom: 10px; text-align: center; font-size: 1.1rem; letter-spacing: 2px;" />
+                    <button class="menu-button" id="btn-join-room" style="margin: 0; padding: 10px; border-color: var(--secondary-glow);">Приєднатись</button>
+                </div>
+
+                <div id="online-status" style="margin-top: 10px; font-size: 0.9rem; color: #ffcc00; text-align: center; min-height: 20px;">Очікування вибору</div>
+                <button class="menu-button btn-back" style="margin-top: 20px; border-color: rgba(255,255,255,0.3);">Назад</button>
+            </div>
+        </div>
+
+        <!-- ONLINE SELECT ROLE SCREEN -->
+        <div id="screen-select-role" class="overlay-screen">
+            <div class="menu-card">
+                <h2>Оберіть свою Роль</h2>
+                <p style="margin-bottom: 20px; color: rgba(255,255,255,0.6); font-size: 0.9rem;">
+                    Визначте, хто б'є пенальті, а хто захищає ворота.
+                </p>
+                <button class="menu-button" id="btn-role-striker" style="border-color: var(--primary-glow);">🏃 Б'ючий (Пенальтист)</button>
+                <button class="menu-button" id="btn-role-keeper" style="border-color: var(--secondary-glow);">🧤 Воротар (Goalkeeper)</button>
+                <div id="role-selection-status" style="margin-top: 15px; font-size: 0.85rem; color: #ffcc00;">Очікування вибору суперника...</div>
             </div>
         </div>
 
@@ -214,6 +254,7 @@
     <script src="./src/audio.js"></script>
     <script src="./src/physics.js"></script>
     <script src="./src/characters.js"></script>
+    <script src="./src/multiplayer.js"></script>
     <script src="./src/main.js"></script>
 </body>
 </html>
