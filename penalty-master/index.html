@@ -66,6 +66,23 @@
             </div>
         </div>
 
+        <!-- ULTIMATE TEAM PLAYER CARD BROADCAST -->
+        <div id="ut-card-broadcast" class="ut-card-hidden">
+            <div class="ut-card-badge">UT 26</div>
+            <div class="ut-card-rating" id="ut-card-val-rating">99</div>
+            <div class="ut-card-name" id="ut-card-val-name">МЕССІ</div>
+            <div class="ut-card-pos">ST</div>
+            <div class="ut-card-logo" id="ut-card-val-logo">👑</div>
+            <div class="ut-card-stats">
+                <div>PAC <span>97</span></div>
+                <div>SHO <span>99</span></div>
+                <div>PAS <span>95</span></div>
+                <div>DRI <span>99</span></div>
+                <div>DEF <span>45</span></div>
+                <div>PHY <span>82</span></div>
+            </div>
+        </div>
+
         <!-- MAIN MENU -->
         <div id="screen-main-menu" class="overlay-screen active">
             <div class="menu-card">
@@ -75,6 +92,7 @@
                 </p>
                 <button class="menu-button" id="btn-start-game">Одиночна гра</button>
                 <button class="menu-button" id="btn-online-menu">Грати Онлайн (PvP)</button>
+                <button class="menu-button" id="btn-team-select-menu" style="border-color: #00ffcc; color: #00ffcc;">🛡️ Обрати Клуб</button>
                 <button class="menu-button" id="btn-shop-menu" style="border-color: #ffd700; color: #ffd700;">🛍️ Магазин Кастомізації</button>
                 <button class="menu-button" id="btn-difficulty-menu">Складність</button>
                 <button class="menu-button" id="btn-stats-menu">Статистика</button>
@@ -114,6 +132,21 @@
 
                 <div id="online-status" style="margin-top: 10px; font-size: 0.9rem; color: #ffcc00; text-align: center; min-height: 20px;">Очікування вибору</div>
                 <button class="menu-button btn-back" style="margin-top: 20px; border-color: rgba(255,255,255,0.3);">Назад</button>
+            </div>
+        </div>
+
+        <!-- TEAM/CLUB SELECTION SCREEN -->
+        <div id="screen-team-select" class="overlay-screen">
+            <div class="menu-card" style="max-width: 500px; padding: 25px;">
+                <div style="font-size:0.8rem; font-weight:800; letter-spacing:3px; color:var(--primary-glow); text-transform:uppercase; margin-bottom:5px;">EA SPORTS FC 26</div>
+                <h2>Оберіть Свій Клуб</h2>
+                <p style="margin-bottom: 20px; color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+                    Ваша футбольна форма зміниться під кольори обраної команди
+                </p>
+                <div id="club-list-container" style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 20px;">
+                    <!-- Clubs generated dynamically -->
+                </div>
+                <button class="menu-button" id="btn-confirm-team" style="border-color: #ffd700; color: #ffd700;">Зберегти вибір</button>
             </div>
         </div>
 

@@ -231,3 +231,16 @@ const SHOP_ITEMS = {
         { id: 'gold_boots', name: 'Золоті бутси', price: 500, color: '#ffd700' }
     ]
 };
+
+/*
+====================================================
+CLUB PRESETS
+====================================================
+*/
+const CLUB_PRESETS = [
+    { id: 'real', name: 'Реал Мадрид', logo: '👑', color: '#ffffff', shortColor: '#ffffff', sockColor: '#ffffff' },
+    { id: 'barca', name: 'Барселона', logo: '🛡️', color: '#a50044', shortColor: '#004d98', sockColor: '#a50044' },
+    { id: 'city', name: 'Манчестер Сіті', logo: '⚓', color: '#6cabdd', shortColor: '#ffffff', sockColor: '#6cabdd' },
+    { id: 'psg', name: 'ПСЖ', logo: '🗼', color: '#004170', shortColor: '#004170', sockColor: '#e30613' },
+    { id: 'bayern', name: 'Баварія', logo: '🔴', color: '#dc052d', shortColor: '#ffffff', sockColor: '#dc052d' }
+];

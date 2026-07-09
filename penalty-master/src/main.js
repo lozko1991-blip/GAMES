@@ -227,6 +227,15 @@ class PenaltyMasterGame {
         this.player.applyLevelColors(lvl);
         this.goalkeeper.applyLevelColors(lvl);
 
+        // Перезаписуємо форму гравця кольорами обраного клубу
+        const selectedClub = safeStorage.getItem('pm_selected_club') || 'real';
+        const activeClub = CLUB_PRESETS.find(c => c.id === selectedClub);
+        if (activeClub) {
+            this.player.jerseyColor = activeClub.color;
+            this.player.shortsColor = activeClub.shortColor;
+            this.player.socksColor = activeClub.sockColor;
+        }
+
         this.goalkeeperAI.setDifficulty(DIFFICULTY_PRESETS[lvl.difficulty]);
 
         const lvlEl = document.getElementById('hud-level');
@@ -425,6 +434,10 @@ class PenaltyMasterGame {
                         this.gameState = 'runup';
                         this.runupProgress = 0;
                         gameAudio.playWhistle();
+                        
+                        // Ховаємо картку Ultimate Team при розбігу
+                        const card = document.getElementById('ut-card-broadcast');
+                        if (card) card.className = 'ut-card-hidden';
                     }
                 } else if (multiplayerState.isOnline && multiplayerState.role === 'striker') {
                     // Надсилаємо приціл супернику-воротарю
@@ -815,6 +828,23 @@ class PenaltyMasterGame {
         // Reactivate goal targets
         this.targets.forEach(t => t.active = true);
 
+        // Відображаємо картку Ultimate Team гравця при прицілюванні
+        const card = document.getElementById('ut-card-broadcast');
+        if (card) {
+            const lvl = this.currentLevel || LEVEL_PRESETS[0];
+            const activeClubId = safeStorage.getItem('pm_selected_club') || 'real';
+            const activeClub = CLUB_PRESETS.find(c => c.id === activeClubId);
+            
+            document.getElementById('ut-card-val-name').innerText = lvl.playerName;
+            document.getElementById('ut-card-val-logo').innerText = activeClub ? activeClub.logo : '👑';
+            
+            // Випадкові характеристики для реалістичності FC 26
+            const randRating = 90 + Math.floor(Math.random() * 9);
+            document.getElementById('ut-card-val-rating').innerText = randRating;
+
+            card.className = 'ut-card-visible';
+        }
+
         this.camera.position.set(0, 1.8, PENALTY_SPOT_Z + 4.2);
         this.camera.target.set(0, 1.0, 0);
 
@@ -1080,6 +1110,71 @@ class PenaltyMasterGame {
             this.ctx.arc(spotProj.x, spotProj.y, 4 * (spotProj.scale / 300), 0, Math.PI * 2);
             this.ctx.fill();
         }
+
+        // ====================================================
+        // EA SPORTS FC 26 DIGITAL AD BOARDS (Рекламні щити)
+        // ====================================================
+        const adTexts = ['EA SPORTS FC 26', 'ANTIGRAVITY AI', 'UEFA CHAMPIONS LEAGUE', 'PLAYSTATION 5', 'NIKE FOOTBALL'];
+        const adIndex = Math.floor((this.gameTime || 0) * 0.4) % adTexts.length;
+        const currentAdText = adTexts[adIndex];
+
+        // Малюємо щити ліворуч та праворуч від воріт (x = -9 та x = 9, z від -1 до 3)
+        const adBoards = [
+            { start: new Vector3(-11, 0, 4), end: new Vector3(-8, 0, 0) },
+            { start: new Vector3(8, 0, 0), end: new Vector3(11, 0, 4) }
+        ];
+
+        adBoards.forEach(board => {
+            const pStart = board.start;
+            const pEnd = board.end;
+            const pStartTop = new Vector3(pStart.coordinateX, 0.8, pStart.coordinateZ);
+            const pEndTop = new Vector3(pEnd.coordinateX, 0.8, pEnd.coordinateZ);
+
+            const projSB = this.camera.project(pStart, width, height);
+            const projEB = this.camera.project(pEnd, width, height);
+            const projSBT = this.camera.project(pStartTop, width, height);
+            const projEBT = this.camera.project(pEndTop, width, height);
+
+            if (projSB && projEB && projSBT && projEBT) {
+                // Заливка щита (неоновий темно-синій)
+                const grad = this.ctx.createLinearGradient(projSBT.x, projSBT.y, projEBT.x, projEBT.y);
+                grad.addColorStop(0, '#000814');
+                grad.addColorStop(0.5, '#001845');
+                grad.addColorStop(1, '#000814');
+
+                this.ctx.fillStyle = grad;
+                this.ctx.beginPath();
+                this.ctx.moveTo(projSBT.x, projSBT.y);
+                this.ctx.lineTo(projEBT.x, projEBT.y);
+                this.ctx.lineTo(projEB.x, projEB.y);
+                this.ctx.lineTo(projSB.x, projSB.y);
+                this.ctx.closePath();
+                this.ctx.fill();
+
+                // Неонова рамка
+                this.ctx.strokeStyle = '#00ffcc';
+                this.ctx.lineWidth = 2 * (projSBT.scale / 300);
+                this.ctx.stroke();
+
+                // Текст на щиті
+                this.ctx.save();
+                const midX = (projSBT.x + projEBT.x) / 2;
+                const midY = (projSBT.y + projEBT.y + 10 * (projSBT.scale / 300)) / 2;
+                this.ctx.translate(midX, midY);
+                
+                // Нахил під кутом перспективи
+                const angle = Math.atan2(projEBT.y - projSBT.y, projEBT.x - projSBT.x);
+                this.ctx.rotate(angle);
+
+                this.ctx.fillStyle = '#00ffcc';
+                this.ctx.font = `bold ${Math.max(8, Math.round(9 * (projSBT.scale / 300)))}px Outfit`;
+                this.ctx.textAlign = 'center';
+                this.ctx.shadowBlur = 8;
+                this.ctx.shadowColor = '#00ffcc';
+                this.ctx.fillText(currentAdText, 0, 0);
+                this.ctx.restore();
+            }
+        });
 
         this.goalNet.render(this.ctx, this.camera, width, height);
 
@@ -1403,6 +1498,12 @@ function showScreen(screenId) {
         screen.classList.remove('active');
     });
     document.getElementById(screenId).classList.add('active');
+
+    // Ховаємо Ultimate Team картку на будь-якому іншому екрані меню
+    if (screenId !== 'hud-container') {
+        const card = document.getElementById('ut-card-broadcast');
+        if (card) card.className = 'ut-card-hidden';
+    }
 }
 
 document.getElementById('btn-start-game').addEventListener('click', () => {
@@ -1635,6 +1736,64 @@ document.getElementById('tab-shop-boots').addEventListener('click', (e) => {
     document.getElementById('tab-shop-balls').style.borderColor = 'rgba(255,255,255,0.2)';
     document.getElementById('tab-shop-balls').style.background = 'transparent';
     renderShopItems();
+});
+
+/*
+====================================================
+TEAM SELECT LOGIC (EA SPORTS FC 26)
+====================================================
+*/
+let selectedClubId = safeStorage.getItem('pm_selected_club') || 'real';
+
+function renderClubSelectionList() {
+    const container = document.getElementById('club-list-container');
+    container.innerHTML = '';
+
+    CLUB_PRESETS.forEach(club => {
+        const item = document.createElement('div');
+        const isActive = club.id === selectedClubId;
+        item.className = `club-select-item ${isActive ? 'active' : ''}`;
+        item.setAttribute('data-id', club.id);
+
+        item.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span class="club-logo-tag">${club.logo}</span>
+                <span style="font-weight: 700; font-size: 1.1rem;">${club.name}</span>
+            </div>
+            <div style="width: 15px; height: 15px; border-radius: 50%; background: ${club.color}; border: 1.5px solid #fff;"></div>
+        `;
+
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.club-select-item').forEach(el => el.classList.remove('active'));
+            item.classList.add('active');
+            selectedClubId = club.id;
+        });
+
+        container.appendChild(item);
+    });
+}
+
+document.getElementById('btn-team-select-menu').addEventListener('click', () => {
+    gameAudio.init();
+    selectedClubId = safeStorage.getItem('pm_selected_club') || 'real';
+    renderClubSelectionList();
+    showScreen('screen-team-select');
+});
+
+document.getElementById('btn-confirm-team').addEventListener('click', () => {
+    safeStorage.setItem('pm_selected_club', selectedClubId);
+    
+    // Оновлюємо форму діючого гравця, якщо гра запущена
+    if (activeGameInstance) {
+        const activeClub = CLUB_PRESETS.find(c => c.id === selectedClubId);
+        if (activeClub) {
+            activeGameInstance.player.jerseyColor = activeClub.color;
+            activeGameInstance.player.shortsColor = activeClub.shortColor;
+            activeGameInstance.player.socksColor = activeClub.sockColor;
+        }
+    }
+    
+    showScreen('screen-main-menu');
 });
 
 // MULTIPLAYER INTERACTIVE BINDINGS

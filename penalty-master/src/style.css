@@ -470,3 +470,127 @@ input:checked + .slider:before {
     margin-bottom: 10px;
     border: 1px solid rgba(255,255,255,0.2);
 }
+
+/* Ultimate Team Card animations & styling (EA FC 26 theme) */
+#ut-card-broadcast {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    width: 170px;
+    height: 250px;
+    background: linear-gradient(135deg, #ffd700 0%, #b8860b 50%, #8b6508 100%);
+    border: 3px solid #ffe066;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(255, 215, 0, 0.3);
+    z-index: 5;
+    color: #000000;
+    font-family: var(--font-family);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s ease;
+    clip-path: polygon(15% 0%, 85% 0%, 100% 12%, 100% 88%, 85% 100%, 15% 100%, 0% 88%, 0% 12%);
+}
+
+.ut-card-hidden {
+    transform: translateY(350px) scale(0.6);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ut-card-visible {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.ut-card-badge {
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: rgba(0,0,0,0.6);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 5px;
+}
+
+.ut-card-rating {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-top: 5px;
+    color: #111;
+}
+
+.ut-card-pos {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #222;
+}
+
+.ut-card-name {
+    font-size: 1.05rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-top: 15px;
+    border-bottom: 1.5px solid rgba(0,0,0,0.25);
+    padding-bottom: 2px;
+    width: 80%;
+    text-align: center;
+}
+
+.ut-card-logo {
+    font-size: 1.6rem;
+    margin: 8px 0;
+}
+
+.ut-card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: x;
+    font-size: 0.65rem;
+    font-weight: 800;
+    width: 90%;
+    text-align: center;
+    border-top: 1px solid rgba(0,0,0,0.15);
+    padding-top: 8px;
+    color: #111;
+}
+
+.ut-card-stats div {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4px;
+}
+
+.ut-card-stats span {
+    font-weight: 900;
+}
+
+/* Club list item wrapper */
+.club-select-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.club-select-item:hover {
+    background: rgba(0, 255, 204, 0.08);
+    border-color: var(--primary-glow);
+}
+
+.club-select-item.active {
+    background: rgba(255, 215, 0, 0.1);
+    border-color: #ffd700;
+}
+
+.club-logo-tag {
+    font-size: 1.4rem;
+}
+
