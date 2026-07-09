@@ -594,6 +594,12 @@ input:checked + .slider:before {
     font-size: 1.4rem;
 }
 
+#btn-emergency-continue:hover {
+    background: rgba(255, 69, 0, 0.4) !important;
+    box-shadow: 0 0 18px rgba(255, 69, 0, 0.6) !important;
+    transform: scale(1.03);
+}
+
 /* Card Rarity Designs */
 .ut-card-collectible {
     width: 140px;

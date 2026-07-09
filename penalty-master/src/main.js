@@ -2054,6 +2054,25 @@ document.getElementById('setting-slowmo').addEventListener('change', (e) => {
     safeStorage.setItem('pm_slowmo', e.target.checked);
 });
 
+document.getElementById('btn-emergency-continue').addEventListener('click', () => {
+    if (activeGameInstance) {
+        // Зачищаємо потенційно завислі оверлеї банерів
+        const banner = document.getElementById('banner-overlay');
+        if (banner) banner.classList.remove('active');
+        
+        const lvlUp = document.getElementById('screen-level-up');
+        if (lvlUp) lvlUp.classList.remove('active');
+
+        const packOpen = document.getElementById('screen-pack-opening');
+        if (packOpen) packOpen.classList.remove('active');
+
+        // Примусово скидаємо кут камери, позиції об'єктів та стан раунду
+        activeGameInstance.cutsceneActive = false;
+        activeGameInstance.resetShot();
+        console.log('🔄 Emergency round continue triggered by player.');
+    }
+});
+
 document.getElementById('btn-toggle-fullscreen').addEventListener('click', () => {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch((err) => {
