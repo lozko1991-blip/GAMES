@@ -394,21 +394,18 @@ class PenaltyMasterGame {
         this.player.update(scaledDeltaTime, playerMultiplier);
 
         switch(this.gameState) {
-            case 'aiming':
+            case 'aiming': {
                 const startZ = PENALTY_SPOT_Z + 2.8;
                 const startX = gameControls.playerStartingOffsetX;
                 this.player.position.set(startX, 0, startZ);
                 this.player.headingAngle = Math.atan2(-startX, -3.0);
                 this.player.setPose('idle');
 
-                // Воротар підстрибує перед ударом (для синглплеєра)
                 if (!multiplayerState.isOnline) {
                     this.goalkeeper.setPose('goalkeeper_bounce');
                 }
 
-                // Якщо гра онлайн і ми воротар - ми не можемо бити
                 if (multiplayerState.isOnline && multiplayerState.role === 'keeper') {
-                    // Воротар може виконувати провокативні пози або підстрибування перед ударом
                     if (gameControls.keys['KeyW']) {
                         this.goalkeeper.setPose('hang_bar');
                         sendNetData({ type: 'keeper_antic', pose: 'hang_bar' });
@@ -424,7 +421,6 @@ class PenaltyMasterGame {
                     }
                 }
 
-                // Обманний рух (замах): якщо натиснути кнопку F перед розбігом
                 if (gameControls.keys['KeyF'] && (multiplayerState.role !== 'keeper')) {
                     this.gameState = 'fake_swing';
                     this.runupProgress = 0;
@@ -432,38 +428,28 @@ class PenaltyMasterGame {
                     if (multiplayerState.isOnline) {
                         sendNetData({ type: 'keeper_antic', pose: 'fake_kick' });
                     }
-                    // Воротар-ШІ реагує на обманку і стрибає раніше!
                     if (!multiplayerState.isOnline) {
-                        setTimeout(() => {
-                            this.goalkeeperAI.onBallKicked(this.ball);
-                        }, 150);
+                        setTimeout(() => { this.goalkeeperAI.onBallKicked(this.ball); }, 150);
                     }
                 }
 
                 if (!gameControls.isChargingPower && gameControls.power > 5) {
                     if (multiplayerState.isOnline && multiplayerState.role === 'keeper') {
-                        // Воротар очікує удар від б'ючого
+                        // Воротар очікує удар
                     } else {
                         this.gameState = 'runup';
                         this.runupProgress = 0;
                         gameAudio.playWhistle();
-                        
-                        // Ховаємо картку Ultimate Team при розбігу
                         const card = document.getElementById('ut-card-broadcast');
                         if (card) card.className = 'ut-card-hidden';
                     }
                 } else if (multiplayerState.isOnline && multiplayerState.role === 'striker') {
-                    // Надсилаємо приціл супернику-воротарю
-                    sendNetData({
-                        type: 'sync_aim',
-                        aimX: gameControls.aimX,
-                        aimY: gameControls.aimY,
-                        power: gameControls.power
-                    });
+                    sendNetData({ type: 'sync_aim', aimX: gameControls.aimX, aimY: gameControls.aimY, power: gameControls.power });
                 }
                 break;
+            }
 
-            case 'fake_swing':
+            case 'fake_swing': {
                 this.runupProgress += scaledDeltaTime * 4.0;
                 if (this.runupProgress >= 1.0) {
                     this.gameState = 'aiming';
@@ -471,8 +457,9 @@ class PenaltyMasterGame {
                     gameControls.reset();
                 }
                 break;
+            }
 
-            case 'runup':
+            case 'runup': {
                 this.player.setPose('run');
                 const runSpeed = 4.8;
                 const distanceVector = new Vector3(0, 0, PENALTY_SPOT_Z).subtract(this.player.position);
@@ -481,13 +468,8 @@ class PenaltyMasterGame {
                 if (distanceVal > 0.42) {
                     const runDir = distanceVector.normalize();
                     this.player.position = this.player.position.add(runDir.scale(runSpeed * scaledDeltaTime));
-
-                    // Періодично додаємо сліди бутс від бігу
                     if (Math.random() < 0.15) {
-                        this.pitchStains.push({
-                            position: this.player.position.clone(),
-                            radius: 0.05 + Math.random() * 0.05
-                        });
+                        this.pitchStains.push({ position: this.player.position.clone(), radius: 0.05 + Math.random() * 0.05 });
                     }
                 } else {
                     this.gameState = 'kick';
@@ -495,23 +477,22 @@ class PenaltyMasterGame {
                     this.runupProgress = 0;
                 }
                 break;
+            }
 
-            case 'kick':
+            case 'kick': {
                 this.runupProgress += scaledDeltaTime * 4.0;
                 this.player.setPose('kick_strike');
-                
+
                 const slideVector = new Vector3(0, 0, -1.2);
                 this.player.position = this.player.position.add(slideVector.scale(scaledDeltaTime));
-                
+
                 if (this.runupProgress >= 1.0) {
                     const angleX = Math.atan2(gameControls.aimX, PENALTY_SPOT_Z);
                     const angleY = Math.atan2(gameControls.aimY - BALL_RADIUS, PENALTY_SPOT_Z);
 
                     let powerMultiplier = 1.0;
-                    if (gameControls.keys['ShiftLeft']) {
-                        powerMultiplier = 1.22;
-                    }
-                    
+                    if (gameControls.keys['ShiftLeft']) powerMultiplier = 1.22;
+
                     let adjustedAimY = angleY;
                     if (gameControls.keys['ControlLeft']) {
                         adjustedAimY = 0.01;
@@ -519,46 +500,30 @@ class PenaltyMasterGame {
                     }
 
                     const finalPower = gameControls.power * powerMultiplier;
-
-                    this.ball.kick(
-                        finalPower, 
-                        angleX, 
-                        adjustedAimY, 
-                        gameControls.sideSpin, 
-                        gameControls.topSpin
-                    );
+                    this.ball.kick(finalPower, angleX, adjustedAimY, gameControls.sideSpin, gameControls.topSpin);
 
                     if (multiplayerState.isOnline && multiplayerState.role === 'striker') {
-                        sendNetData({
-                            type: 'kick',
-                            power: gameControls.power,
-                            aimX: gameControls.aimX,
-                            aimY: gameControls.aimY,
-                            sideSpin: gameControls.sideSpin,
-                            topSpin: gameControls.topSpin
-                        });
+                        sendNetData({ type: 'kick', power: gameControls.power, aimX: gameControls.aimX, aimY: gameControls.aimY, sideSpin: gameControls.sideSpin, topSpin: gameControls.topSpin });
                     }
 
+                    this._roundEnded = false; // скидаємо захист від подвійного тригера
                     this.goalkeeperAI.onBallKicked(this.ball);
                     this.gameState = 'flight';
-                    this._flightTimer = 0; // скидаємо таймер антизависання
+                    this._flightTimer = 0;
                     this.runupProgress = 0;
                 }
                 break;
+            }
 
-            case 'flight':
+            case 'flight': {
                 this.runupProgress += scaledDeltaTime;
-                if (this.runupProgress < 0.4) {
-                    this.player.setPose('kick_strike');
-                } else {
-                    this.player.setPose('idle');
-                }
+                this.player.setPose(this.runupProgress < 0.4 ? 'kick_strike' : 'idle');
                 this.trackCameraToBall(scaledDeltaTime);
 
-                // В мережевій грі колізії розраховує тільки striker (б'ючий), а воротар отримує пакет result
                 const isLocalOrStriker = !multiplayerState.isOnline || multiplayerState.role === 'striker';
-                const saveResult = isLocalOrStriker ? this.goalkeeperAI.checkSaveCollision(this.ball) : null;
+                const saveResult = (isLocalOrStriker && !this._roundEnded) ? this.goalkeeperAI.checkSaveCollision(this.ball) : null;
                 if (saveResult) {
+                    this._roundEnded = true;
                     this.gameState = 'result';
                     this.timeScale = 1.0;
 
@@ -567,64 +532,39 @@ class PenaltyMasterGame {
                         this.ball.angularVelocity.set(0, 0, 0);
                         this.ball.isStatic = true;
                         this.goalkeeper.setPose('idle');
-                        
-                        // Додаємо слід ковзання воротаря на газоні в місці падіння
-                        this.pitchStains.push({
-                            position: this.goalkeeper.position.clone(),
-                            radius: 0.16 + Math.random() * 0.08
-                        });
-
+                        this.pitchStains.push({ position: this.goalkeeper.position.clone(), radius: 0.16 + Math.random() * 0.08 });
                         gameAudio.playKeeperSave();
                         this.triggerShotResult(false, 'СЕЙВ ВОРОТАРЯ!');
                     } else {
-                        const n  = saveResult.contactNormal; 
-                        const kv = saveResult.keeperVel;     
-                        const bv = this.ball.velocity;        
-
-                        const relVelDotN = (
-                            (bv.coordinateX - kv.coordinateX) * n.coordinateX +
-                            (bv.coordinateY - kv.coordinateY) * n.coordinateY +
-                            (bv.coordinateZ - kv.coordinateZ) * n.coordinateZ
-                        );
-
-                        const restitution = 0.72; 
+                        const n  = saveResult.contactNormal;
+                        const kv = saveResult.keeperVel;
+                        const bv = this.ball.velocity;
+                        const relVelDotN = (bv.coordinateX - kv.coordinateX) * n.coordinateX + (bv.coordinateY - kv.coordinateY) * n.coordinateY + (bv.coordinateZ - kv.coordinateZ) * n.coordinateZ;
+                        const restitution = 0.72;
                         const impulseMag = -(1.0 + restitution) * relVelDotN;
-
                         const newVelX = bv.coordinateX + impulseMag * n.coordinateX + kv.coordinateX * 0.45;
                         const newVelY = bv.coordinateY + impulseMag * n.coordinateY + Math.abs(kv.coordinateY) * 0.3 + 1.5;
-                        // М'яч відбивається вперед і в бік, а не до камери
-                        const punchSideX = (Math.random() - 0.5) * 4.0;
-                        const newVelZ = -(Math.abs(bv.coordinateZ) * restitution + 2.0); // від'ємний = від камери
-
+                        const newVelZ = -(Math.abs(bv.coordinateZ) * restitution + 2.0);
                         this.ball.velocity = new Vector3(newVelX, newVelY, newVelZ);
-                        this.ball.angularVelocity = new Vector3(
-                            (Math.random() - 0.5) * 8.0,
-                            kv.coordinateX * -0.4,
-                            (Math.random() - 0.5) * 4.0
-                        );
-
+                        this.ball.angularVelocity = new Vector3((Math.random() - 0.5) * 8.0, kv.coordinateX * -0.4, (Math.random() - 0.5) * 4.0);
                         gameAudio.playKeeperSave();
                         this.triggerShotResult(false, 'ВІДБИТО!');
                     }
+                    break;
                 }
 
-                // Check collision with interactive targets in the corners of the goal
+                // Мішені у кутах воріт
                 if (isLocalOrStriker && !this.ball.didHitTarget && this.ball.position.coordinateZ <= 0.8 && this.ball.position.coordinateZ >= -0.2) {
                     this.targets.forEach(target => {
                         if (target.active) {
-                            const distanceVec = this.ball.position.subtract(target.position);
-                            // Ігноруємо глибину Z для плоского перерізу мішені у створі воріт
-                            const dist2D = Math.sqrt(distanceVec.coordinateX*distanceVec.coordinateX + distanceVec.coordinateY*distanceVec.coordinateY);
-                            if (dist2D < (TARGET_RADIUS + BALL_RADIUS)) {
+                            const dv = this.ball.position.subtract(target.position);
+                            const d2 = Math.sqrt(dv.coordinateX*dv.coordinateX + dv.coordinateY*dv.coordinateY);
+                            if (d2 < (TARGET_RADIUS + BALL_RADIUS)) {
                                 target.active = false;
                                 this.ball.didHitTarget = true;
                                 this.targetHits++;
-                                
-                                // Гучний звук та вибух часток
                                 gameAudio.playGoalCheer();
                                 gameVFX.spawnTargetHitExplosion(target.position);
-                                
-                                // Тряска камери для соковитості
                                 this.camera.triggerShake(0.85);
                             }
                         }
@@ -632,12 +572,16 @@ class PenaltyMasterGame {
                 }
 
                 if (isLocalOrStriker) {
-                    // --- ДЕТЕКТОР ГОЛУ ---
-                    if (this.ball.position.coordinateZ <= 0.05 && this.ball.position.coordinateZ >= -0.2) {
-                        const inGoalX = Math.abs(this.ball.position.coordinateX) < (GOAL_WIDTH / 2 - 0.03);
-                        const inGoalY = this.ball.position.coordinateY < (GOAL_HEIGHT - 0.03) && this.ball.position.coordinateY > 0.05;
+                    const bx = this.ball.position.coordinateX;
+                    const by = this.ball.position.coordinateY;
+                    const bz = this.ball.position.coordinateZ;
 
+                    // ГОЛ
+                    if (bz <= 0.05 && bz >= -0.2) {
+                        const inGoalX = Math.abs(bx) < (GOAL_WIDTH / 2 - 0.03);
+                        const inGoalY = by < (GOAL_HEIGHT - 0.03) && by > 0.05;
                         if (inGoalX && inGoalY) {
+                            this._roundEnded = true;
                             this.gameState = 'result';
                             this.timeScale = 1.0;
                             this.ball.velocity = this.ball.velocity.scale(0.12);
@@ -646,28 +590,20 @@ class PenaltyMasterGame {
                             gameAudio.playGoalCheer();
                             gameVFX.spawnConfettiRain(this.ball.position);
                             this.triggerShotResult(true, 'Лозко молодець');
+                            break;
                         }
                     }
 
-                    // --- ДЕТЕКТОР ПРОМАХУ / М'ЯЧ ЗА ПОЛЕМ ---
-                    const bx = this.ball.position.coordinateX;
-                    const by = this.ball.position.coordinateY;
-                    const bz = this.ball.position.coordinateZ;
-
-                    // За лінією воріт
-                    const missedGoal = bz < -0.3;
-                    // Далеко в бік або вверх
-                    const wideOrHigh = Math.abs(bx) > GOAL_WIDTH / 2 + 1.8 || by > GOAL_HEIGHT + 1.2;
-                    // М'яч летить назад до камери (відбито воротарем або не потрапив)
-                    const flyingTowardCamera = bz > 12.0;
-                    // М'яч зупинився на землі далеко від воріт (після відбиття)
-                    const stoppedOnGround = by <= BALL_RADIUS + 0.05 && this.ball.velocity.length() < 0.5 && bz > 1.5;
-
-                    // --- ТАЙМАУТ: якщо польот тривав > 6 секунд → примусово завершити ---
+                    // ПРОМАХ / ВИЙШОВ ЗА ПОЛЕ
                     this._flightTimer = (this._flightTimer || 0) + scaledDeltaTime;
-                    const flightTimeout = this._flightTimer > 6.0;
+                    const missedGoal      = bz < -0.3;
+                    const wideOrHigh      = Math.abs(bx) > GOAL_WIDTH / 2 + 1.8 || by > GOAL_HEIGHT + 1.2;
+                    const towardCamera    = bz > 12.0;
+                    const stoppedOnGround = by <= BALL_RADIUS + 0.05 && this.ball.velocity.length() < 0.5 && bz > 1.5;
+                    const timeout         = this._flightTimer > 6.0;
 
-                    if (missedGoal || wideOrHigh || flyingTowardCamera || stoppedOnGround || flightTimeout) {
+                    if (missedGoal || wideOrHigh || towardCamera || stoppedOnGround || timeout) {
+                        this._roundEnded = true;
                         this.gameState = 'result';
                         this.timeScale = 1.0;
                         this._flightTimer = 0;
@@ -678,18 +614,18 @@ class PenaltyMasterGame {
 
                 if (this.slowMoEnabled && this.ball.position.coordinateZ < 3.2 && this.ball.position.coordinateZ > 0.4) {
                     this.timeScale = 0.25;
-                } else {
+                } else if (this.gameState === 'flight') {
                     this.timeScale = 1.0;
                 }
                 break;
+            }
 
-            case 'result':
+            case 'result': {
                 if (this.cutsceneActive) {
                     this.updateCutscene(scaledDeltaTime);
                 } else {
                     this.trackCameraToBall(scaledDeltaTime);
                 }
-
                 if (this.lastShotIsGoal) {
                     this.player.setPose('celebrate');
                     this.goalkeeper.setPose('sad');
@@ -698,8 +634,9 @@ class PenaltyMasterGame {
                     this.goalkeeper.setPose('celebrate');
                 }
                 break;
+            }
         }
-    }
+    } // end update()
 
     trackCameraToBall(deltaTime) {
         const targetCamX = this.ball.position.coordinateX * 0.72;
