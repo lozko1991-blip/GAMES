@@ -194,7 +194,9 @@ class PenaltyMasterGame {
 
         this.loadStatsFromStorage();
         this.generateNewWind();
-        this.applyLevel(0);
+        
+        // Починаємо гру одразу зі складності LEGEND для максимального інтересу
+        this.applyLevel(4); // Фінал ЧС 2026: Лос-Анджелес Стедіум (Складність LEGEND)
     }
 
     /*
@@ -762,7 +764,12 @@ class PenaltyMasterGame {
             const progEl = document.getElementById('hud-level-progress');
             if (progEl) progEl.innerText = `Голі: ${this.levelGoalsScored}/${lvl.goalsToAdvance}`;
 
-            if (this.levelGoalsScored >= lvl.goalsToAdvance && this.currentLevelIndex < LEVEL_PRESETS.length - 1) {
+            // Кожні 3 забиті голи видаємо новий пак карток Ultimate Team
+            if (this.goalsCount > 0 && this.goalsCount % 3 === 0) {
+                setTimeout(() => {
+                    triggerPackOpening();
+                }, 4400);
+            } else if (this.levelGoalsScored >= lvl.goalsToAdvance && this.currentLevelIndex < LEVEL_PRESETS.length - 1) {
                 setTimeout(() => {
                     this.showLevelUp(this.currentLevelIndex + 1);
                 }, 4200);
@@ -1793,6 +1800,126 @@ document.getElementById('btn-confirm-team').addEventListener('click', () => {
         }
     }
     
+    showScreen('screen-main-menu');
+});
+
+/*
+====================================================
+CARD COLLECTION & PACK OPENINGS (EA SPORTS FC 26 UT)
+====================================================
+*/
+function getOwnedCards() {
+    let cards = JSON.parse(safeStorage.getItem('pm_owned_cards'));
+    if (!cards || !Array.isArray(cards)) {
+        cards = ['c_palazhchenko']; // Початкова безкоштовна картка
+        safeStorage.setItem('pm_owned_cards', JSON.stringify(cards));
+    }
+    return cards;
+}
+
+function saveOwnedCards(cardsArray) {
+    safeStorage.setItem('pm_owned_cards', JSON.stringify(cardsArray));
+}
+
+function renderCollectionDeck() {
+    const grid = document.getElementById('collection-grid');
+    grid.innerHTML = '';
+
+    const owned = getOwnedCards();
+
+    CARD_DATABASE.forEach(card => {
+        const isOwned = owned.includes(card.id);
+        
+        const cardEl = document.createElement('div');
+        cardEl.className = `ut-card-collectible ut-card-${card.rarity} ${isOwned ? '' : 'locked'}`;
+
+        cardEl.innerHTML = `
+            <div style="font-size: 0.5rem; font-weight: 800; opacity: 0.7;">UT 26</div>
+            <div class="collectible-rating">${card.rating}</div>
+            <div class="collectible-pos">${card.pos}</div>
+            <div class="collectible-name">${card.name}</div>
+            <div class="collectible-logo">${card.logo}</div>
+            <div class="collectible-stats">
+                <div>PAC <span>${card.pac}</span></div>
+                <div>SHO <span>${card.sho}</span></div>
+                <div>PAS <span>${card.pas}</span></div>
+                <div>DRI <span>${card.dri}</span></div>
+                <div>DEF <span>${card.def}</span></div>
+                <div>PHY <span>${card.phy}</span></div>
+            </div>
+        `;
+
+        grid.appendChild(cardEl);
+    });
+}
+
+function triggerPackOpening() {
+    // Обираємо випадкову картку з бази даних
+    // Ймовірність: легендарні випадають рідше!
+    const roll = Math.random();
+    let selectedRarity = 'bronze';
+    if (roll < 0.05) selectedRarity = 'legendary'; // 5%
+    else if (roll < 0.20) selectedRarity = 'gold'; // 15%
+    else if (roll < 0.55) selectedRarity = 'silver'; // 35%
+
+    const filteredPool = CARD_DATABASE.filter(c => c.rarity === selectedRarity);
+    const rewardCard = filteredPool[Math.floor(Math.random() * filteredPool.length)] || CARD_DATABASE[0];
+
+    // Додаємо картку в список куплених, якщо її ще немає
+    let owned = getOwnedCards();
+    if (!owned.includes(rewardCard.id)) {
+        owned.push(rewardCard.id);
+        saveOwnedCards(owned);
+    }
+
+    // Відображаємо картку в оверлеї
+    const holder = document.getElementById('pack-card-holder');
+    holder.innerHTML = '';
+
+    const cardEl = document.createElement('div');
+    cardEl.className = `ut-card-collectible ut-card-${rewardCard.rarity} pack-reveal-anim`;
+    cardEl.style.width = '170px';
+    cardEl.style.height = '250px';
+    cardEl.style.fontSize = '0.95rem';
+
+    cardEl.innerHTML = `
+        <div style="font-size: 0.6rem; font-weight: 800; opacity: 0.7;">UT 26</div>
+        <div class="collectible-rating" style="font-size: 2.1rem;">${rewardCard.rating}</div>
+        <div class="collectible-pos" style="font-size: 0.75rem;">${rewardCard.pos}</div>
+        <div class="collectible-name" style="font-size: 1.05rem; margin-top: 15px;">${rewardCard.name}</div>
+        <div class="collectible-logo" style="font-size: 1.6rem; margin: 8px 0;">${rewardCard.logo}</div>
+        <div class="collectible-stats" style="font-size: 0.65rem; border-top: 1px solid rgba(0,0,0,0.15); padding-top: 8px; width: 90%;">
+            <div>PAC <span>${rewardCard.pac}</span></div>
+            <div>SHO <span>${rewardCard.sho}</span></div>
+            <div>PAS <span>${rewardCard.pas}</span></div>
+            <div>DRI <span>${rewardCard.dri}</span></div>
+            <div>DEF <span>${rewardCard.def}</span></div>
+            <div>PHY <span>${rewardCard.phy}</span></div>
+        </div>
+    `;
+
+    holder.appendChild(cardEl);
+
+    // Звуки та ефекти вибуху залежно від цінності
+    if (rewardCard.rarity === 'legendary') {
+        gameAudio.playGoalCheer();
+        gameVFX.spawnConfettiRain(new Vector3(0, 0, 0));
+    } else if (rewardCard.rarity === 'gold') {
+        gameAudio.playGoalCheer();
+    } else {
+        gameAudio.playWhistle();
+    }
+
+    showScreen('screen-pack-opening');
+}
+
+document.getElementById('btn-collection-menu').addEventListener('click', () => {
+    gameAudio.init();
+    renderCollectionDeck();
+    showScreen('screen-collection');
+});
+
+document.getElementById('btn-close-pack').addEventListener('click', () => {
     showScreen('screen-main-menu');
 });
 

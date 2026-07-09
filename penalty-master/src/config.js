@@ -37,17 +37,17 @@ const DIFFICULTY_PRESETS = {
     },
     HARD: {
         name: 'HARD',
-        reactionDelay: 0.20,
-        diveSpeed: 8.2,
-        predictionError: 0.25,
-        mistakeChance: 0.05
+        reactionDelay: 0.12,
+        diveSpeed: 9.6,
+        predictionError: 0.15,
+        mistakeChance: 0.02
     },
     LEGEND: {
         name: 'LEGEND',
-        reactionDelay: 0.06,
-        diveSpeed: 10.5,
-        predictionError: 0.05,
-        mistakeChance: 0.02
+        reactionDelay: 0.01,
+        diveSpeed: 13.5,
+        predictionError: 0.01,
+        mistakeChance: 0.00
     }
 };
 
@@ -242,5 +242,36 @@ const CLUB_PRESETS = [
     { id: 'barca', name: 'Барселона', logo: '🛡️', color: '#a50044', shortColor: '#004d98', sockColor: '#a50044' },
     { id: 'city', name: 'Манчестер Сіті', logo: '⚓', color: '#6cabdd', shortColor: '#ffffff', sockColor: '#6cabdd' },
     { id: 'psg', name: 'ПСЖ', logo: '🗼', color: '#004170', shortColor: '#004170', sockColor: '#e30613' },
-    { id: 'bayern', name: 'Баварія', logo: '🔴', color: '#dc052d', shortColor: '#ffffff', sockColor: '#dc052d' }
+    { id: 'bayern', name: 'Баварія', logo: '🔴', color: '#dc052d', shortColor: '#ffffff', sockColor: '#dc052d' },
+    { id: 'arsenal', name: 'Арсенал', logo: '🛡️', color: '#ef0107', shortColor: '#ffffff', sockColor: '#ffffff' },
+    { id: 'liverpool', name: 'Ліверпуль', logo: '🦁', color: '#c8102e', shortColor: '#c8102e', sockColor: '#c8102e' },
+    { id: 'juventus', name: 'Ювентус', logo: '🦓', color: '#111111', shortColor: '#ffffff', sockColor: '#111111' },
+    { id: 'milan', name: 'Мілан', logo: '👿', color: '#e31b23', shortColor: '#111111', sockColor: '#111111' }
+];
+
+/*
+====================================================
+CARD COLLECTION DATABASE (EA SPORTS FC 26 UT)
+====================================================
+*/
+const CARD_DATABASE = [
+    // Bronze
+    { id: 'c_palazhchenko', name: 'Палажченко', rating: 74, rarity: 'bronze', pos: 'GK', logo: '🦢', pac: 58, sho: 32, pas: 60, dri: 52, def: 74, phy: 70 },
+    { id: 'c_mudryk', name: 'Мудрик', rating: 78, rarity: 'bronze', pos: 'LW', logo: '🦁', pac: 92, sho: 70, pas: 68, dri: 79, def: 35, phy: 62 },
+    { id: 'c_zinchenko', name: 'Зінченко', rating: 80, rarity: 'bronze', pos: 'LB', logo: '🛡️', pac: 72, sho: 66, pas: 81, dri: 80, def: 77, phy: 68 },
+    
+    // Silver
+    { id: 'c_courtois', name: 'Куртуа', rating: 89, rarity: 'silver', pos: 'GK', logo: '👑', pac: 48, sho: 15, pas: 55, dri: 48, def: 89, phy: 80 },
+    { id: 'c_bellingham', name: 'Беллінгем', rating: 88, rarity: 'silver', pos: 'CM', logo: '👑', pac: 80, sho: 84, pas: 83, dri: 88, def: 79, phy: 88 },
+    { id: 'c_lewandowski', name: 'Левандовскі', rating: 89, rarity: 'silver', pos: 'ST', logo: '🔴', pac: 75, sho: 91, pas: 72, dri: 86, def: 42, phy: 83 },
+    
+    // Gold
+    { id: 'c_mbappe', name: 'Мбаппе', rating: 92, rarity: 'gold', pos: 'ST', logo: '🗼', pac: 97, sho: 90, pas: 80, dri: 92, def: 36, phy: 78 },
+    { id: 'c_haaland', name: 'Холанд', rating: 91, rarity: 'gold', pos: 'ST', logo: '⚓', pac: 89, sho: 93, pas: 66, dri: 80, def: 45, phy: 88 },
+    { id: 'c_vinicius', name: 'Вінісіус', rating: 90, rarity: 'gold', pos: 'LW', logo: '👑', pac: 95, sho: 82, pas: 78, dri: 91, def: 29, phy: 68 },
+
+    // Legendary
+    { id: 'c_messi', name: 'Мессі', rating: 97, rarity: 'legendary', pos: 'ST', logo: '🐐', pac: 92, sho: 96, pas: 98, dri: 99, def: 38, phy: 68 },
+    { id: 'c_ronaldo', name: 'Роналду', rating: 96, rarity: 'legendary', pos: 'ST', logo: '🇵🇹', pac: 94, sho: 98, pas: 84, dri: 92, def: 35, phy: 84 },
+    { id: 'c_lozko', name: 'Лозко', rating: 99, rarity: 'legendary', pos: 'ST', logo: '🏆', pac: 99, sho: 99, pas: 99, dri: 99, def: 88, phy: 95 }
 ];

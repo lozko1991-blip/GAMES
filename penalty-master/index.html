@@ -93,6 +93,7 @@
                 <button class="menu-button" id="btn-start-game">Одиночна гра</button>
                 <button class="menu-button" id="btn-online-menu">Грати Онлайн (PvP)</button>
                 <button class="menu-button" id="btn-team-select-menu" style="border-color: #00ffcc; color: #00ffcc;">🛡️ Обрати Клуб</button>
+                <button class="menu-button" id="btn-collection-menu" style="border-color: #e0a96d; color: #e0a96d;">🎴 Моя Колекція</button>
                 <button class="menu-button" id="btn-shop-menu" style="border-color: #ffd700; color: #ffd700;">🛍️ Магазин Кастомізації</button>
                 <button class="menu-button" id="btn-difficulty-menu">Складність</button>
                 <button class="menu-button" id="btn-stats-menu">Статистика</button>
@@ -283,6 +284,40 @@
                 </div>
 
                 <button class="menu-button btn-back" style="margin-top: 15px; border-color: rgba(255,255,255,0.3);">Назад</button>
+            </div>
+        </div>
+
+        <!-- COLLECTION SCREEN (UT DECK) -->
+        <div id="screen-collection" class="overlay-screen">
+            <div class="menu-card" style="max-width: 650px; padding: 25px;">
+                <div style="font-size:0.8rem; font-weight:800; letter-spacing:3px; color:#ffd700; text-transform:uppercase; margin-bottom:5px;">EA SPORTS FC 26</div>
+                <h2>🎴 Моя Колекція Карток</h2>
+                <p style="margin-bottom: 20px; color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+                    Забивайте голи та проходьте рівні, щоб отримувати нові паки карток!
+                </p>
+
+                <!-- Collection Grid -->
+                <div id="collection-grid" class="tutorial-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-height: 280px; overflow-y: auto; padding: 10px 5px;">
+                    <!-- Collection UT Cards populated dynamically -->
+                </div>
+
+                <button class="menu-button btn-back" style="margin-top: 15px; border-color: rgba(255,255,255,0.3);">Назад</button>
+            </div>
+        </div>
+
+        <!-- UT PACK OPENING OVERLAY SCREEN -->
+        <div id="screen-pack-opening" class="overlay-screen" style="z-index: 100; background: rgba(0,0,0,0.92);">
+            <div class="menu-card" style="max-width: 420px; background: transparent; border: none; box-shadow: none; text-align: center;">
+                <div style="font-size:1rem; font-weight:800; color:#ffd700; letter-spacing:4px; text-transform:uppercase; margin-bottom:30px; text-shadow: 0 0 10px rgba(255,215,0,0.4);">
+                    НОВИЙ ПАК РОЗПАКОВАНО!
+                </div>
+                
+                <!-- Animated Pack Reveal Card Container -->
+                <div id="pack-card-holder" style="display: flex; justify-content: center; align-items: center; min-height: 270px; margin-bottom: 30px;">
+                    <!-- The single UT Card generated dynamically with custom flip classes -->
+                </div>
+
+                <button class="menu-button" id="btn-close-pack" style="border-color: #ffd700; color: #ffd700; max-width: 200px; margin: 0 auto;">Забрати в Колекцію</button>
             </div>
         </div>
 

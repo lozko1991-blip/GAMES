@@ -594,3 +594,121 @@ input:checked + .slider:before {
     font-size: 1.4rem;
 }
 
+/* Card Rarity Designs */
+.ut-card-collectible {
+    width: 140px;
+    height: 200px;
+    border-radius: 10px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    color: #111;
+    font-family: var(--font-family);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    clip-path: polygon(15% 0%, 85% 0%, 100% 12%, 100% 88%, 85% 100%, 15% 100%, 0% 88%, 0% 12%);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.ut-card-collectible:hover {
+    transform: scale(1.08) translateY(-5px);
+    z-index: 10;
+}
+
+/* Locked Card overlay */
+.ut-card-collectible.locked {
+    filter: grayscale(1) brightness(0.4);
+    opacity: 0.65;
+}
+
+.ut-card-collectible.locked::after {
+    content: '🔒';
+    position: absolute;
+    top: 45%;
+    left: 45%;
+    font-size: 1.8rem;
+    filter: none;
+    z-index: 2;
+}
+
+/* Rarity classes backgrounds */
+.ut-card-bronze {
+    background: linear-gradient(135deg, #cd7f32 0%, #8b5a2b 100%);
+    border: 2px solid #df9c5c;
+}
+.ut-card-silver {
+    background: linear-gradient(135deg, #c0c0c0 0%, #7e7e7e 100%);
+    border: 2px solid #e8e8e8;
+}
+.ut-card-gold {
+    background: linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa7c11 100%);
+    border: 2.5px solid #fff176;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.25);
+}
+.ut-card-legendary {
+    background: linear-gradient(135deg, #2c003e 0%, #fe30a7 50%, #ffd700 100%);
+    border: 3px solid #ff007f;
+    animation: legendaryGlow 2.5s infinite alternate;
+    color: #fff !important;
+}
+.ut-card-legendary * {
+    color: #fff !important;
+}
+
+@keyframes legendaryGlow {
+    0% { box-shadow: 0 0 8px rgba(255, 0, 127, 0.4); }
+    100% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.8), 0 0 15px rgba(255, 0, 127, 0.6); }
+}
+
+/* Custom Card Layout inside grid */
+.collectible-rating {
+    font-size: 1.6rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-top: 3px;
+}
+.collectible-pos {
+    font-size: 0.65rem;
+    font-weight: 700;
+}
+.collectible-name {
+    font-size: 0.85rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-top: 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.15);
+    width: 90%;
+    text-align: center;
+}
+.collectible-logo {
+    font-size: 1.1rem;
+    margin: 4px 0;
+}
+.collectible-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    font-size: 0.5rem;
+    font-weight: 800;
+    width: 95%;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    padding-top: 4px;
+}
+.collectible-stats div {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 2px;
+}
+
+/* Card Pack Opening Reveal Animation */
+.pack-reveal-anim {
+    animation: packFlipped 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes packFlipped {
+    0% { transform: scale(0.1) rotateY(0deg); opacity: 0; }
+    50% { transform: scale(1.1) rotateY(180deg); }
+    100% { transform: scale(1) rotateY(360deg); opacity: 1; }
+}
+
+
