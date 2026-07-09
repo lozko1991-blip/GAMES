@@ -50,6 +50,7 @@ class PlayerControls {
         this.topSpin = 0;
         this.aimX = 0;
         this.aimY = 1.2;
+        this.keys = {}; // Очищуємо натиснуті кнопки, щоб уникнути зависання
     }
 
     /*
