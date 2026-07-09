@@ -163,6 +163,9 @@ class PenaltyMasterGame {
             { id: 'top-left',  position: new Vector3(-GOAL_WIDTH/2 + 0.5, GOAL_HEIGHT - 0.5, 0), active: true },
             { id: 'top-right', position: new Vector3(GOAL_WIDTH/2 - 0.5, GOAL_HEIGHT - 0.5, 0), active: true }
         ];
+
+        // Масив слідів бутс та падінь на полі (Pitch Degradation)
+        this.pitchStains = [];
         this.targetHits = 0;
         this.coins = 0;
 
@@ -470,6 +473,14 @@ class PenaltyMasterGame {
                 if (distanceVal > 0.42) {
                     const runDir = distanceVector.normalize();
                     this.player.position = this.player.position.add(runDir.scale(runSpeed * scaledDeltaTime));
+
+                    // Періодично додаємо сліди бутс від бігу
+                    if (Math.random() < 0.15) {
+                        this.pitchStains.push({
+                            position: this.player.position.clone(),
+                            radius: 0.05 + Math.random() * 0.05
+                        });
+                    }
                 } else {
                     this.gameState = 'kick';
                     this.player.setPose('kick_swing');
@@ -548,6 +559,12 @@ class PenaltyMasterGame {
                         this.ball.isStatic = true;
                         this.goalkeeper.setPose('idle');
                         
+                        // Додаємо слід ковзання воротаря на газоні в місці падіння
+                        this.pitchStains.push({
+                            position: this.goalkeeper.position.clone(),
+                            radius: 0.16 + Math.random() * 0.08
+                        });
+
                         gameAudio.playKeeperSave();
                         this.triggerShotResult(false, 'СЕЙВ ВОРОТАРЯ!');
                     } else {
@@ -995,14 +1012,18 @@ class PenaltyMasterGame {
         }
 
         this.audienceFlashes.forEach(flash => {
-            flash.intensity += flash.speed * (scaledDeltaTime || 0.016);
+            // При святкуванні гола спалахи камери вибухають набагато частіше та інтенсивніше
+            const isGoalCelebrate = this.cutsceneActive && this.cutsceneIsGoal;
+            const flashSpeedMultiplier = isGoalCelebrate ? 4.5 : 1.0;
+            
+            flash.intensity += flash.speed * (scaledDeltaTime || 0.016) * flashSpeedMultiplier;
             if (flash.intensity > Math.PI) {
                 flash.intensity = 0;
                 flash.xRatio = Math.random();
                 flash.yRatio = Math.random();
-                flash.speed = 0.8 + Math.random() * 3.5;
+                flash.speed = isGoalCelebrate ? 2.5 + Math.random() * 4.5 : 0.8 + Math.random() * 3.5;
             }
-            const brightness = Math.sin(flash.intensity);
+            const brightness = Math.sin(flash.intensity) * (isGoalCelebrate ? 1.45 : 1.0);
             if (brightness > 0.05) {
                 const flashX = flash.xRatio * width;
                 const flashY = (horizonY - height * 0.22) + flash.yRatio * (height * 0.20);
@@ -1080,6 +1101,18 @@ class PenaltyMasterGame {
             }
         }
 
+        // Рендеринг слідів бутс та падінь (Pitch Degradation)
+        this.pitchStains.forEach(stain => {
+            const proj = this.camera.project(stain.position, width, height);
+            if (proj) {
+                const size = stain.radius * proj.scale;
+                this.ctx.fillStyle = 'rgba(10, 35, 10, 0.45)'; // Темний бруд від розкопаного газону
+                this.ctx.beginPath();
+                this.ctx.arc(proj.x, proj.y, size, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+        });
+
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
         this.ctx.lineWidth = 2.0;
 
@@ -1119,13 +1152,18 @@ class PenaltyMasterGame {
         }
 
         // ====================================================
-        // EA SPORTS FC 26 DIGITAL AD BOARDS (Рекламні щити)
+        // KRONOS FOOTBALL DIGITAL AD BOARDS (Рекламні щити)
         // ====================================================
-        const adTexts = ['EA SPORTS FC 26', 'ANTIGRAVITY AI', 'UEFA CHAMPIONS LEAGUE', 'PLAYSTATION 5', 'NIKE FOOTBALL'];
-        const adIndex = Math.floor((this.gameTime || 0) * 0.4) % adTexts.length;
-        const currentAdText = adTexts[adIndex];
+        const adTexts = ['KRONOS FOOTBALL', 'PLAYSTATION 5', 'NIKE SOCCER', 'PEPSI MAX', 'CHAMPIONS LEAGUE'];
+        const adIndex = Math.floor((this.gameTime || 0) * 0.5) % adTexts.length;
+        
+        // Реакція на гол: щити блимають золотим кольором
+        const isGoalReaction = this.cutsceneActive && this.cutsceneIsGoal;
+        const currentAdText = isGoalReaction ? '⚽ GOAL! GOAL! GOAL! ⚽' : adTexts[adIndex];
+        const adColor = isGoalReaction ? '#ffd700' : '#00ffcc';
+        const adBorder = isGoalReaction ? '#ffffff' : '#00ffcc';
 
-        // Малюємо щити ліворуч та праворуч від воріт (x = -9 та x = 9, z від -1 до 3)
+        // Малюємо щити ліворуч та праворуч від воріт
         const adBoards = [
             { start: new Vector3(-11, 0, 4), end: new Vector3(-8, 0, 0) },
             { start: new Vector3(8, 0, 0), end: new Vector3(11, 0, 4) }
@@ -1143,11 +1181,17 @@ class PenaltyMasterGame {
             const projEBT = this.camera.project(pEndTop, width, height);
 
             if (projSB && projEB && projSBT && projEBT) {
-                // Заливка щита (неоновий темно-синій)
+                // Заливка щита
                 const grad = this.ctx.createLinearGradient(projSBT.x, projSBT.y, projEBT.x, projEBT.y);
-                grad.addColorStop(0, '#000814');
-                grad.addColorStop(0.5, '#001845');
-                grad.addColorStop(1, '#000814');
+                if (isGoalReaction) {
+                    grad.addColorStop(0, '#4a3c00');
+                    grad.addColorStop(0.5, '#b8860b');
+                    grad.addColorStop(1, '#4a3c00');
+                } else {
+                    grad.addColorStop(0, '#000814');
+                    grad.addColorStop(0.5, '#001845');
+                    grad.addColorStop(1, '#000814');
+                }
 
                 this.ctx.fillStyle = grad;
                 this.ctx.beginPath();
@@ -1159,11 +1203,11 @@ class PenaltyMasterGame {
                 this.ctx.fill();
 
                 // Неонова рамка
-                this.ctx.strokeStyle = '#00ffcc';
+                this.ctx.strokeStyle = adBorder;
                 this.ctx.lineWidth = 2 * (projSBT.scale / 300);
                 this.ctx.stroke();
 
-                // Текст на щиті
+                // Текст на щиті з прокруткою
                 this.ctx.save();
                 const midX = (projSBT.x + projEBT.x) / 2;
                 const midY = (projSBT.y + projEBT.y + 10 * (projSBT.scale / 300)) / 2;
@@ -1173,12 +1217,15 @@ class PenaltyMasterGame {
                 const angle = Math.atan2(projEBT.y - projSBT.y, projEBT.x - projSBT.x);
                 this.ctx.rotate(angle);
 
-                this.ctx.fillStyle = '#00ffcc';
-                this.ctx.font = `bold ${Math.max(8, Math.round(9 * (projSBT.scale / 300)))}px Outfit`;
+                // Ефект прокрутки тексту (маркер світлодіодного табло)
+                const textScrollOffset = Math.sin((this.gameTime || 0) * 3) * 10;
+                
+                this.ctx.fillStyle = adColor;
+                this.ctx.font = `bold ${Math.max(8, Math.round(10 * (projSBT.scale / 300)))}px Outfit`;
                 this.ctx.textAlign = 'center';
-                this.ctx.shadowBlur = 8;
-                this.ctx.shadowColor = '#00ffcc';
-                this.ctx.fillText(currentAdText, 0, 0);
+                this.ctx.shadowBlur = isGoalReaction ? 15 : 8;
+                this.ctx.shadowColor = adColor;
+                this.ctx.fillText(currentAdText, textScrollOffset, 0);
                 this.ctx.restore();
             }
         });
@@ -1826,15 +1873,25 @@ function renderCollectionDeck() {
     grid.innerHTML = '';
 
     const owned = getOwnedCards();
+    const currentClubId = safeStorage.getItem('pm_selected_club') || 'real';
+    const activeClub = CLUB_PRESETS.find(c => c.id === currentClubId);
+    const activeClubLogo = activeClub ? activeClub.logo : '';
 
     CARD_DATABASE.forEach(card => {
         const isOwned = owned.includes(card.id);
         
+        // Розраховуємо хімію (якщо логотипи/клуби картки збігаються з обраним клубом)
+        const chemMatch = card.logo === activeClubLogo;
+        const chemistryStars = chemMatch ? '⭐⭐⭐' : '⭐';
+
         const cardEl = document.createElement('div');
         cardEl.className = `ut-card-collectible ut-card-${card.rarity} ${isOwned ? '' : 'locked'}`;
 
         cardEl.innerHTML = `
-            <div style="font-size: 0.5rem; font-weight: 800; opacity: 0.7;">UT 26</div>
+            <div style="font-size: 0.5rem; font-weight: 800; opacity: 0.7; display: flex; justify-content: space-between; width: 100%;">
+                <span>UT 26</span>
+                <span style="color: #ffd700;">${isOwned ? chemistryStars : ''}</span>
+            </div>
             <div class="collectible-rating">${card.rating}</div>
             <div class="collectible-pos">${card.pos}</div>
             <div class="collectible-name">${card.name}</div>

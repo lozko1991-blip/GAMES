@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Penalty Master - Симулятор Пенальті</title>
+    <title>KRONOS FOOTBALL - Симулятор Пенальті</title>
     <!-- Google Fonts for premium visuals -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,6 +13,12 @@
 </head>
 <body>
     <div id="game-container">
+        <!-- Live Stream overlay badge -->
+        <div id="live-stream-badge" style="position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); z-index: 10; font-family: 'Outfit'; font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; pointer-events: none;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #ff0055; box-shadow: 0 0 8px #ff0055; animation: liveBlink 1.5s infinite alternate;"></span>
+            LIVE BROADCAST
+        </div>
+
         <!-- Canvas for 3D game rendering -->
         <canvas id="game-canvas"></canvas>
 
@@ -86,9 +92,9 @@
         <!-- MAIN MENU -->
         <div id="screen-main-menu" class="overlay-screen active">
             <div class="menu-card">
-                <h1>PENALTY MASTER</h1>
+                <h1 style="background: linear-gradient(135deg, #ffd700 0%, #aa7c11 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Outfit'; font-weight: 900; letter-spacing: 2px;">KRONOS FOOTBALL</h1>
                 <p style="margin-bottom: 25px; color: rgba(255,255,255,0.6); text-transform: uppercase; font-size: 0.9rem; letter-spacing: 2px;">
-                    Справжній 3D симулятор пенальті
+                    Преміальний 3D Футбольний Симулятор
                 </p>
                 <button class="menu-button" id="btn-start-game">Одиночна гра</button>
                 <button class="menu-button" id="btn-online-menu">Грати Онлайн (PvP)</button>

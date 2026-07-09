@@ -257,6 +257,29 @@ class SkeletalCharacter {
             j.footL.set(-0.16, GOAL_HEIGHT - 1.45 + swingPhase * 0.12, -0.25 + swingPhase * 0.2);
             j.footR.set(0.16, GOAL_HEIGHT - 1.45 - swingPhase * 0.12, -0.25 - swingPhase * 0.2);
         }
+        else if (this.pose === 'keeper_split') {
+            // Воротар падає у шпагат для перехоплення низового м'яча
+            j.pelvis.set(0, 0.18, 0);
+            j.spine.set(0, 0.52, -0.05);
+            j.head.set(0, 0.88, -0.05);
+
+            j.shoulderL.set(-0.25, 0.6, 0);
+            j.shoulderR.set(0.25, 0.6, 0);
+            j.elbowL.set(-0.55, 0.52, 0.1);
+            j.elbowR.set(0.55, 0.52, 0.1);
+            j.handL.set(-0.85, 0.45, 0.2);
+            j.handR.set(0.85, 0.45, 0.2);
+
+            j.hipL.set(-0.16, 0.15, 0);
+            j.hipR.set(0.16, 0.15, 0);
+
+            // Розсунуті ноги вздовж землі
+            j.kneeL.set(-0.95, 0.10, 0.05);
+            j.footL.set(-1.65, 0.04, 0.05);
+
+            j.kneeR.set(0.95, 0.10, 0.05);
+            j.footR.set(1.65, 0.04, 0.05);
+        }
         else if (this.pose === 'walk_bar') {
             const walkPhase = Math.sin(this.animationTimer * 3.5);
             const armBalance = Math.cos(this.animationTimer * 2.0) * 0.15;
@@ -672,9 +695,13 @@ class GoalkeeperAI {
                 const isLeft = this.predictedTargetX < this.keeper.position.coordinateX;
                 const isHigh = this.predictedTargetY > 0.95;
                 
-                // Рандомно або завжди робить смішне колесо (сальто) в стрибку
-                const somersaultChance = 0.85; // 85% шансу зробити сальто для смішного ефекту
-                if (Math.random() < somersaultChance) {
+                // Спеціальні сейви ногами для низьких ударів, інакше сальто або класичний сейв
+                const isLow = this.predictedTargetY < 0.65;
+                const somersaultChance = 0.65; 
+                
+                if (isLow && Math.random() < 0.5) {
+                    this.keeper.setPose('keeper_split');
+                } else if (Math.random() < somersaultChance) {
                     this.keeper.setPose(isLeft ? 'somersault_left' : 'somersault_right');
                 } else {
                     this.keeper.setPose(isLeft ? (isHigh ? 'dive_high_left' : 'dive_low_left') : (isHigh ? 'dive_high_right' : 'dive_low_right'));

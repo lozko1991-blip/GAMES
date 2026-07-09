@@ -224,13 +224,14 @@ class NetParticle {
 
         this.previousPosition.set(this.position.coordinateX, this.position.coordinateY, this.position.coordinateZ);
 
-        // Додавання м'якої гравітації та повернення до спокою
-        const restoreX = (this.originalPosition.coordinateX - this.position.coordinateX) * 0.15;
-        const restoreY = (this.originalPosition.coordinateY - this.position.coordinateY) * 0.15;
-        const restoreZ = (this.originalPosition.coordinateZ - this.position.coordinateZ) * 0.15;
+        // Підвищена еластичність пружності сітки
+        const restoreForce = 0.55; 
+        const restoreX = (this.originalPosition.coordinateX - this.position.coordinateX) * restoreForce;
+        const restoreY = (this.originalPosition.coordinateY - this.position.coordinateY) * restoreForce;
+        const restoreZ = (this.originalPosition.coordinateZ - this.position.coordinateZ) * restoreForce;
 
         this.position.coordinateX += velocityX + restoreX * deltaTime;
-        this.position.coordinateY += velocityY + (restoreY - 1.5) * deltaTime; // Невелика вага сітки
+        this.position.coordinateY += velocityY + (restoreY - 0.8) * deltaTime; // М'якша вага сітки для красивої хлісткості
         this.position.coordinateZ += velocityZ + restoreZ * deltaTime;
 
         // Обмеження нижньої межі (земля)
@@ -708,15 +709,25 @@ class Ball3D {
     update(deltaTime) {
         if (this.isStatic) return;
 
-        const currentSpeed = this.velocity.length();
-        if (currentSpeed > 0.05) {
-            const dragForceMagnitude = 0.5 * PHYSICS_AIR_DENSITY * BALL_DRAG_COEFFICIENT * BALL_CROSS_SECTION * currentSpeed * currentSpeed;
+        // Додаємо випадкову турбулентність та опір вітру
+        const speed = this.velocity.length();
+        let currentDragCoeff = BALL_DRAG_COEFFICIENT;
+
+        // Симуляція коливань опору повітря (турбулентність та вологість)
+        const turbulence = 1.0 + Math.sin(performance.now() * 0.05) * 0.08;
+        currentDragCoeff *= turbulence;
+
+        if (speed > 0.05) {
+            const dragForceMagnitude = 0.5 * PHYSICS_AIR_DENSITY * currentDragCoeff * BALL_CROSS_SECTION * speed * speed;
             const dragForceVector = this.velocity.normalize().scale(-dragForceMagnitude / BALL_MASS);
             this.velocity = this.velocity.add(dragForceVector.scale(deltaTime));
         }
 
-        if (currentSpeed > 0.1 && this.angularVelocity.length() > 0.1) {
-            const magnusForceVector = this.angularVelocity.cross(this.velocity).scale(BALL_MAGNUS_COEFFICIENT / BALL_MASS);
+        // Покращений фізично реалістичний ефект Магнуса
+        if (speed > 0.1 && this.angularVelocity.length() > 0.1) {
+            // Ефект підкрутки сильнішає при зростанні швидкості
+            const liftCoeff = BALL_MAGNUS_COEFFICIENT * (1.0 + speed * 0.015);
+            const magnusForceVector = this.angularVelocity.cross(this.velocity).scale(liftCoeff / BALL_MASS);
             this.velocity = this.velocity.add(magnusForceVector.scale(deltaTime));
         }
 
