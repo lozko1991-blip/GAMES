@@ -59,17 +59,11 @@ class PlayerControls {
     Призначення: Зчитує натиснуті кнопки та змінює стан гри.
     ====================================================
     */
-    update(deltaTime, isRunUpStarted) {
-        const aimSpeed = 4.0;
+    update(deltaTime, isRunUpStarted, gameState) {
+        const aimSpeed = 4.8; // Збільшена швидкість прицілювання для чутливості
 
-        if (!isRunUpStarted) {
-            if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
-                this.playerStartingOffsetX = Math.max(-2.5, this.playerStartingOffsetX - 2.5 * deltaTime);
-            }
-            if (this.keys['ArrowRight'] || this.keys['KeyD']) {
-                this.playerStartingOffsetX = Math.min(2.5, this.playerStartingOffsetX + 2.5 * deltaTime);
-            }
-        } else {
+        // Дозволяємо цілитися під час вибору старту розбігу ТА під час самого розбігу
+        if (gameState === 'aiming' || gameState === 'runup' || isRunUpStarted) {
             if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
                 this.aimX = Math.max(-GOAL_WIDTH/2 - 0.8, this.aimX - aimSpeed * deltaTime);
                 this.sideSpin = Math.max(-1.0, this.sideSpin - 1.5 * deltaTime);
@@ -85,6 +79,16 @@ class PlayerControls {
             if (this.keys['ArrowDown'] || this.keys['KeyS']) {
                 this.aimY = Math.max(0.05, this.aimY - aimSpeed * 0.8 * deltaTime);
                 this.topSpin = Math.min(1.0, this.topSpin + 1.2 * deltaTime);
+            }
+        }
+
+        // Керуємо стартовим офсетом зміщення гравця тільки коли прицілювання чисте (сила 0)
+        if (gameState === 'aiming' && this.power === 0) {
+            if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
+                this.playerStartingOffsetX = Math.max(-2.5, this.playerStartingOffsetX - 2.5 * deltaTime);
+            }
+            if (this.keys['ArrowRight'] || this.keys['KeyD']) {
+                this.playerStartingOffsetX = Math.min(2.5, this.playerStartingOffsetX + 2.5 * deltaTime);
             }
         }
 
@@ -286,7 +290,7 @@ class PenaltyMasterGame {
         gameVFX.update(scaledDeltaTime);
         
         const isRunUpStarted = this.gameState !== 'aiming';
-        gameControls.update(realDeltaTime, isRunUpStarted);
+        gameControls.update(realDeltaTime, isRunUpStarted, this.gameState);
 
         document.getElementById('hud-power-fill').style.width = gameControls.power + '%';
 
@@ -789,7 +793,14 @@ class PenaltyMasterGame {
         setTimeout(() => {
             banner.classList.remove('active');
             this.cutsceneActive = false;
-            this.resetShot();
+            
+            // Запобігаємо зависанню при переході на наступний рівень
+            const levelUpScreen = document.getElementById('screen-level-up');
+            const isLevelUpActive = levelUpScreen && levelUpScreen.classList.contains('active');
+            
+            if (!isLevelUpActive) {
+                this.resetShot();
+            }
         }, resetDelay);
     }
 

@@ -672,8 +672,9 @@ class GoalkeeperAI {
                 const isLeft = this.predictedTargetX < this.keeper.position.coordinateX;
                 const isHigh = this.predictedTargetY > 0.95;
                 
-                const isAcrobaticDiff = this.difficulty && (this.difficulty.name === 'HARD' || this.difficulty.name === 'LEGEND');
-                if (isAcrobaticDiff && Math.random() < 0.50) {
+                // Рандомно або завжди робить смішне колесо (сальто) в стрибку
+                const somersaultChance = 0.85; // 85% шансу зробити сальто для смішного ефекту
+                if (Math.random() < somersaultChance) {
                     this.keeper.setPose(isLeft ? 'somersault_left' : 'somersault_right');
                 } else {
                     this.keeper.setPose(isLeft ? (isHigh ? 'dive_high_left' : 'dive_low_left') : (isHigh ? 'dive_high_right' : 'dive_low_right'));
