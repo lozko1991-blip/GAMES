@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-    <title>Труханів Острів: Шлях Бійця �    <!-- Google Fonts for premium visuals -->
+    <title>Труханів Острів: Шлях Бійця — Kyiv Edition</title>
+    <!-- Google Fonts for premium visuals -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
@@ -114,8 +115,7 @@
                 
                 <div class="select-group">
                     <label>ГРАВЕЦЬ 1:</label>
-                    <!-- Reuse the main char select ID, but wait: local PvP uses this dropdown for Player 1, which works! -->
-                    <select id="char-select-local-p1" onchange="document.getElementById('char-select').value = this.value">
+                    <select id="char-select-local-p1">
                         <option value="lozko">Лозко (Труханів / Вода)</option>
                         <option value="demchuk">Демчук (Шулявка / Енергія)</option>
                         <option value="kolomiiets">Коломієць (КНЕУ / Блискавка)</option>
@@ -130,9 +130,8 @@
 
                 <div class="select-group">
                     <label>ГРАВЕЦЬ 2:</label>
-                    <!-- Reuse the main char2 select ID, but wait: local PvP uses this dropdown for Player 2, which works! -->
-                    <select id="char-select-local-p2" onchange="document.getElementById('char2-select').value = this.value">
-                        <option value="lozko" selected>Лозко (Труханів / Вода)</option>
+                    <select id="char-select-local-p2">
+                        <option value="lozko">Лозко (Труханів / Вода)</option>
                         <option value="demchuk" selected>Демчук (Шулявка / Енергія)</option>
                         <option value="kolomiiets">Коломієць (КНЕУ / Блискавка)</option>
                         <option value="palazhchenko">Палажченко (Борщага / Вогонь)</option>
@@ -146,7 +145,7 @@
 
                 <div class="select-group">
                     <label>АРЕНА:</label>
-                    <select id="level-select-local" onchange="document.getElementById('level-select').value = this.value">
+                    <select id="level-select-local">
                         <option value="random">Випадкова арена</option>
                         <option value="0">Труханів Острів (Пляж)</option>
                         <option value="1">Хрещатик (Захід сонця)</option>
@@ -176,7 +175,7 @@
                 
                 <div class="select-group" style="margin-bottom: 10px;">
                     <label>ОБЕРІТЬ СВОГО БІЙЦЯ:</label>
-                    <select id="char-select-online" onchange="document.getElementById('char-select').value = this.value">
+                    <select id="char-select-online">
                         <option value="lozko">Лозко (Труханів / Вода)</option>
                         <option value="demchuk">Демчук (Шулявка / Енергія)</option>
                         <option value="kolomiiets">Коломієць (КНЕУ / Блискавка)</option>
@@ -244,18 +243,6 @@
                     </ul>
                 </div>
                 <button onclick="showScreen('screen-main-menu')" style="background: #333; border-color: #444;">Назад</button>
-            </div>
-        </div>
-ze: 12px; font-weight: bold; color: #00ffcc; background: rgba(0,0,0,0.8); padding: 3px; margin: 2px 0; border: 1px dashed #00ffcc; text-align: center; cursor: pointer;">Завантаження...</div>
-                            </div>
-                            <input type="text" id="join-room-id" placeholder="Введіть код кімнати" style="padding: 4px; width: calc(100% - 10px); background: #111; color: #fff; border: 1px solid #444; border-radius: 4px; margin-bottom: 4px; text-align: center; font-size: 9px;" />
-                            <button onclick="joinRoom()" style="padding: 4px; background: #333; border-color: #555; width: 100%; font-size: 9px;">Приєднатись</button>
-                        </div>
-                        
-                        <button id="btn-start-online-game" class="hidden" onclick="startOnlineGame()" style="margin: 6px 0 0 0; padding: 6px; font-size: 10px; background: #ffcc00; color: #000; border-color: #ffcc00;">ПОЧАТИ ОНЛАЙН БІЙ</button>
-                        <div id="online-status" style="margin-top: 4px; font-size: 9px; color: #ffcc00; text-align: center;">Оберіть режим</div>
-                    </div>
-                </div>
             </div>
         </div>
 
