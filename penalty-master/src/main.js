@@ -722,6 +722,80 @@ class PenaltyMasterGame {
                 }
                 break;
             }
+
+            case 'matrix_headshot_cutscene': {
+                this.matrixTimer = (this.matrixTimer || 0) + scaledDeltaTime;
+                this.matrixOrbitAngle = (this.matrixOrbitAngle || 0) + scaledDeltaTime * 0.35;
+
+                const targetX = 0;
+                const targetY = 1.25;
+                const targetZ = 0.0;
+                const orbitRadius = 4.5;
+                
+                // Обертання камери навколо воротаря в стилі Матриці (bullet-time)
+                this.camera.position.set(
+                    targetX + Math.sin(this.matrixOrbitAngle) * orbitRadius,
+                    targetY + 0.45 * Math.sin(this.matrixOrbitAngle * 1.5) + 0.2,
+                    targetZ + Math.cos(this.matrixOrbitAngle) * orbitRadius
+                );
+                this.camera.target.set(targetX, targetY, targetZ);
+
+                if (this.matrixTimer < 1.0) {
+                    const progress = Math.min(1.0, this.matrixTimer / 1.0);
+                    // Траєкторія м'яча прямо в голову воротарю
+                    this.ball.position.coordinateX = 0;
+                    this.ball.position.coordinateY = 0.11 + progress * (1.58 - 0.11) + Math.sin(progress * Math.PI) * 0.8;
+                    this.ball.position.coordinateZ = 11.0 - progress * 11.0;
+                    this.ball.velocity.set(0, 0, -11.0);
+                    this.ball.angularVelocity.set(40, 0, 0);
+                    
+                    this.goalkeeper.position.set(0, 0, 0);
+                    this.goalkeeper.setPose('idle');
+                } else {
+                    if (!this.matrixHitTriggered) {
+                        this.matrixHitTriggered = true;
+                        
+                        // Ефектний вибух часток у точці влучання (в голову)
+                        gameVFX.spawnTargetHitExplosion(new Vector3(0, 1.58, 0));
+                        this.camera.triggerShake(1.5);
+                        
+                        gameAudio.playKeeperSave();
+                        gameAudio.playMissGroan();
+                        
+                        // Переводимо воротаря у позу падіння Матриці
+                        this.goalkeeper.setPose('matrix_fall');
+                        
+                        // М'яч відлітає назад
+                        this.ball.velocity.set(0.5, 1.8, 3.5);
+                        this.ball.angularVelocity.set(-5, 10, -5);
+                    }
+                    
+                    // Фізика польоту м'яча після влучання
+                    this.ball.velocity.coordinateY -= PHYSICS_GRAVITY * scaledDeltaTime;
+                    this.ball.position.coordinateX += this.ball.velocity.coordinateX * scaledDeltaTime;
+                    this.ball.position.coordinateY += this.ball.velocity.coordinateY * scaledDeltaTime;
+                    this.ball.position.coordinateZ += this.ball.velocity.coordinateZ * scaledDeltaTime;
+                    
+                    if (this.ball.position.coordinateY < BALL_RADIUS) {
+                        this.ball.position.coordinateY = BALL_RADIUS;
+                        this.ball.velocity.coordinateY = -this.ball.velocity.coordinateY * 0.45;
+                        this.ball.velocity.coordinateX *= 0.8;
+                        this.ball.velocity.coordinateZ *= 0.8;
+                    }
+                }
+
+                if (this.matrixTimer >= 5.0) {
+                    this.gameState = 'aiming';
+                    this.timeScale = 1.0;
+                    this.matrixTimer = 0;
+                    this.matrixOrbitAngle = 0;
+                    this.matrixHitTriggered = false;
+                    this.matrix3DStreams = null;
+                    
+                    this.showMatrixRewardOverlay();
+                }
+                break;
+            }
         }
     } // end update()
 
@@ -854,8 +928,12 @@ class PenaltyMasterGame {
             const progEl = document.getElementById('hud-level-progress');
             if (progEl) progEl.innerText = `Голі: ${this.levelGoalsScored}/${lvl.goalsToAdvance}`;
 
-            // Кожні 3 забиті голи видаємо новий пак карток Ultimate Team
-            if (this.goalsCount > 0 && this.goalsCount % 3 === 0) {
+            // Кожні 4 забиті голи запускаємо міні-гру «Матричний Прорив»
+            if (this.goalsCount > 0 && this.goalsCount % 4 === 0) {
+                setTimeout(() => {
+                    this.triggerMatrixMiniGame();
+                }, 4400);
+            } else if (this.goalsCount > 0 && this.goalsCount % 3 === 0) {
                 setTimeout(() => {
                     triggerPackOpening();
                 }, 4400);
@@ -905,11 +983,13 @@ class PenaltyMasterGame {
             banner.classList.remove('active');
             this.cutsceneActive = false;
             
-            // Запобігаємо зависанню при переході на наступний рівень
+            // Запобігаємо зависанню при переході на наступний рівень або міні-гру
             const levelUpScreen = document.getElementById('screen-level-up');
             const isLevelUpActive = levelUpScreen && levelUpScreen.classList.contains('active');
+            const matrixScreen = document.getElementById('screen-matrix-run');
+            const isMatrixActive = matrixScreen && matrixScreen.classList.contains('active');
             
-            if (!isLevelUpActive) {
+            if (!isLevelUpActive && !isMatrixActive) {
                 this.resetShot();
             }
         }, resetDelay);
@@ -1558,6 +1638,38 @@ class PenaltyMasterGame {
         renderQueue.sort((a, b) => a.depth - b.depth);
         renderQueue.forEach(item => item.render());
 
+        // Візуалізація коду Матриці поверх 3D полотна під час катсцени
+        if (this.gameState === 'matrix_headshot_cutscene') {
+            this.ctx.fillStyle = 'rgba(0, 255, 102, 0.08)';
+            this.ctx.fillRect(0, 0, width, height);
+
+            if (!this.matrix3DStreams) {
+                this.matrix3DStreams = [];
+                const cols = Math.floor(width / 22);
+                for (let i = 0; i < cols; i++) {
+                    this.matrix3DStreams.push({
+                        x: i * 22,
+                        y: Math.random() * -height,
+                        speed: 120 + Math.random() * 200,
+                        chars: Array.from({length: 15}, () => String.fromCharCode(33 + Math.floor(Math.random() * 93)))
+                    });
+                }
+            }
+
+            this.ctx.fillStyle = 'rgba(0, 255, 102, 0.25)';
+            this.ctx.font = '11px monospace';
+            this.matrix3DStreams.forEach(stream => {
+                stream.y += stream.speed * scaledDeltaTime;
+                if (stream.y > height) {
+                    stream.y = Math.random() * -200;
+                    stream.chars = Array.from({length: 15}, () => String.fromCharCode(33 + Math.floor(Math.random() * 93)));
+                }
+                stream.chars.forEach((char, idx) => {
+                    this.ctx.fillText(char, stream.x, stream.y + idx * 13);
+                });
+            });
+        }
+
         this.renderWindIndicator(width, height);
     }
 
@@ -1687,6 +1799,115 @@ class PenaltyMasterGame {
         
         document.getElementById('stat-max-streak').innerText = this.maxStreak;
         document.getElementById('stat-post-hits').innerText = this.postHits;
+    }
+
+    triggerMatrixMiniGame() {
+        const screen = document.getElementById('screen-matrix-run');
+        if (!screen) return;
+
+        // Ховаємо основний інтерфейс
+        document.getElementById('hud-container').classList.remove('active');
+        showScreen('screen-matrix-run');
+
+        const canvas = document.getElementById('matrix-canvas');
+        const runner = new MatrixRunGame(
+            canvas,
+            (coins) => {
+                screen.classList.remove('active');
+                document.getElementById('hud-container').classList.add('active');
+                showScreen('hud-container');
+                
+                // Запускаємо slow-mo катсцену
+                this.startMatrixCutscene(coins);
+            },
+            () => {
+                this.showMatrixDefeatOverlay();
+            }
+        );
+        runner.start();
+    }
+
+    startMatrixCutscene(coinsReward) {
+        this.gameState = 'matrix_headshot_cutscene';
+        this.timeScale = 0.12; // Ефект надповільного часу
+        
+        this.matrixTimer = 0;
+        this.matrixOrbitAngle = 0;
+        this.matrixHitTriggered = false;
+        this.matrix3DStreams = null;
+        this.matrixCoinsReward = coinsReward;
+
+        this.ball.reset();
+        this.ball.position.set(0, 0.11, 11.0);
+        this.ball.velocity.set(0, 0, -11.0);
+
+        this.goalkeeper.position.set(0, 0, 0);
+        this.goalkeeper.setPose('idle');
+    }
+
+    showMatrixRewardOverlay() {
+        this.coins += this.matrixCoinsReward;
+        this.saveStatsToStorage();
+        this.updateHUD();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'matrix-reward-popup';
+        overlay.style.cssText = 'position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(2,11,5,0.92); z-index:100; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#00ff66; font-family:"Outfit", sans-serif;';
+        
+        overlay.innerHTML = `
+            <div class="menu-card" style="border-color:#00ff66; background:#020b05; max-width:480px; box-shadow:0 0 35px rgba(0,255,102,0.3);">
+                <h1 style="color:#00ff66; text-shadow:0 0 10px #00ff66; font-weight:900; font-family:\'Outfit\';">MATRIX HEADSHOT!</h1>
+                <p style="color:#fff; font-size:1.1rem; margin:15px 0;">Влучання в голову воротаря виконано! Воротар ефектно ліг відпочити 💤</p>
+                <div style="font-size:2rem; font-weight:bold; color:#00ffcc; margin:15px 0; text-shadow:0 0 10px #00ffcc;">
+                    🪙 +${this.matrixCoinsReward} МОНЕТ
+                </div>
+                <div style="display:flex; gap:15px; justify-content:center; margin-top:20px;">
+                    <button class="menu-button" id="btn-matrix-replay-win" style="border-color:#00ffcc; color:#00ffcc; margin:0; padding:10px 20px;">Зіграти знову</button>
+                    <button class="menu-button" id="btn-matrix-continue-win" style="border-color:#00ff66; color:#00ff66; margin:0; padding:10px 20px;">Продовжити</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        document.getElementById('btn-matrix-replay-win').onclick = () => {
+            document.body.removeChild(overlay);
+            this.triggerMatrixMiniGame();
+        };
+
+        document.getElementById('btn-matrix-continue-win').onclick = () => {
+            document.body.removeChild(overlay);
+            this.resetShot();
+            showScreen('hud-container');
+        };
+    }
+
+    showMatrixDefeatOverlay() {
+        const overlay = document.createElement('div');
+        overlay.id = 'matrix-defeat-popup';
+        overlay.style.cssText = 'position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(20,5,5,0.92); z-index:100; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#ff3333; font-family:"Outfit", sans-serif;';
+        
+        overlay.innerHTML = `
+            <div class="menu-card" style="border-color:#ff3333; background:#0c0202; max-width:480px; box-shadow:0 0 35px rgba(255,51,51,0.3);">
+                <h1 style="color:#ff3333; text-shadow:0 0 10px #ff3333; font-weight:900; font-family:\'Outfit\';">СИСТЕМНИЙ ЗБІЙ</h1>
+                <p style="color:#fff; font-size:1.1rem; margin:15px 0;">Ви зіткнулися з брандмауером та зазнали поразки!</p>
+                <div style="display:flex; gap:15px; justify-content:center; margin-top:20px;">
+                    <button class="menu-button" id="btn-matrix-replay-fail" style="border-color:#00ffcc; color:#00ffcc; margin:0; padding:10px 20px;">Спробувати ще раз</button>
+                    <button class="menu-button" id="btn-matrix-continue-fail" style="border-color:#ff3333; color:#ff3333; margin:0; padding:10px 20px;">Продовжити</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        document.getElementById('btn-matrix-replay-fail').onclick = () => {
+            document.body.removeChild(overlay);
+            this.triggerMatrixMiniGame();
+        };
+
+        document.getElementById('btn-matrix-continue-fail').onclick = () => {
+            document.body.removeChild(overlay);
+            this.resetShot();
+            showScreen('hud-container');
+        };
     }
 }
 
@@ -2261,6 +2482,19 @@ document.getElementById('btn-collection-menu').addEventListener('click', () => {
 });
 
 document.getElementById('btn-close-pack').addEventListener('click', () => {
+    showScreen('screen-main-menu');
+});
+
+document.getElementById('btn-matrix-run').addEventListener('click', () => {
+    gameAudio.init();
+    if (!activeGameInstance) {
+        activeGameInstance = new PenaltyMasterGame();
+        activeGameInstance.start();
+    }
+    activeGameInstance.triggerMatrixMiniGame();
+});
+
+document.getElementById('btn-matrix-back').addEventListener('click', () => {
     showScreen('screen-main-menu');
 });
 

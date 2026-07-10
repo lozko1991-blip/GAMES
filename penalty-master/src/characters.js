@@ -438,6 +438,30 @@ class SkeletalCharacter {
             j.footL.set(-0.16, 0.02, 0);
             j.footR.set(0.16, 0.02, 0);
         }
+        else if (this.pose === 'matrix_fall') {
+            // Анімація падіння назад в стилі матриці
+            const t = Math.min(1.0, this.animationTimer * 0.45); // падіння триває ~2.2 секунди
+            const kneeBend = t * 0.45;
+            const pelvisHeight = 0.9 - kneeBend * 1.25;
+            
+            j.pelvis.set(0, pelvisHeight, -t * 0.4);
+            j.spine.set(0, pelvisHeight + 0.35 - t * 0.25, -t * 1.15);
+            j.head.set(0, pelvisHeight + 0.65 - t * 0.4, -t * 1.45);
+
+            j.shoulderL.set(-0.25, pelvisHeight + 0.45 - t * 0.3, -t * 0.9);
+            j.shoulderR.set(0.25, pelvisHeight + 0.45 - t * 0.3, -t * 0.9);
+            j.elbowL.set(-0.55, pelvisHeight + 0.55 - t * 0.2, -t * 1.1);
+            j.elbowR.set(0.55, pelvisHeight + 0.55 - t * 0.2, -t * 1.1);
+            j.handL.set(-0.7, pelvisHeight + 0.6 - t * 0.1, -t * 1.3);
+            j.handR.set(0.7, pelvisHeight + 0.6 - t * 0.1, -t * 1.3);
+
+            j.hipL.set(-0.16, pelvisHeight * 0.92, -t * 0.3);
+            j.hipR.set(0.16, pelvisHeight * 0.92, -t * 0.3);
+            j.kneeL.set(-0.16 - t * 0.08, pelvisHeight * 0.55, -t * 0.1);
+            j.kneeR.set(0.16 + t * 0.08, pelvisHeight * 0.55, -t * 0.1);
+            j.footL.set(-0.16, 0.05, 0);
+            j.footR.set(0.16, 0.05, 0);
+        }
         // === НОВІ СМІШНІ ПОЗИ ВОРОТАРЯ ===
         else if (this.pose === 'taunt') {
             // Воротар насміхається - бедра хитаються, руки дражняться
