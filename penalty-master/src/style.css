@@ -717,4 +717,24 @@ input:checked + .slider:before {
     100% { transform: scale(1) rotateY(360deg); opacity: 1; }
 }
 
+/* СТИЛЬ ДЛЯ ЕКІПІРОВАНОЇ КАРТКИ ГРАВЦЯ */
+.ut-card-collectible.active-equipped {
+    border-color: #ffd700 !important;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.7), 0 0 10px rgba(0, 255, 204, 0.4) !important;
+    transform: scale(1.03) translateY(-3px);
+}
+.ut-card-collectible.active-equipped::before {
+    content: 'ACTIVE';
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #ffd700;
+    color: #000;
+    font-size: 0.5rem;
+    font-weight: 900;
+    padding: 2px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+}
+
 

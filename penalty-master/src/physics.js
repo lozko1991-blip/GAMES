@@ -442,8 +442,31 @@ class GoalNet {
     ====================================================
     */
     render(ctx, camera, canvasWidth, canvasHeight) {
-        ctx.strokeStyle = 'rgba(230, 230, 255, 0.22)';
-        ctx.lineWidth = 1.0;
+        let netColor = 'rgba(230, 230, 255, 0.22)';
+        let lineWidth = 1.0;
+        let isNeon = false;
+
+        try {
+            const equippedGoalId = safeStorage.getItem('pm_equipped_goal') || 'default';
+            const goalSkin = SHOP_ITEMS.goals.find(g => g.id === equippedGoalId);
+            if (goalSkin) {
+                netColor = goalSkin.netColor;
+                if (equippedGoalId === 'neon_net') {
+                    lineWidth = 1.6;
+                    isNeon = true;
+                }
+            }
+        } catch (e) {
+            console.warn('Error reading goal net skin: ', e);
+        }
+
+        ctx.save();
+        if (isNeon) {
+            ctx.shadowColor = '#39ff14';
+            ctx.shadowBlur = 8;
+        }
+        ctx.strokeStyle = netColor;
+        ctx.lineWidth = lineWidth;
 
         this.springs.forEach(spring => {
             const p1Proj = camera.project(spring.particleA.position, canvasWidth, canvasHeight);
@@ -456,6 +479,7 @@ class GoalNet {
                 ctx.stroke();
             }
         });
+        ctx.restore();
     }
 }
 
@@ -712,7 +736,28 @@ class Ball3D {
     update(deltaTime) {
         if (this.isStatic) return;
 
-        // Додаємо випадкову турбулентність та опір вітру
+        // Зчитуємо вплив стадіону на фізику
+        let airDensity = PHYSICS_AIR_DENSITY;
+        let windX = 0;
+        let windZ = 0;
+        
+        try {
+            const equippedStadiumId = safeStorage.getItem('pm_equipped_stadium') || 'default';
+            const stadium = SHOP_ITEMS.stadiums.find(s => s.id === equippedStadiumId);
+            if (stadium) {
+                // Барометрична формула для густини повітря на висоті
+                airDensity = PHYSICS_AIR_DENSITY * Math.exp(-stadium.altitude / 8500);
+            }
+            
+            // Зчитуємо поточний вітер з інстансу гри (якщо він є)
+            if (window.gameApp) {
+                windX = window.gameApp.windX || 0;
+                windZ = window.gameApp.windZ || 0;
+            }
+        } catch (e) {
+            console.warn('Error reading stadium physics: ', e);
+        }
+
         const speed = this.velocity.length();
         let currentDragCoeff = BALL_DRAG_COEFFICIENT;
 
@@ -720,16 +765,25 @@ class Ball3D {
         const turbulence = 1.0 + Math.sin(performance.now() * 0.05) * 0.08;
         currentDragCoeff *= turbulence;
 
-        if (speed > 0.05) {
-            const dragForceMagnitude = 0.5 * PHYSICS_AIR_DENSITY * currentDragCoeff * BALL_CROSS_SECTION * speed * speed;
-            const dragForceVector = this.velocity.normalize().scale(-dragForceMagnitude / BALL_MASS);
+        // Розраховуємо опір повітря (враховуючи відносну швидкість до вітру)
+        const relativeVelocity = new Vector3(
+            this.velocity.coordinateX - windX,
+            this.velocity.coordinateY,
+            this.velocity.coordinateZ - windZ
+        );
+        const relSpeed = relativeVelocity.length();
+
+        if (relSpeed > 0.05) {
+            const dragForceMagnitude = 0.5 * airDensity * currentDragCoeff * BALL_CROSS_SECTION * relSpeed * relSpeed;
+            const dragForceVector = relativeVelocity.normalize().scale(-dragForceMagnitude / BALL_MASS);
             this.velocity = this.velocity.add(dragForceVector.scale(deltaTime));
         }
 
         // Покращений фізично реалістичний ефект Магнуса
         if (speed > 0.1 && this.angularVelocity.length() > 0.1) {
-            // Ефект підкрутки сильнішає при зростанні швидкості
-            const liftCoeff = BALL_MAGNUS_COEFFICIENT * (1.0 + speed * 0.015);
+            // Ефект підкрутки сильнішає при зростанні швидкості та пропорційний густині повітря
+            const densityRatio = airDensity / PHYSICS_AIR_DENSITY;
+            const liftCoeff = BALL_MAGNUS_COEFFICIENT * (1.0 + speed * 0.015) * densityRatio;
             const magnusForceVector = this.angularVelocity.cross(this.velocity).scale(liftCoeff / BALL_MASS);
             this.velocity = this.velocity.add(magnusForceVector.scale(deltaTime));
         }

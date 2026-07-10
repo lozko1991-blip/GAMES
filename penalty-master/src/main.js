@@ -65,6 +65,24 @@ class PlayerControls {
 
         // Дозволяємо цілитися під час вибору старту розбігу ТА під час самого розбігу
         if (gameState === 'aiming' || gameState === 'runup' || isRunUpStarted) {
+            let shoStat = 75;
+            try {
+                const equippedCardId = safeStorage.getItem('pm_equipped_card') || 'c_palazhchenko';
+                const activeCard = CARD_DATABASE.find(c => c.id === equippedCardId);
+                if (activeCard) shoStat = activeCard.sho;
+            } catch (e) {
+                console.warn('Error reading SHO stat: ', e);
+            }
+
+            // Розраховуємо силу коливання прицілу (sway) залежно від точності гравця
+            const swayAmplitude = Math.max(0.01, 1.25 * (1.0 - shoStat / 100));
+            const swaySpeed = Math.max(0.4, 3.2 * (1.0 - shoStat / 100));
+            const time = performance.now() * 0.001 * swaySpeed;
+
+            // Додаємо постійне коливання (коли гравець утримує або не утримує приціл)
+            this.aimX += Math.sin(time * 2.0) * swayAmplitude * deltaTime;
+            this.aimY += Math.cos(time * 1.6) * swayAmplitude * 0.7 * deltaTime;
+
             if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
                 this.aimX = Math.max(-GOAL_WIDTH/2 - 0.8, this.aimX - aimSpeed * deltaTime);
                 this.sideSpin = Math.max(-1.0, this.sideSpin - 1.5 * deltaTime);
@@ -81,6 +99,10 @@ class PlayerControls {
                 this.aimY = Math.max(0.05, this.aimY - aimSpeed * 0.8 * deltaTime);
                 this.topSpin = Math.min(1.0, this.topSpin + 1.2 * deltaTime);
             }
+
+            // Надійно лімітуємо координати прицілювання
+            this.aimX = Math.max(-GOAL_WIDTH/2 - 0.8, Math.min(GOAL_WIDTH/2 + 0.8, this.aimX));
+            this.aimY = Math.max(0.05, Math.min(GOAL_HEIGHT + 0.6, this.aimY));
         }
 
         // Керуємо стартовим офсетом зміщення гравця тільки коли прицілювання чисте (сила 0)
@@ -233,12 +255,30 @@ class PenaltyMasterGame {
         this.goalkeeper.applyLevelColors(lvl);
 
         // Перезаписуємо форму гравця кольорами обраного клубу
-        const selectedClub = safeStorage.getItem('pm_selected_club') || 'real';
+        const selectedClub = safeStorage.getItem('pm_selected_club') || 'polissya';
         const activeClub = CLUB_PRESETS.find(c => c.id === selectedClub);
         if (activeClub) {
             this.player.jerseyColor = activeClub.color;
             this.player.shortsColor = activeClub.shortColor;
             this.player.socksColor = activeClub.sockColor;
+        }
+
+        // Перезаписуємо форму кастомним кітом, якщо екіпірований
+        const equippedKitId = safeStorage.getItem('pm_equipped_kit') || 'default';
+        if (equippedKitId !== 'default') {
+            const kit = SHOP_ITEMS.kits.find(k => k.id === equippedKitId);
+            if (kit) {
+                this.player.jerseyColor = kit.jersey;
+                this.player.shortsColor = kit.shorts;
+                this.player.socksColor = kit.socks;
+            }
+        }
+
+        // Перезаписуємо ім'я гравця на купленого/екіпірованого з Ultimate Team
+        const equippedCardId = safeStorage.getItem('pm_equipped_card') || 'c_palazhchenko';
+        const activeCard = CARD_DATABASE.find(c => c.id === equippedCardId);
+        if (activeCard) {
+            lvl.playerName = activeCard.name;
         }
 
         this.goalkeeperAI.setDifficulty(DIFFICULTY_PRESETS[lvl.difficulty]);
@@ -461,7 +501,17 @@ class PenaltyMasterGame {
 
             case 'runup': {
                 this.player.setPose('run');
-                const runSpeed = 4.8;
+                
+                let pacStat = 75;
+                try {
+                    const equippedCardId = safeStorage.getItem('pm_equipped_card') || 'c_palazhchenko';
+                    const activeCard = CARD_DATABASE.find(c => c.id === equippedCardId);
+                    if (activeCard) pacStat = activeCard.pac;
+                } catch (e) {
+                    console.warn('Error reading PAC stat: ', e);
+                }
+                const runSpeed = 3.6 + (pacStat / 100) * 2.0; // від 3.6 до 5.6
+                
                 const distanceVector = new Vector3(0, 0, PENALTY_SPOT_Z).subtract(this.player.position);
                 const distanceVal = distanceVector.length();
 
@@ -500,8 +550,31 @@ class PenaltyMasterGame {
                         powerMultiplier *= 0.9;
                     }
 
-                    const finalPower = gameControls.power * powerMultiplier;
-                    this.ball.kick(finalPower, angleX, adjustedAimY, gameControls.sideSpin, gameControls.topSpin);
+                    let pasStat = 75;
+                    let shoStat = 75;
+                    try {
+                        const equippedCardId = safeStorage.getItem('pm_equipped_card') || 'c_palazhchenko';
+                        const activeCard = CARD_DATABASE.find(c => c.id === equippedCardId);
+                        if (activeCard) {
+                            pasStat = activeCard.pas;
+                            shoStat = activeCard.sho;
+                        }
+                    } catch (e) {
+                        console.warn('Error reading stats for kick: ', e);
+                    }
+
+                    const sideSpinMult = 0.5 + (pasStat / 100) * 0.7;
+                    const topSpinMult = 0.5 + (pasStat / 100) * 0.7;
+                    const statsPowerMultiplier = 0.95 + (shoStat / 100) * 0.15;
+
+                    const finalPower = gameControls.power * powerMultiplier * statsPowerMultiplier;
+                    this.ball.kick(
+                        finalPower, 
+                        angleX, 
+                        adjustedAimY, 
+                        gameControls.sideSpin * sideSpinMult, 
+                        gameControls.topSpin * topSpinMult
+                    );
 
                     if (multiplayerState.isOnline && multiplayerState.role === 'striker') {
                         sendNetData({ type: 'kick', power: gameControls.power, aimX: gameControls.aimX, aimY: gameControls.aimY, sideSpin: gameControls.sideSpin, topSpin: gameControls.topSpin });
@@ -738,7 +811,30 @@ class PenaltyMasterGame {
             if (this.ball.didHitTarget) {
                 earned += 25;
             }
+
+            // Застосовуємо множник монет поточного клубу
+            try {
+                const selectedClub = safeStorage.getItem('pm_selected_club') || 'polissya';
+                const activeClub = CLUB_PRESETS.find(c => c.id === selectedClub);
+                if (activeClub) {
+                    earned = Math.round(earned * activeClub.coinMultiplier);
+                }
+            } catch (e) {
+                console.warn('Error reading club multiplier: ', e);
+            }
             this.coins += earned;
+
+            // Нараховуємо престиж (XP)
+            try {
+                let prestigeEarned = 15;
+                if (this.ball.didHitTarget) prestigeEarned += 20;
+                if (this.streakCount > 1) prestigeEarned += this.streakCount * 5;
+                
+                const currentPrestige = parseInt(safeStorage.getItem('pm_prestige')) || 0;
+                safeStorage.setItem('pm_prestige', currentPrestige + prestigeEarned);
+            } catch (e) {
+                console.warn('Error adding prestige: ', e);
+            }
 
             this.levelGoalsScored++;
             const lvl = this.currentLevel || LEVEL_PRESETS[0];
@@ -940,11 +1036,40 @@ class PenaltyMasterGame {
 
         this.ctx.clearRect(0, 0, width, height);
 
-        const skyGrad = this.ctx.createLinearGradient(0, 0, 0, height * 0.45);
         const lvl = this.currentLevel || LEVEL_PRESETS[0];
-        skyGrad.addColorStop(0, lvl.skyTop);
-        skyGrad.addColorStop(0.5, lvl.skyMid);
-        skyGrad.addColorStop(1, lvl.skyBot);
+
+        // Зчитуємо екіпірований стадіон з магазину
+        let skyTop = lvl.skyTop;
+        let skyMid = lvl.skyMid;
+        let skyBot = lvl.skyBot;
+        let stadiumColor = lvl.stadiumColor;
+        let grassA = lvl.grassA;
+        let grassB = lvl.grassB;
+        let lightColor1 = lvl.lightColor1;
+        let lightColor2 = lvl.lightColor2;
+
+        try {
+            const equippedStadiumId = safeStorage.getItem('pm_equipped_stadium') || 'default';
+            const stadium = SHOP_ITEMS.stadiums.find(s => s.id === equippedStadiumId);
+            if (stadium && equippedStadiumId !== 'default') {
+                skyTop = stadium.skyTop;
+                skyMid = stadium.skyMid;
+                skyBot = stadium.skyBot;
+                stadiumColor = stadium.stadiumColor;
+                grassA = stadium.grassA;
+                grassB = stadium.grassB;
+                // Неоново-блакитні прожектори для сучасних стадіонів
+                lightColor1 = 'rgba(0, 255, 204, 0.7)';
+                lightColor2 = 'rgba(0, 255, 204, 0.15)';
+            }
+        } catch (e) {
+            console.warn('Error applying stadium styles: ', e);
+        }
+
+        const skyGrad = this.ctx.createLinearGradient(0, 0, 0, height * 0.45);
+        skyGrad.addColorStop(0, skyTop);
+        skyGrad.addColorStop(0.5, skyMid);
+        skyGrad.addColorStop(1, skyBot);
         this.ctx.fillStyle = skyGrad;
         this.ctx.fillRect(0, 0, width, height);
 
@@ -957,7 +1082,7 @@ class PenaltyMasterGame {
             horizonY = height * 0.45;
         }
 
-        this.ctx.fillStyle = lvl.stadiumColor;
+        this.ctx.fillStyle = stadiumColor;
         this.ctx.beginPath();
         this.ctx.moveTo(0, horizonY - height * 0.25);
         this.ctx.lineTo(width, horizonY - height * 0.25);
@@ -966,7 +1091,7 @@ class PenaltyMasterGame {
         this.ctx.closePath();
         this.ctx.fill();
 
-        this.ctx.strokeStyle = lvl.stadiumColor;
+        this.ctx.strokeStyle = stadiumColor;
         this.ctx.lineWidth = 1.0;
         for (let coordinateY = horizonY - height * 0.22; coordinateY < horizonY - 5; coordinateY += 6) {
             this.ctx.beginPath();
@@ -992,7 +1117,7 @@ class PenaltyMasterGame {
                 const flashX = flash.xRatio * width;
                 const flashY = (horizonY - height * 0.22) + flash.yRatio * (height * 0.20);
                 
-                this.ctx.fillStyle = lvl.lightColor2;
+                this.ctx.fillStyle = lightColor2;
                 this.ctx.save();
                 this.ctx.globalAlpha = brightness * 0.85;
                 this.ctx.beginPath();
@@ -1022,8 +1147,8 @@ class PenaltyMasterGame {
 
             const radG = this.ctx.createRadialGradient(light.x, light.y, 1, light.x, light.y, 45);
             radG.addColorStop(0, '#ffffff');
-            radG.addColorStop(0.2, lvl.lightColor1);
-            radG.addColorStop(0.5, lvl.lightColor2);
+            radG.addColorStop(0.2, lightColor1);
+            radG.addColorStop(0.5, lightColor2);
             radG.addColorStop(1, 'rgba(0, 0, 0, 0)');
             
             this.ctx.fillStyle = radG;
@@ -1032,7 +1157,7 @@ class PenaltyMasterGame {
             this.ctx.fill();
         });
 
-        const grassColors = [lvl.grassA, lvl.grassB];
+        const grassColors = [grassA, grassB];
         const totalGrassStripes = 20;
         const overlapZ = 0.05; 
         
@@ -1245,7 +1370,18 @@ class PenaltyMasterGame {
 
         if (projLLBase && projLLTop && projRRBase && projRRTop) {
             this.ctx.lineCap = 'round';
-            this.ctx.strokeStyle = lvl.postColor;
+            
+            let postColor = lvl.postColor;
+            try {
+                const equippedGoalId = safeStorage.getItem('pm_equipped_goal') || 'default';
+                const goalSkin = SHOP_ITEMS.goals.find(g => g.id === equippedGoalId);
+                if (goalSkin) {
+                    postColor = goalSkin.postColor;
+                }
+            } catch (e) {
+                console.warn('Error applying goalpost styles: ', e);
+            }
+            this.ctx.strokeStyle = postColor;
             
             const postWidth = GOAL_POST_RADIUS * 2 * (projLLBase.scale);
             this.ctx.lineWidth = postWidth;
@@ -1669,10 +1805,40 @@ function renderShopItems() {
     const container = document.getElementById('shop-items-container');
     container.innerHTML = '';
 
-    const items = SHOP_ITEMS[shopCurrentTab];
-    const ownedKey = shopCurrentTab === 'balls' ? 'pm_owned_balls' : 'pm_owned_boots';
-    const equippedKey = shopCurrentTab === 'balls' ? 'pm_equipped_ball' : 'pm_equipped_boot';
-    const defaultEquipped = shopCurrentTab === 'balls' ? 'classic' : 'black';
+    let items;
+    let ownedKey;
+    let equippedKey;
+    let defaultEquipped;
+
+    if (shopCurrentTab === 'players') {
+        items = CARD_DATABASE;
+        ownedKey = 'pm_owned_cards';
+        equippedKey = 'pm_equipped_card';
+        defaultEquipped = 'c_palazhchenko';
+    } else {
+        items = SHOP_ITEMS[shopCurrentTab];
+        ownedKey = `pm_owned_${shopCurrentTab}`;
+        
+        const equippedKeys = {
+            balls: 'pm_equipped_ball',
+            boots: 'pm_equipped_boot',
+            caps: 'pm_equipped_cap',
+            kits: 'pm_equipped_kit',
+            goals: 'pm_equipped_goal',
+            stadiums: 'pm_equipped_stadium'
+        };
+        equippedKey = equippedKeys[shopCurrentTab];
+
+        const defaultEquippedVals = {
+            balls: 'classic',
+            boots: 'black',
+            caps: 'none',
+            kits: 'default',
+            goals: 'default',
+            stadiums: 'default'
+        };
+        defaultEquipped = defaultEquippedVals[shopCurrentTab];
+    }
 
     // Отримуємо список куплених товарів
     let owned = JSON.parse(safeStorage.getItem(ownedKey));
@@ -1690,7 +1856,7 @@ function renderShopItems() {
         const card = document.createElement('div');
         card.className = `shop-card ${isEquipped ? 'active' : ''}`;
 
-        // Додаємо маленьке прев'ю скіна
+        // Додаємо прев'ю скіна
         let previewHTML = '';
         if (shopCurrentTab === 'balls') {
             let ballStyle = `background: ${item.color};`;
@@ -1698,8 +1864,28 @@ function renderShopItems() {
                 ballStyle += `box-shadow: 0 0 10px ${item.glowColor}; border-color: ${item.glowColor};`;
             }
             previewHTML = `<div class="shop-card-preview-ball" style="${ballStyle}"></div>`;
-        } else {
+        } else if (shopCurrentTab === 'boots') {
             previewHTML = `<div class="shop-card-preview-boots" style="background: ${item.color};"></div>`;
+        } else if (shopCurrentTab === 'caps') {
+            previewHTML = `<div style="font-size: 2.2rem; text-align: center; margin: 8px 0;">${item.id === 'crown' ? '👑' : (item.id === 'none' ? '❌' : '🧢')}</div>`;
+        } else if (shopCurrentTab === 'kits') {
+            let kitStyle = item.jersey === 'club' ? 'background: linear-gradient(135deg, #00ffcc 0%, #ff00ff 100%)' : `background: ${item.jersey}`;
+            previewHTML = `<div style="${kitStyle}; width: 38px; height: 38px; border-radius: 50%; margin: 8px auto; border: 2px solid rgba(255,255,255,0.25);"></div>`;
+        } else if (shopCurrentTab === 'goals') {
+            let netGlow = item.glowColor ? `box-shadow: 0 0 10px ${item.glowColor}; border-color: ${item.glowColor};` : 'border-color: #fff;';
+            previewHTML = `<div style="border: 2px solid; ${netGlow} width: 62px; height: 32px; margin: 10px auto; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); font-size: 0.85rem; font-weight: 800; color: ${item.postColor || '#fff'}">🥅</div>`;
+        } else if (shopCurrentTab === 'stadiums') {
+            let grassGrad = `background: linear-gradient(180deg, ${item.skyBot} 0%, ${item.grassA} 100%)`;
+            previewHTML = `<div style="${grassGrad}; width: 65px; height: 38px; border-radius: 4px; margin: 8px auto; border: 1.5px solid rgba(255,255,255,0.15);"></div>`;
+        } else if (shopCurrentTab === 'players') {
+            previewHTML = `
+                <div class="ut-card-collectible ut-card-${item.rarity}" style="transform: scale(0.62); margin: -28px auto -15px auto; pointer-events: none;">
+                    <div class="collectible-rating" style="font-size: 1.25rem;">${item.rating}</div>
+                    <div class="collectible-pos" style="font-size: 0.65rem; top: 22px;">${item.pos}</div>
+                    <div class="collectible-name" style="font-size: 0.7rem; bottom: 8px;">${item.name}</div>
+                    <div class="collectible-logo" style="font-size: 1.4rem; top: 28px;">${item.logo}</div>
+                </div>
+            `;
         }
 
         let buttonText = 'Вибрати';
@@ -1707,19 +1893,18 @@ function renderShopItems() {
         
         if (isEquipped) {
             buttonText = 'Екіпіровано';
-            buttonStyle = 'border-color: #ffd700; color: #ffd700; background: rgba(255,215,0,0.1);';
+            buttonStyle = 'border-color: #ffd700; color: #ffd700; background: rgba(255,215,0,0.1); pointer-events: none;';
         } else if (!isOwned) {
             buttonText = `Купити: 🪙 ${item.price}`;
             buttonStyle = 'border-color: #ff9900; color: #ff9900;';
         }
 
         card.innerHTML = `
-            <div class="shop-card-title">${item.name}</div>
+            <div class="shop-card-title" style="font-size: 0.9rem;">${item.name}</div>
             ${previewHTML}
             <button class="menu-button shop-buy-btn" data-id="${item.id}" style="margin: 5px 0 0 0; padding: 6px 12px; font-size: 0.85rem; ${buttonStyle}">${buttonText}</button>
         `;
 
-        // Обробник кліку на покупку/вибір
         card.querySelector('.shop-buy-btn').addEventListener('click', () => {
             handleShopItemClick(item, isOwned, isEquipped, ownedKey, equippedKey);
         });
@@ -1737,12 +1922,28 @@ function handleShopItemClick(item, isOwned, isEquipped, ownedKey, equippedKey) {
         renderShopItems();
         if (activeGameInstance) {
             activeGameInstance.updateHUD();
+            // Спеціальний випадок для кастомної форми під час гри
+            if (shopCurrentTab === 'kits' && activeGameInstance.player) {
+                if (item.id === 'default') {
+                    const activeClubId = safeStorage.getItem('pm_selected_club') || 'polissya';
+                    const activeClub = CLUB_PRESETS.find(c => c.id === activeClubId);
+                    if (activeClub) {
+                        activeGameInstance.player.jerseyColor = activeClub.color;
+                        activeGameInstance.player.shortsColor = activeClub.shortColor;
+                        activeGameInstance.player.socksColor = activeClub.sockColor;
+                    }
+                } else {
+                    activeGameInstance.player.jerseyColor = item.jersey;
+                    activeGameInstance.player.shortsColor = item.shorts;
+                    activeGameInstance.player.socksColor = item.socks;
+                }
+            }
         }
     } else {
         // Покупка
         const coins = getPlayerCoins();
         if (coins >= item.price) {
-            // Зменшуємо баланс
+            // Зменшуємо баланс монет
             if (activeGameInstance) {
                 activeGameInstance.coins -= item.price;
                 activeGameInstance.saveStatsToStorage();
@@ -1761,7 +1962,7 @@ function handleShopItemClick(item, isOwned, isEquipped, ownedKey, equippedKey) {
 
             updateShopCoinsDisplay();
             renderShopItems();
-            gameAudio.playGoalCheer(); // Звук успішної покупки
+            gameAudio.playGoalCheer(); // Звук успіху
         } else {
             alert('Недостатньо монет! Забивайте голи та збивайте мішені, щоб заробити більше.');
         }
@@ -1775,80 +1976,132 @@ document.getElementById('btn-shop-menu').addEventListener('click', () => {
     showScreen('screen-shop');
 });
 
-document.getElementById('tab-shop-balls').addEventListener('click', (e) => {
-    shopCurrentTab = 'balls';
-    document.getElementById('tab-shop-balls').style.borderColor = 'var(--primary-glow)';
-    document.getElementById('tab-shop-balls').style.background = 'rgba(0, 255, 204, 0.1)';
-    document.getElementById('tab-shop-boots').style.borderColor = 'rgba(255,255,255,0.2)';
-    document.getElementById('tab-shop-boots').style.background = 'transparent';
-    renderShopItems();
-});
+// Допоміжна функція для скидання активних стилів вкладок магазину
+function resetShopTabStyles() {
+    const tabs = ['tab-shop-balls', 'tab-shop-boots', 'tab-shop-caps', 'tab-shop-kits', 'tab-shop-goals', 'tab-shop-stadiums', 'tab-shop-players'];
+    tabs.forEach(tabId => {
+        const el = document.getElementById(tabId);
+        if (el) {
+            el.style.borderColor = 'rgba(255,255,255,0.2)';
+            el.style.background = 'transparent';
+        }
+    });
+}
 
-document.getElementById('tab-shop-boots').addEventListener('click', (e) => {
-    shopCurrentTab = 'boots';
-    document.getElementById('tab-shop-boots').style.borderColor = 'var(--primary-glow)';
-    document.getElementById('tab-shop-boots').style.background = 'rgba(0, 255, 204, 0.1)';
-    document.getElementById('tab-shop-balls').style.borderColor = 'rgba(255,255,255,0.2)';
-    document.getElementById('tab-shop-balls').style.background = 'transparent';
+function selectShopTab(tabId, tabName) {
+    shopCurrentTab = tabName;
+    resetShopTabStyles();
+    const el = document.getElementById(tabId);
+    if (el) {
+        el.style.borderColor = 'var(--primary-glow)';
+        el.style.background = 'rgba(0, 255, 204, 0.1)';
+    }
     renderShopItems();
-});
+}
+
+document.getElementById('tab-shop-balls').addEventListener('click', () => selectShopTab('tab-shop-balls', 'balls'));
+document.getElementById('tab-shop-boots').addEventListener('click', () => selectShopTab('tab-shop-boots', 'boots'));
+document.getElementById('tab-shop-caps').addEventListener('click', () => selectShopTab('tab-shop-caps', 'caps'));
+document.getElementById('tab-shop-kits').addEventListener('click', () => selectShopTab('tab-shop-kits', 'kits'));
+document.getElementById('tab-shop-goals').addEventListener('click', () => selectShopTab('tab-shop-goals', 'goals'));
+document.getElementById('tab-shop-stadiums').addEventListener('click', () => selectShopTab('tab-shop-stadiums', 'stadiums'));
+document.getElementById('tab-shop-players').addEventListener('click', () => selectShopTab('tab-shop-players', 'players'));
 
 /*
 ====================================================
-TEAM SELECT LOGIC (EA SPORTS FC 26)
+CAREER & TRANSFER SYSTEM (FC 26 CAREER MODE)
 ====================================================
 */
-let selectedClubId = safeStorage.getItem('pm_selected_club') || 'real';
+function getPlayerPrestige() {
+    return parseInt(safeStorage.getItem('pm_prestige')) || 0;
+}
 
-function renderClubSelectionList() {
-    const container = document.getElementById('club-list-container');
+function renderCareerScreen() {
+    const prestige = getPlayerPrestige();
+    const currentClubId = safeStorage.getItem('pm_selected_club') || 'polissya';
+    const currentClub = CLUB_PRESETS.find(c => c.id === currentClubId) || CLUB_PRESETS[CLUB_PRESETS.length - 1];
+
+    document.getElementById('career-club-logo').innerText = currentClub.logo;
+    document.getElementById('career-club-name').innerText = currentClub.name;
+    document.getElementById('career-prestige-display').innerText = prestige;
+
+    const container = document.getElementById('career-transfer-list');
     container.innerHTML = '';
+
+    const playerCoins = getPlayerCoins();
 
     CLUB_PRESETS.forEach(club => {
         const item = document.createElement('div');
-        const isActive = club.id === selectedClubId;
-        item.className = `club-select-item ${isActive ? 'active' : ''}`;
-        item.setAttribute('data-id', club.id);
+        const isCurrent = club.id === currentClubId;
+        const isLocked = prestige < club.requiredPrestige;
+        const canAfford = playerCoins >= club.transferFee;
+
+        item.className = `club-select-item ${isCurrent ? 'active' : ''}`;
+
+        let actionHTML = '';
+        if (isCurrent) {
+            actionHTML = `<span style="color: #ffd700; font-weight: 800; font-size: 0.85rem;">📝 ПОТОЧНИЙ КОНТРАКТ</span>`;
+        } else if (isLocked) {
+            actionHTML = `<span style="color: #ff3366; font-size: 0.85rem; font-weight: 700;">🔒 Потрібно ⭐ ${club.requiredPrestige}</span>`;
+        } else {
+            const btnColor = canAfford ? '#ff9900' : 'rgba(255,255,255,0.2)';
+            const btnTextColor = canAfford ? '#ff9900' : 'rgba(255,255,255,0.4)';
+            actionHTML = `<button class="menu-button transfer-buy-btn" data-id="${club.id}" style="margin: 0; padding: 6px 12px; font-size: 0.8rem; border-color: ${btnColor}; color: ${btnTextColor};" ${canAfford ? '' : 'disabled'}>Підписати: 🪙 ${club.transferFee}</button>`;
+        }
 
         item.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <span class="club-logo-tag">${club.logo}</span>
-                <span style="font-weight: 700; font-size: 1.1rem;">${club.name}</span>
+            <div style="display: flex; align-items: center; gap: 12px; text-align: left;">
+                <span class="club-logo-tag" style="font-size: 1.25rem;">${club.logo}</span>
+                <div>
+                    <div style="font-weight: 800; font-size: 0.95rem; color: #fff;">${club.name}</div>
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">
+                        Бонус до монет: <span style="color: #00ffcc; font-weight: 700;">x${club.coinMultiplier.toFixed(1)}</span>
+                    </div>
+                </div>
             </div>
-            <div style="width: 15px; height: 15px; border-radius: 50%; background: ${club.color}; border: 1.5px solid #fff;"></div>
+            <div>
+                ${actionHTML}
+            </div>
         `;
 
-        item.addEventListener('click', () => {
-            document.querySelectorAll('.club-select-item').forEach(el => el.classList.remove('active'));
-            item.classList.add('active');
-            selectedClubId = club.id;
-        });
+        if (!isCurrent && !isLocked && canAfford) {
+            item.querySelector('.transfer-buy-btn').addEventListener('click', () => {
+                const coins = getPlayerCoins();
+                // Знімаємо кошти за трансфер
+                if (activeGameInstance) {
+                    activeGameInstance.coins -= club.transferFee;
+                    activeGameInstance.saveStatsToStorage();
+                    activeGameInstance.updateHUD();
+                } else {
+                    safeStorage.setItem('pm_coins', coins - club.transferFee);
+                }
+
+                safeStorage.setItem('pm_selected_club', club.id);
+                gameAudio.playGoalCheer(); // Звук радості
+                alert(`Вітаємо! Ви підписали офіційний контракт з клубом ${club.name}! 🎉`);
+
+                renderCareerScreen();
+
+                // Оновлюємо форму гравця, якщо запущено
+                if (activeGameInstance) {
+                    const equippedKitId = safeStorage.getItem('pm_equipped_kit') || 'default';
+                    if (equippedKitId === 'default') {
+                        activeGameInstance.player.jerseyColor = club.color;
+                        activeGameInstance.player.shortsColor = club.shortColor;
+                        activeGameInstance.player.socksColor = club.sockColor;
+                    }
+                }
+            });
+        }
 
         container.appendChild(item);
     });
 }
 
-document.getElementById('btn-team-select-menu').addEventListener('click', () => {
+document.getElementById('btn-career-menu').addEventListener('click', () => {
     gameAudio.init();
-    selectedClubId = safeStorage.getItem('pm_selected_club') || 'real';
-    renderClubSelectionList();
-    showScreen('screen-team-select');
-});
-
-document.getElementById('btn-confirm-team').addEventListener('click', () => {
-    safeStorage.setItem('pm_selected_club', selectedClubId);
-    
-    // Оновлюємо форму діючого гравця, якщо гра запущена
-    if (activeGameInstance) {
-        const activeClub = CLUB_PRESETS.find(c => c.id === selectedClubId);
-        if (activeClub) {
-            activeGameInstance.player.jerseyColor = activeClub.color;
-            activeGameInstance.player.shortsColor = activeClub.shortColor;
-            activeGameInstance.player.socksColor = activeClub.sockColor;
-        }
-    }
-    
-    showScreen('screen-main-menu');
+    renderCareerScreen();
+    showScreen('screen-career');
 });
 
 /*
@@ -1874,24 +2127,26 @@ function renderCollectionDeck() {
     grid.innerHTML = '';
 
     const owned = getOwnedCards();
-    const currentClubId = safeStorage.getItem('pm_selected_club') || 'real';
+    const currentClubId = safeStorage.getItem('pm_selected_club') || 'polissya';
     const activeClub = CLUB_PRESETS.find(c => c.id === currentClubId);
     const activeClubLogo = activeClub ? activeClub.logo : '';
+    const equippedCardId = safeStorage.getItem('pm_equipped_card') || 'c_palazhchenko';
 
     CARD_DATABASE.forEach(card => {
         const isOwned = owned.includes(card.id);
+        const isEquipped = equippedCardId === card.id;
         
         // Розраховуємо хімію (якщо логотипи/клуби картки збігаються з обраним клубом)
         const chemMatch = card.logo === activeClubLogo;
         const chemistryStars = chemMatch ? '⭐⭐⭐' : '⭐';
 
         const cardEl = document.createElement('div');
-        cardEl.className = `ut-card-collectible ut-card-${card.rarity} ${isOwned ? '' : 'locked'}`;
+        cardEl.className = `ut-card-collectible ut-card-${card.rarity} ${isOwned ? '' : 'locked'} ${isEquipped ? 'active-equipped' : ''}`;
 
         cardEl.innerHTML = `
             <div style="font-size: 0.5rem; font-weight: 800; opacity: 0.7; display: flex; justify-content: space-between; width: 100%;">
                 <span>UT 26</span>
-                <span style="color: #ffd700;">${isOwned ? chemistryStars : ''}</span>
+                <span style="color: #ffd700;">${isOwned ? (isEquipped ? '✅ ЕКІП' : chemistryStars) : ''}</span>
             </div>
             <div class="collectible-rating">${card.rating}</div>
             <div class="collectible-pos">${card.pos}</div>
@@ -1906,6 +2161,21 @@ function renderCollectionDeck() {
                 <div>PHY <span>${card.phy}</span></div>
             </div>
         `;
+
+        if (isOwned) {
+            cardEl.style.cursor = 'pointer';
+            cardEl.addEventListener('click', () => {
+                if (isEquipped) return;
+                safeStorage.setItem('pm_equipped_card', card.id);
+                renderCollectionDeck();
+                
+                // Оновлюємо ім'я діючого гравця під час гри
+                if (activeGameInstance) {
+                    activeGameInstance.currentLevel.playerName = card.name;
+                    activeGameInstance.updateHUD();
+                }
+            });
+        }
 
         grid.appendChild(cardEl);
     });

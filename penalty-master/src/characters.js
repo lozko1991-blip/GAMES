@@ -632,10 +632,88 @@ class SkeletalCharacter {
             ctx.arc(projectedJoints.head.x, projectedJoints.head.y, thicknessHead, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.fillStyle = this.isGoalkeeper ? '#111111' : '#ff9900';
-            ctx.beginPath();
-            ctx.arc(projectedJoints.head.x, projectedJoints.head.y - thicknessHead * 0.3, thicknessHead * 0.85, Math.PI, 0);
-            ctx.fill();
+            // Волосся (для воротаря або якщо немає кепки)
+            let drawHair = true;
+            let cap = null;
+
+            if (!this.isGoalkeeper) {
+                const equippedCapId = safeStorage.getItem('pm_equipped_cap') || 'none';
+                if (equippedCapId !== 'none') {
+                    cap = SHOP_ITEMS.caps.find(c => c.id === equippedCapId);
+                    if (cap) {
+                        drawHair = false;
+                    }
+                }
+            }
+
+            if (drawHair) {
+                ctx.fillStyle = this.isGoalkeeper ? '#111111' : '#ff9900';
+                ctx.beginPath();
+                ctx.arc(projectedJoints.head.x, projectedJoints.head.y - thicknessHead * 0.3, thicknessHead * 0.85, Math.PI, 0);
+                ctx.fill();
+            } else if (cap) {
+                // Рендер кепки / корони
+                if (cap.type === 'forward' || cap.type === 'backward') {
+                    // Основа кепки (купол)
+                    ctx.fillStyle = cap.color;
+                    ctx.beginPath();
+                    ctx.arc(projectedJoints.head.x, projectedJoints.head.y - thicknessHead * 0.2, thicknessHead * 1.05, Math.PI * 1.1, Math.PI * 1.9);
+                    ctx.fill();
+
+                    // Козирок
+                    ctx.strokeStyle = cap.color;
+                    ctx.lineWidth = thicknessHead * 0.25;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    if (cap.type === 'forward') {
+                        ctx.moveTo(projectedJoints.head.x - thicknessHead * 0.7, projectedJoints.head.y - thicknessHead * 0.3);
+                        ctx.lineTo(projectedJoints.head.x - thicknessHead * 1.6, projectedJoints.head.y - thicknessHead * 0.15);
+                    } else {
+                        ctx.moveTo(projectedJoints.head.x + thicknessHead * 0.7, projectedJoints.head.y - thicknessHead * 0.3);
+                        ctx.lineTo(projectedJoints.head.x + thicknessHead * 1.5, projectedJoints.head.y - thicknessHead * 0.15);
+                    }
+                    ctx.stroke();
+                } else if (cap.type === 'crown') {
+                    // Золота корона
+                    ctx.fillStyle = '#ffd700';
+                    ctx.strokeStyle = '#ffaa00';
+                    ctx.lineWidth = Math.max(1, thicknessHead * 0.1);
+                    ctx.lineJoin = 'miter';
+                    
+                    const cx = projectedJoints.head.x;
+                    const cy = projectedJoints.head.y - thicknessHead * 0.8;
+                    const w = thicknessHead * 1.1;
+                    const h = thicknessHead * 0.9;
+
+                    ctx.beginPath();
+                    ctx.moveTo(cx - w, cy);
+                    ctx.lineTo(cx - w * 0.8, cy - h);
+                    ctx.lineTo(cx - w * 0.4, cy - h * 0.3);
+                    ctx.lineTo(cx, cy - h * 1.2);
+                    ctx.lineTo(cx + w * 0.4, cy - h * 0.3);
+                    ctx.lineTo(cx + w * 0.8, cy - h);
+                    ctx.lineTo(cx + w, cy);
+                    ctx.lineTo(cx + w, cy + thicknessHead * 0.1);
+                    ctx.lineTo(cx - w, cy + thicknessHead * 0.1);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Дорогоцінні камені (червоні та бірюзові рубіни)
+                    ctx.fillStyle = '#ff0055';
+                    ctx.beginPath();
+                    ctx.arc(cx - w * 0.8, cy - h, thicknessHead * 0.18, 0, Math.PI * 2);
+                    ctx.arc(cx, cy - h * 1.2, thicknessHead * 0.18, 0, Math.PI * 2);
+                    ctx.arc(cx + w * 0.8, cy - h, thicknessHead * 0.18, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#00ffff';
+                    ctx.beginPath();
+                    ctx.arc(cx - w * 0.4, cy - h * 0.3, thicknessHead * 0.12, 0, Math.PI * 2);
+                    ctx.arc(cx + w * 0.4, cy - h * 0.3, thicknessHead * 0.12, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
         }
 
         if (this.isGoalkeeper && projectedJoints.handL && projectedJoints.handR) {
