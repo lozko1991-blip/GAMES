@@ -85,7 +85,16 @@
                             <option value="7">Магазин BRAIN / ITbox</option>
                             <option value="8">Бортницька станція аерації</option>
                             <option value="9">Село Дубище</option>
+                            <option value="10" id="opt-level-10" disabled>🔒 Пристроми (Укрпромпостач)</option>
+                            <option value="11" id="opt-level-11" disabled>🔒 Переяслав (Дзвіниця)</option>
+                            <option value="12" id="opt-level-12" disabled>🔒 Березань (Вітальна арка)</option>
                         </select>
+                    </div>
+
+                    <!-- Shop Launcher & Coins Display -->
+                    <div style="display: flex; gap: 4px; align-items: center; justify-content: space-between; margin-top: 4px; padding: 4px; border: 1px solid rgba(0,255,204,0.3); border-radius: 4px; background: rgba(0,0,0,0.6);">
+                        <span style="font-size: 9px; color: #ffcc00; font-weight: bold;">КОЇНИ: <span id="shop-coins-display" style="color: #00ffcc; font-size: 11px;">200</span> 🪙</span>
+                        <button id="btn-shop-menu" onclick="openShop()" style="margin: 0; padding: 4px 10px; font-size: 10px; font-weight: bold; background: #660099; border-color: #8800cc; color: #fff; border-radius: 4px; cursor: pointer;">🏪 МАГАЗИН</button>
                     </div>
 
                     <!-- Mode 1: Single Player -->
@@ -138,6 +147,30 @@
             <p id="result-desc" style="font-size:13px;margin:5px 0 10px 0;color:#ccc;text-align:center;"></p>
             <button id="btn-next" onclick="nextRound()" style="width:220px;margin:4px auto;">Продовжити</button>
             <button onclick="showMenu()" style="width:220px;background:#333;border-color:#444;margin:4px auto;">В головне меню</button>
+        </div>
+
+        <!-- Shop Screen Overlay -->
+        <div id="screen-shop" class="screen hidden" style="flex-direction: column; justify-content: center; align-items: center; padding: 20px;">
+            <h2 style="font-family: 'Orbitron', monospace; color: #ff0055; text-shadow: 0 0 10px #ff0055; margin-bottom: 10px;">🏪 МАГАЗИН КРИПТИ</h2>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 760px; margin: 0 auto 10px; padding: 6px 12px; background: rgba(0,0,0,0.6); border: 1px solid rgba(0,255,204,0.3); border-radius: 6px;">
+                <span style="font-size: 11px; color: #ffcc00; font-weight: bold;">БАЛАНС: <span id="shop-modal-coins" style="color: #00ffcc; font-size: 14px; text-shadow: 0 0 5px #00ffcc;">200</span> 🪙</span>
+                <span style="font-size: 9px; color: #aaa;">Заробляйте монети, б'ючи бота та виграючи поєдинки!</span>
+            </div>
+            
+            <!-- Shop Tabs -->
+            <div style="display: flex; gap: 4px; justify-content: center; width: 100%; max-width: 760px; margin: 0 auto 10px;">
+                <button id="tab-shop-weapons" onclick="selectShopTab('weapons')" style="flex: 1; padding: 6px; font-size: 10px; font-weight: bold; background: #660099; border-color: #8800cc; color: white; cursor: pointer;">⚔️ Зброя</button>
+                <button id="tab-shop-skins" onclick="selectShopTab('skins')" style="flex: 1; padding: 6px; font-size: 10px; font-weight: bold; background: #222; border-color: #444; color: #ccc; cursor: pointer;">🥋 Одяг (Скіни)</button>
+                <button id="tab-shop-levels" onclick="selectShopTab('levels')" style="flex: 1; padding: 6px; font-size: 10px; font-weight: bold; background: #222; border-color: #444; color: #ccc; cursor: pointer;">🗺️ Арени</button>
+            </div>
+            
+            <!-- Shop Items Grid Container -->
+            <div id="shop-items-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; width: 100%; max-width: 760px; height: 260px; overflow-y: auto; margin: 0 auto 15px; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 8px;">
+                <!-- Cards will be dynamically inserted here via JavaScript -->
+            </div>
+            
+            <button onclick="closeShop()" style="width: 220px; background: #333; border-color: #444; color: white; margin: 0 auto; display: block; font-size: 11px; cursor: pointer; padding: 8px;">Назад до меню</button>
         </div>
         <div id="controls-hint" style="position:absolute; top:70px; left:50%; transform:translateX(-50%); z-index:1000; line-height:1.6; text-align:center; width:90%; max-width:840px; background:rgba(0,0,0,0.75); padding:10px; border:1px solid #666; border-radius:8px; box-shadow: 0 4px 10px rgba(0,0,0,0.8);">
             <button onclick="document.getElementById('controls-hint').style.display='none'" style="position:absolute; top:-12px; right:-12px; background:#ff0055; color:white; border:2px solid #fff; border-radius:50%; width:30px; height:30px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow: 0 0 5px #000;">X</button>

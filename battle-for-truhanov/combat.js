@@ -144,6 +144,17 @@
             if (!blocked) {
                 attacker.comboCounter++; attacker.comboResetTimer = 85; showCombo(attacker.comboCounter);
                 if (attacker.comboCounter === 4 && state.toastyTimer <= 0) { state.toastyTimer = 80 }
+                if (attacker.id === 'p1') {
+                    state.coins += 1; // Basic hit reward
+                    if (attacker.comboCounter > 1) {
+                        state.coins += Math.floor(attacker.comboCounter * 0.5); // Extra reward for combos
+                    }
+                    localStorage.setItem('truhanov_coins', state.coins.toString());
+                    const coinsLabel = document.getElementById('shop-coins-display');
+                    if (coinsLabel) coinsLabel.innerText = state.coins;
+                    const hudCoins = document.getElementById('hud-coins');
+                    if (hudCoins) hudCoins.innerText = state.coins;
+                }
             }
             const comboBonus = attacker.comboCounter > 1 ? (1.0 + attacker.comboCounter * 0.15) : 1.0;
             attacker.weaponCharge = Math.min(100, attacker.weaponCharge + finalDmg * 1.8 * comboBonus);

@@ -328,6 +328,15 @@
             }
             draw() {
                 const dir = this.isLeft ? 1 : -1;
+                // Override colors if Player 1 has equipped a custom shop skin
+                if (this.id === 'p1' && typeof state !== 'undefined' && state.equippedSkin && state.equippedSkin !== 'default') {
+                    const activeSkin = SHOP_SKINS.find(s => s.id === state.equippedSkin);
+                    if (activeSkin) {
+                        this.skinColor = activeSkin.skin;
+                        this.clothColor = activeSkin.cloth;
+                        this.hairColor = activeSkin.line || activeSkin.cloth;
+                    }
+                }
                 if (this.shadows && this.shadows.length > 0) {
                     this.shadows.forEach((snap, index) => {
                         const opacity = (index + 1) / (this.shadows.length + 1) * 0.32;
@@ -638,6 +647,89 @@
                             CTX.save(); CTX.strokeStyle = '#cccccc'; CTX.lineWidth = 4; CTX.globalAlpha = 0.25; CTX.shadowBlur = 8; CTX.shadowColor = '#ffffff';
                             const startArcAngle = armAngle - 0.7 * dir; const endArcAngle = armAngle;
                             CTX.beginPath(); CTX.arc(shoulderX, shoulderY, 74, startArcAngle, endArcAngle, dir === -1); CTX.stroke();
+                            CTX.restore();
+                        }
+                    } else if (wType === 'sausage') {
+                        CTX.save(); CTX.translate(activeHandX, activeHandY); CTX.rotate(armAngle);
+                        CTX.fillStyle = '#d35252'; 
+                        CTX.fillRect(-4, -5, 38, 10);
+                        // Salami spots
+                        CTX.fillStyle = '#ffffff';
+                        for (let sp = 0; sp < 6; sp++) {
+                            CTX.fillRect(sp * 6, -3 + (sp % 2) * 4, 2, 2);
+                        }
+                        // Sausage casing tie
+                        CTX.fillStyle = '#d79e64';
+                        CTX.fillRect(-7, -1, 3, 2);
+                        CTX.restore();
+                        if (this.attackState === 10 && this.attackTimer > 4 && this.attackTimer < 18) {
+                            CTX.save(); CTX.strokeStyle = '#ff9999'; CTX.lineWidth = 5; CTX.globalAlpha = 0.25; CTX.shadowBlur = 8; CTX.shadowColor = '#ff5555';
+                            const startArcAngle = armAngle - 0.7 * dir; const endArcAngle = armAngle;
+                            CTX.beginPath(); CTX.arc(shoulderX, shoulderY, 74, startArcAngle, endArcAngle, dir === -1); CTX.stroke();
+                            CTX.restore();
+                        }
+                    } else if (wType === 'bow') {
+                        CTX.save(); CTX.translate(activeHandX, activeHandY); CTX.rotate(armAngle);
+                        // Arc
+                        CTX.strokeStyle = '#8a5229'; CTX.lineWidth = 3.5;
+                        CTX.beginPath(); CTX.arc(10, 0, 18, -Math.PI / 2, Math.PI / 2); CTX.stroke();
+                        // String
+                        CTX.strokeStyle = '#cccccc'; CTX.lineWidth = 1;
+                        CTX.beginPath(); CTX.moveTo(10, -18); CTX.lineTo(10, 18); CTX.stroke();
+                        // Arrow
+                        if (this.attackState === 11 && this.attackTimer >= 10 && this.attackTimer <= 13) {
+                            CTX.fillStyle = '#ffcc00';
+                            CTX.fillRect(2, -1.5, 20, 3);
+                            CTX.beginPath(); CTX.moveTo(22, -4); CTX.lineTo(28, 0); CTX.lineTo(22, 4); CTX.closePath(); CTX.fill();
+                        }
+                        CTX.restore();
+                    } else if (wType === 'nunchucks') {
+                        CTX.save(); CTX.translate(activeHandX, activeHandY); CTX.rotate(armAngle);
+                        // Stick 1
+                        CTX.fillStyle = '#ccaa44'; CTX.fillRect(-4, -2, 16, 4);
+                        // Chain
+                        CTX.strokeStyle = '#a6abb0'; CTX.lineWidth = 1.5;
+                        CTX.beginPath(); CTX.moveTo(12, 0); CTX.lineTo(20, 4); CTX.stroke();
+                        // Stick 2
+                        CTX.fillStyle = '#ccaa44';
+                        CTX.save(); CTX.translate(20, 4); CTX.rotate(0.3 * Math.sin(Date.now() / 90));
+                        CTX.fillRect(0, -2, 16, 4);
+                        CTX.restore();
+                        CTX.restore();
+                        if (this.attackState === 10 && this.attackTimer > 4 && this.attackTimer < 18) {
+                            CTX.save(); CTX.strokeStyle = '#ffdd44'; CTX.lineWidth = 3.5; CTX.globalAlpha = 0.25; CTX.shadowBlur = 8; CTX.shadowColor = '#ffbb00';
+                            const startArcAngle = armAngle - 0.7 * dir; const endArcAngle = armAngle;
+                            CTX.beginPath(); CTX.arc(shoulderX, shoulderY, 74, startArcAngle, endArcAngle, dir === -1); CTX.stroke();
+                            CTX.restore();
+                        }
+                    } else if (wType === 'spear') {
+                        CTX.save(); CTX.translate(activeHandX, activeHandY); CTX.rotate(armAngle);
+                        // Shaft
+                        CTX.strokeStyle = '#8a5229'; CTX.lineWidth = 2.5;
+                        CTX.beginPath(); CTX.moveTo(-20, 0); CTX.lineTo(44, 0); CTX.stroke();
+                        // Head
+                        CTX.fillStyle = '#c0c5ca';
+                        CTX.beginPath(); CTX.moveTo(44, -4.5); CTX.lineTo(58, 0); CTX.lineTo(44, 4.5); CTX.closePath(); CTX.fill();
+                        CTX.fillStyle = '#00ffcc'; CTX.fillRect(42, -1.5, 3, 3);
+                        CTX.restore();
+                    } else if (wType === 'greatsword') {
+                        CTX.save(); CTX.translate(activeHandX, activeHandY); CTX.rotate(armAngle);
+                        // Crossguard
+                        CTX.fillStyle = '#ccaa44'; CTX.fillRect(0, -11, 4, 22);
+                        // Handle
+                        CTX.fillStyle = '#3a3a3a'; CTX.fillRect(-10, -2, 10, 4);
+                        // Large blade
+                        const bladeGrad = CTX.createLinearGradient(4, 0, 52, 0); bladeGrad.addColorStop(0, '#7a8288'); bladeGrad.addColorStop(0.5, '#c0c5ca'); bladeGrad.addColorStop(1, '#ffffff');
+                        CTX.fillStyle = bladeGrad;
+                        CTX.beginPath(); CTX.moveTo(4, -5.5); CTX.lineTo(46, -4.5); CTX.lineTo(54, 0); CTX.lineTo(46, 4.5); CTX.lineTo(4, 5.5); CTX.closePath(); CTX.fill();
+                        // Groove
+                        CTX.strokeStyle = '#333333'; CTX.lineWidth = 1;
+                        CTX.beginPath(); CTX.moveTo(6, 0); CTX.lineTo(44, 0); CTX.stroke();
+                        CTX.restore();
+                        if (this.attackState === 10 && this.attackTimer > 4 && this.attackTimer < 18) {
+                            CTX.save(); CTX.strokeStyle = '#00ffff'; CTX.lineWidth = 6; CTX.globalAlpha = 0.3; CTX.shadowBlur = 12; CTX.shadowColor = '#00ffff';
+                            const startArcAngle = armAngle - 0.75 * dir; const endArcAngle = armAngle;
+                            CTX.beginPath(); CTX.arc(shoulderX, shoulderY, 78, startArcAngle, endArcAngle, dir === -1); CTX.stroke();
                             CTX.restore();
                         }
                     } else if (wType === 'rifle') {

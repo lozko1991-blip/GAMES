@@ -2,13 +2,28 @@
         const CTX = CANVAS.getContext('2d');
         const GROUND_Y = 450;
         const GRAVITY = 0.55;
+        // Safely load economy items from LocalStorage
+        const getCoins = () => parseInt(localStorage.getItem('truhanov_coins') || '200'); // Start with 200 free coins
+        const getOwnedWeapons = () => JSON.parse(localStorage.getItem('truhanov_owned_weapons') || '["none", "pipe", "pistol", "rifle", "bazooka", "sword"]');
+        const getEquippedWeapon = () => localStorage.getItem('truhanov_equipped_weapon') || 'none';
+        const getOwnedSkins = () => JSON.parse(localStorage.getItem('truhanov_owned_skins') || '["default"]');
+        const getEquippedSkin = () => localStorage.getItem('truhanov_equipped_skin') || 'default';
+        const getOwnedLevels = () => JSON.parse(localStorage.getItem('truhanov_owned_levels') || '[0,1,2,3,4,5,6,7,8,9]');
+
         LEVELS.forEach(lvl => { lvl.img = new Image(); lvl.img.src = lvl.src; });
         let state = {
             currentLevelIndex: 0, difficulty: 1, isRunning: false, player: null, bot: null, keys: {}, timer: 99, timerInterval: null,
             particles: [], projectiles: [], floatingTexts: [], roundNum: 1, p1Wins: 0, p2Wins: 0, isMatchEnding: false,
             finishHimStage: false, finishHimTimeout: null, screenShake: 0, hitstopFrames: 0, toastyTimer: 0, fatalityAnimation: null,
-            controlGestures: {}, inputLock: false, frameCount: 0, hintTimeout: null, hintTimeout: null,
-            isOnline: false, isHost: false, netReady: false, opponentCharId: null, peer: null, netConn: null
+            controlGestures: {}, inputLock: false, frameCount: 0, hintTimeout: null,
+            isOnline: false, isHost: false, netReady: false, opponentCharId: null, peer: null, netConn: null,
+            // Shop & economy states
+            coins: getCoins(),
+            ownedWeapons: getOwnedWeapons(),
+            equippedWeapon: getEquippedWeapon(),
+            ownedSkins: getOwnedSkins(),
+            equippedSkin: getEquippedSkin(),
+            ownedLevels: getOwnedLevels()
         };
         let AI_ENGINE;
         window.addEventListener('keydown', (e) => { if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) >= 0) { e.preventDefault() } });

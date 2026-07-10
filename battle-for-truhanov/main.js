@@ -194,6 +194,13 @@
             state.isRunning = false; showRoundResults(roundWinner);
         }
         function showRoundResults(winner) {
+            if (winner && winner.id === 'p1') {
+                let earned = 50;
+                if (state.p1Wins === 2) earned += 100;
+                state.coins += earned;
+                localStorage.setItem('truhanov_coins', state.coins.toString());
+                showFloatingText(`+${earned} COINS!`, CANVAS.width / 2 - 55, CANVAS.height / 2 - 50, '#00ffcc');
+            }
             const resScreen = document.getElementById('screen-result'); const title = document.getElementById('result-title'); const desc = document.getElementById('result-desc'); const nextBtn = document.getElementById('btn-next');
             resScreen.classList.remove('hidden'); document.getElementById('hud').style.display = 'none'; document.getElementById('timer-box').style.display = 'none';
             let winnerName = winner ? winner.name : "Нічия"; AudioSys.announce(winner ? `${winnerName} WINS` : "DRAW");
@@ -291,3 +298,166 @@
         document.addEventListener('fullscreenchange', resetFullscreenUI);
         document.addEventListener('webkitfullscreenchange', resetFullscreenUI);
         drawScene(0);
+
+        // ─── SHOP SYSTEM & ECONOMY LOGIC ─────────────────────────
+        let shopCurrentTab = 'weapons';
+        
+        function openShop() {
+            document.getElementById('screen-menu').classList.add('hidden');
+            document.getElementById('screen-shop').classList.remove('hidden');
+            document.getElementById('shop-modal-coins').innerText = state.coins;
+            renderShopItems();
+        }
+        
+        function closeShop() {
+            document.getElementById('screen-shop').classList.add('hidden');
+            document.getElementById('screen-menu').classList.remove('hidden');
+            document.getElementById('shop-coins-display').innerText = state.coins;
+            updateLevelDropdownLocks();
+        }
+        
+        function selectShopTab(tabName) {
+            shopCurrentTab = tabName;
+            ['weapons', 'skins', 'levels'].forEach(t => {
+                const btn = document.getElementById(`tab-shop-${t}`);
+                if (btn) {
+                    if (t === tabName) {
+                        btn.style.background = '#660099';
+                        btn.style.borderColor = '#8800cc';
+                        btn.style.color = 'white';
+                    } else {
+                        btn.style.background = '#222';
+                        btn.style.borderColor = '#444';
+                        btn.style.color = '#ccc';
+                    }
+                }
+            });
+            renderShopItems();
+        }
+        
+        function renderShopItems() {
+            const container = document.getElementById('shop-items-container');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            let items = [];
+            if (shopCurrentTab === 'weapons') items = SHOP_WEAPONS;
+            else if (shopCurrentTab === 'skins') items = SHOP_SKINS;
+            else if (shopCurrentTab === 'levels') items = SHOP_LEVELS;
+            
+            items.forEach(item => {
+                let isOwned = false;
+                let isEquipped = false;
+                
+                if (shopCurrentTab === 'weapons') {
+                    isOwned = state.ownedWeapons.includes(item.id);
+                    isEquipped = state.equippedWeapon === item.id;
+                } else if (shopCurrentTab === 'skins') {
+                    isOwned = state.ownedSkins.includes(item.id);
+                    isEquipped = state.equippedSkin === item.id;
+                } else if (shopCurrentTab === 'levels') {
+                    isOwned = state.ownedLevels.includes(item.id);
+                }
+                
+                const card = document.createElement('div');
+                card.style.background = 'rgba(20,20,40,0.7)';
+                card.style.border = isEquipped ? '2px solid #00ffcc' : '1px solid #444';
+                card.style.borderRadius = '6px';
+                card.style.padding = '8px';
+                card.style.display = 'flex';
+                card.style.flexDirection = 'column';
+                card.style.justifyContent = 'space-between';
+                card.style.alignItems = 'center';
+                card.style.textAlign = 'center';
+                
+                let btnHTML = '';
+                if (isOwned) {
+                    if (shopCurrentTab === 'levels') {
+                        btnHTML = `<button style="background:#111; border-color:#333; color:#888; width:100%; cursor:default; padding: 4px;" disabled>РОЗБЛОКОВАНО</button>`;
+                    } else {
+                        btnHTML = `<button onclick="equipShopItem('${item.id}')" style="background:${isEquipped ? '#006655' : '#333'}; border-color:${isEquipped ? '#00ffcc' : '#555'}; color:white; width:100%; cursor:pointer; padding: 4px;">${isEquipped ? 'ЕКІПІРОВАНО' : 'ВИБРАТИ'}</button>`;
+                    }
+                } else {
+                    const canAfford = state.coins >= item.price;
+                    btnHTML = `<button onclick="buyShopItem('${item.id}', ${item.price})" style="background:${canAfford ? '#660099' : '#333'}; border-color:${canAfford ? '#8800cc' : '#444'}; color:${canAfford ? 'white' : '#888'}; width:100%; cursor:${canAfford ? 'pointer' : 'not-allowed'}; padding: 4px;" ${canAfford ? '' : 'disabled'}>КУПИТИ: ${item.price} 🪙</button>`;
+                }
+                
+                let previewHTML = '';
+                if (shopCurrentTab === 'weapons') {
+                    previewHTML = `<span style="font-size:28px; margin-bottom:4px;">${item.id === 'sausage' ? '🥖' : (item.id === 'bow' ? '🏹' : (item.id === 'nunchucks' ? '⛓️' : (item.id === 'spear' ? '🔱' : '⚔️')))}</span>`;
+                } else if (shopCurrentTab === 'skins') {
+                    previewHTML = `<div style="width:24px; height:24px; border-radius:50%; background:${item.cloth}; border:2px solid ${item.line || '#fff'}; margin-bottom:6px;"></div>`;
+                } else if (shopCurrentTab === 'levels') {
+                    previewHTML = `<span style="font-size:28px; margin-bottom:4px;">🗺️</span>`;
+                }
+
+                card.innerHTML = `
+                    \${previewHTML}
+                    <div style="font-size:10px; font-weight:bold; color:#ffcc00; margin-bottom:2px;">\${item.name}</div>
+                    <div style="font-size:8px; color:#aaa; margin-bottom:8px; height:32px; overflow:hidden;">\${item.desc}</div>
+                    \${btnHTML}
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        function buyShopItem(id, price) {
+            if (state.coins < price) return;
+            state.coins -= price;
+            localStorage.setItem('truhanov_coins', state.coins.toString());
+            document.getElementById('shop-modal-coins').innerText = state.coins;
+            document.getElementById('shop-coins-display').innerText = state.coins;
+            
+            if (shopCurrentTab === 'weapons') {
+                state.ownedWeapons.push(id);
+                localStorage.setItem('truhanov_owned_weapons', JSON.stringify(state.ownedWeapons));
+                state.equippedWeapon = id;
+                localStorage.setItem('truhanov_equipped_weapon', id);
+            } else if (shopCurrentTab === 'skins') {
+                state.ownedSkins.push(id);
+                localStorage.setItem('truhanov_owned_skins', JSON.stringify(state.ownedSkins));
+                state.equippedSkin = id;
+                localStorage.setItem('truhanov_equipped_skin', id);
+            } else if (shopCurrentTab === 'levels') {
+                const lvlIdx = parseInt(id);
+                state.ownedLevels.push(lvlIdx);
+                localStorage.setItem('truhanov_owned_levels', JSON.stringify(state.ownedLevels));
+            }
+            AudioSys.superHit();
+            renderShopItems();
+            updateLevelDropdownLocks();
+        }
+        
+        function equipShopItem(id) {
+            if (shopCurrentTab === 'weapons') {
+                state.equippedWeapon = id;
+                localStorage.setItem('truhanov_equipped_weapon', id);
+            } else if (shopCurrentTab === 'skins') {
+                state.equippedSkin = id;
+                localStorage.setItem('truhanov_equipped_skin', id);
+            }
+            AudioSys.punch();
+            renderShopItems();
+        }
+        
+        function updateLevelDropdownLocks() {
+            for (let i = 10; i <= 12; i++) {
+                const opt = document.getElementById(`opt-level-${i}`);
+                if (opt) {
+                    if (state.ownedLevels.includes(i)) {
+                        opt.disabled = false;
+                        opt.innerText = LEVELS[i].name;
+                    } else {
+                        opt.disabled = true;
+                        opt.innerText = `🔒 ` + LEVELS[i].name;
+                    }
+                }
+            }
+        }
+        
+        // Setup initial coin displays and option locks
+        updateLevelDropdownLocks();
+        setTimeout(() => {
+            const coinsLabel = document.getElementById('shop-coins-display');
+            if (coinsLabel) coinsLabel.innerText = state.coins;
+        }, 100);

@@ -18,8 +18,39 @@
                     CTX.fillStyle = '#ffaa00'; CTX.beginPath(); CTX.arc(this.x, this.y, this.radius, 0, Math.PI * 2); CTX.fill();
                     CTX.fillStyle = '#ff3300'; CTX.beginPath(); CTX.arc(this.x - this.vx * 0.5, this.y, this.radius * 0.7, 0, Math.PI * 2); CTX.fill();
                 } else if (this.type === 'bullet') {
-                    CTX.fillStyle = '#dfe5ef'; CTX.fillRect(this.x - 8, this.y - 3, 16, 6);
-                    CTX.fillStyle = '#7f8794'; CTX.fillRect(this.x - 2, this.y - 1, 10, 2);
+                    if (this.owner && (this.owner.weaponSelected === 'bow' || this.owner.weaponActiveType === 'bow')) {
+                        // Draw a custom archery arrow
+                        CTX.save();
+                        CTX.strokeStyle = '#8a5229'; CTX.lineWidth = 2.5; // Wooden shaft
+                        const length = 24;
+                        const dir = this.vx > 0 ? 1 : -1;
+                        CTX.beginPath();
+                        CTX.moveTo(this.x - (length / 2) * dir, this.y);
+                        CTX.lineTo(this.x + (length / 2) * dir, this.y);
+                        CTX.stroke();
+                        
+                        // Metallic triangular tip
+                        CTX.fillStyle = '#c0c5ca';
+                        CTX.beginPath();
+                        CTX.moveTo(this.x + (length / 2) * dir, this.y);
+                        CTX.lineTo(this.x + (length / 2 - 5) * dir, this.y - 4);
+                        CTX.lineTo(this.x + (length / 2 - 5) * dir, this.y + 4);
+                        CTX.closePath();
+                        CTX.fill();
+                        
+                        // Feathers (fletching) on the back
+                        CTX.strokeStyle = '#ffffff'; CTX.lineWidth = 1.5;
+                        CTX.beginPath();
+                        CTX.moveTo(this.x - (length / 2) * dir, this.y);
+                        CTX.lineTo(this.x - (length / 2 - 6) * dir, this.y - 4);
+                        CTX.moveTo(this.x - (length / 2) * dir, this.y);
+                        CTX.lineTo(this.x - (length / 2 - 6) * dir, this.y + 4);
+                        CTX.stroke();
+                        CTX.restore();
+                    } else {
+                        CTX.fillStyle = '#dfe5ef'; CTX.fillRect(this.x - 8, this.y - 3, 16, 6);
+                        CTX.fillStyle = '#7f8794'; CTX.fillRect(this.x - 2, this.y - 1, 10, 2);
+                    }
                 } else if (this.type === 'rocket') {
                     CTX.fillStyle = '#ff3300';
                     CTX.fillRect(this.x - 12, this.y - 5, 24, 10);

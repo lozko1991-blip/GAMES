@@ -24,7 +24,7 @@
         }
         function cycleWeapon(player) {
             if (!player) return;
-            const weapons = ['none', 'pipe', 'rifle', 'bazooka'];
+            const weapons = (player.id === 'p1') ? state.ownedWeapons : ['none', 'pipe', 'rifle', 'bazooka', 'sausage', 'bow', 'nunchucks', 'spear', 'greatsword'];
             let idx = weapons.indexOf(player.weaponSelected || 'none');
             idx = (idx + 1) % weapons.length;
             player.weaponSelected = weapons[idx];
@@ -64,12 +64,12 @@
             }
             if (player.weaponSelected && player.weaponSelected !== 'none') {
                 if (actionName === 'punch') {
-                    if (player.weaponSelected === 'pipe') player.action('weapon_pipe_light');
-                    else if (player.weaponSelected === 'rifle') player.action('weapon_rifle_shoot');
+                    if (['pipe', 'sausage', 'nunchucks', 'spear', 'greatsword'].includes(player.weaponSelected)) player.action('weapon_pipe_light');
+                    else if (['rifle', 'bow'].includes(player.weaponSelected)) player.action('weapon_rifle_shoot');
                     else if (player.weaponSelected === 'bazooka') player.action('weapon_bazooka_shoot');
                 } else if (actionName === 'kick') {
-                    if (player.weaponSelected === 'pipe') player.action('weapon_pipe_heavy');
-                    else if (player.weaponSelected === 'rifle') player.action('weapon_rifle_melee');
+                    if (['pipe', 'sausage', 'nunchucks', 'spear', 'greatsword'].includes(player.weaponSelected)) player.action('weapon_pipe_heavy');
+                    else if (['rifle', 'bow'].includes(player.weaponSelected)) player.action('weapon_rifle_melee');
                     else if (player.weaponSelected === 'bazooka') player.action('weapon_bazooka_melee');
                 } else {
                     if (actionName === 'special') {
@@ -134,12 +134,12 @@
             if (player.weaponSelected && player.weaponSelected !== 'none') {
                 if (actionName === 'weapon') { cycleWeapon(player); return; }
                 if (actionName === 'punch') {
-                    if (player.weaponSelected === 'pipe') player.action('weapon_pipe_spin');
-                    else if (player.weaponSelected === 'rifle') player.action('weapon_rifle_burst');
+                    if (['pipe', 'sausage', 'nunchucks', 'spear', 'greatsword'].includes(player.weaponSelected)) player.action('weapon_pipe_spin');
+                    else if (['rifle', 'bow'].includes(player.weaponSelected)) player.action('weapon_rifle_burst');
                     else if (player.weaponSelected === 'bazooka') player.action('weapon_bazooka_charged');
                 } else if (actionName === 'kick') {
-                    if (player.weaponSelected === 'pipe') player.action('weapon_pipe_heavy');
-                    else if (player.weaponSelected === 'rifle') player.action('weapon_rifle_melee');
+                    if (['pipe', 'sausage', 'nunchucks', 'spear', 'greatsword'].includes(player.weaponSelected)) player.action('weapon_pipe_heavy');
+                    else if (['rifle', 'bow'].includes(player.weaponSelected)) player.action('weapon_rifle_melee');
                     else if (player.weaponSelected === 'bazooka') player.action('weapon_bazooka_melee');
                 } else {
                     tapAction(player, actionName);
