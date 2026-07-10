@@ -3,42 +3,313 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lozko Games Hub</title>
-    <!-- Auto-redirect to penalty master as the primary game -->
-    <meta http-equiv="refresh" content="0; url=./penalty-master/index.html">
+    <title>Lozko Arcade Games Hub — Грати Онлайн</title>
+    <meta name="description" content="Офіційний ігровий портал Lozko. Грайте в Penalty Master та Битву за Труханів онлайн прямо у вашому браузері безкоштовно!">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Lozko Arcade Games Hub">
+    <meta property="og:description" content="Грайте в найкращі київські веб-ігри онлайн: Penalty Master та файтинг Битва за Труханів!">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
-        body {
+        :root {
+            --bg-color: #06060f;
+            --card-bg: rgba(18, 18, 35, 0.6);
+            --card-border: rgba(0, 240, 255, 0.15);
+            --primary-glow: #00f0ff;
+            --secondary-glow: #ff0055;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --font-display: 'Orbitron', system-ui, -apple-system, sans-serif;
+            --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
-            background: #0a0a16;
-            color: #ffffff;
-            font-family: system-ui, -apple-system, sans-serif;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(0, 240, 255, 0.07) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255, 0, 85, 0.07) 0%, transparent 40%);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-x: hidden;
+        }
+
+        /* Ambient animated grid in background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(18, 18, 35, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(18, 18, 35, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        header {
+            padding: 3rem 1.5rem 1rem 1.5rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 2.8rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #00f0ff 0%, #ff0055 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.8rem;
+            filter: drop-shadow(0 2px 10px rgba(0, 240, 255, 0.2));
+            animation: titlePulse 4s ease-in-out infinite alternate;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: 1px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        main {
+            flex-grow: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            overflow: hidden;
+            padding: 2rem 1.5rem;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+            width: 100%;
+            max-width: 960px;
+        }
+
+        .game-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
             text-align: center;
+            position: relative;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
         }
-        .loader {
-            border: 3px solid rgba(0, 255, 204, 0.1);
-            border-radius: 50%;
-            border-top: 3px solid #00ffcc;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+
+        /* Card themes */
+        .card-penalty {
+            --accent-color: #00ffaa;
+            --accent-glow: rgba(0, 255, 170, 0.3);
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        .card-truhanov {
+            --accent-color: #ff0055;
+            --accent-glow: rgba(255, 0, 85, 0.3);
+        }
+
+        /* Hover states */
+        .game-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: var(--accent-color);
+            box-shadow: 0 15px 35px var(--accent-glow);
+        }
+
+        /* Card background accent light */
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .game-card:hover::before {
+            opacity: 1;
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+        }
+
+        .game-icon {
+            font-size: 4rem;
+            margin-bottom: 1.2rem;
+            display: inline-block;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+            transition: transform 0.3s ease;
+        }
+
+        .game-card:hover .game-icon {
+            transform: scale(1.15) rotate(5deg);
+        }
+
+        .game-title {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .game-description {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            min-height: 80px;
+        }
+
+        .btn-play {
+            position: relative;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.9rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #000000;
+            background: var(--accent-color);
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px var(--accent-glow);
+            transition: all 0.3s ease;
+        }
+
+        .btn-play:hover {
+            background: #ffffff;
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-play:active {
+            transform: translateY(1px);
+        }
+
+        footer {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Animations */
+        @keyframes titlePulse {
+            0% {
+                filter: drop-shadow(0 2px 8px rgba(0, 240, 255, 0.2));
+            }
+            100% {
+                filter: drop-shadow(0 2px 18px rgba(255, 0, 85, 0.35));
+            }
+        }
+
+        /* Responsive adaptations */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            .subtitle {
+                font-size: 0.95rem;
+            }
+            .games-grid {
+                grid-template-columns: 1fr;
+                gap: 1.8rem;
+                max-width: 450px;
+            }
+            header {
+                padding: 2rem 1rem 0.5rem 1rem;
+            }
+            main {
+                padding: 1rem 1rem 2rem 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div>
-        <div class="loader"></div>
-        <h2>Завантаження Penalty Master...</h2>
-        <p style="color: #666; font-size: 0.9rem;">Якщо перенаправлення не відбулося автоматично, <a href="./penalty-master/index.html" style="color: #00ffcc; text-decoration: none;">натисніть сюди</a>.</p>
-    </div>
+
+    <div class="bg-grid"></div>
+
+    <header>
+        <h1>Lozko Arcade</h1>
+        <p class="subtitle">Оберіть київську легенду та починайте грати прямо зараз у браузері</p>
+    </header>
+
+    <main>
+        <div class="games-grid">
+            
+            <!-- Game 1: Penalty Master -->
+            <section class="game-card card-penalty">
+                <div class="card-content">
+                    <span class="game-icon">⚽</span>
+                    <h2 class="game-title">Penalty Master</h2>
+                    <p class="game-description">Захоплюючий симулятор футбольних пенальті. Оберіть свій клуб, бийте по воротах або захищайте їх в ролі воротаря, відбиваючи удари суперників та виграючи кубки!</p>
+                </div>
+                <a href="./penalty-master/index.html" class="btn-play" id="btn-play-penalty">Грати ⚽</a>
+            </section>
+
+            <!-- Game 2: Battle for Truhanov -->
+            <section class="game-card card-truhanov">
+                <div class="card-content">
+                    <span class="game-icon">🥋</span>
+                    <h2 class="game-title">Битва за Труханів</h2>
+                    <p class="game-description">Вуличний файтинг у серці Києва. Оберіть легендарного бійця, використовуйте комбо-удари, ласо, зброю та фірмові супер-здібності, щоб захистити свій район на Трухановому острові!</p>
+                </div>
+                <a href="./battle-for-truhanov/index.html" class="btn-play" id="btn-play-truhanov">Бій! 🥋</a>
+            </section>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Lozko Games Hub. Усі права захищені.</p>
+    </footer>
+
 </body>
 </html>
