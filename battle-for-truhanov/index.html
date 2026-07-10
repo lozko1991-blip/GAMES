@@ -85,9 +85,9 @@
                             <option value="7">Магазин BRAIN / ITbox</option>
                             <option value="8">Бортницька станція аерації</option>
                             <option value="9">Село Дубище</option>
-                            <option value="10" id="opt-level-10" disabled>🔒 Пристроми (Укрпромпостач)</option>
-                            <option value="11" id="opt-level-11" disabled>🔒 Переяслав (Дзвіниця)</option>
-                            <option value="12" id="opt-level-12" disabled>🔒 Березань (Вітальна арка)</option>
+                            <option value="10" id="opt-level-10">Пристроми (Укрпромпостач)</option>
+                            <option value="11" id="opt-level-11">Переяслав (Дзвіниця)</option>
+                            <option value="12" id="opt-level-12">Березань (Вітальна арка)</option>
                         </select>
                     </div>
 
@@ -162,7 +162,7 @@
             <div style="display: flex; gap: 4px; justify-content: center; width: 100%; max-width: 760px; margin: 0 auto 10px;">
                 <button id="tab-shop-weapons" onclick="selectShopTab('weapons')" style="flex: 1; padding: 6px; font-size: 10px; font-weight: bold; background: #660099; border-color: #8800cc; color: white; cursor: pointer;">⚔️ Зброя</button>
                 <button id="tab-shop-skins" onclick="selectShopTab('skins')" style="flex: 1; padding: 6px; font-size: 10px; font-weight: bold; background: #222; border-color: #444; color: #ccc; cursor: pointer;">🥋 Одяг (Скіни)</button>
-                <button id="tab-shop-levels" onclick="selectShopTab('levels')" style="flex: 1; padding: 6px; font-size: 10px; font-weight: bold; background: #222; border-color: #444; color: #ccc; cursor: pointer;">🗺️ Арени</button>
+                <button id="tab-shop-upgrades" onclick="selectShopTab('upgrades')" style="flex: 1; padding: 6px; font-size: 10px; font-weight: bold; background: #222; border-color: #444; color: #ccc; cursor: pointer;">⚡ Покращення</button>
             </div>
             
             <!-- Shop Items Grid Container -->
@@ -193,6 +193,7 @@
                         <div class="round-node"></div>
                         <div class="round-node"></div>
                     </div>
+                    <div id="streak-badge-p1" style="font-size: 8px; color: #ffaa00; font-weight: bold; background: rgba(0,0,0,0.6); padding: 2px 4px; border: 1px solid #ffaa00; border-radius: 4px; margin-left: 6px; display: none;">STREAK: <span id="streak-val-p1">0</span> 🔥</div>
                 </div>
                 <div class="bar-container">
                     <div class="hp-delay-bar" id="hp-delay-p1"></div>

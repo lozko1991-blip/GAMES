@@ -4,7 +4,8 @@
                 this.vx = 0; this.vy = 0; this.isLeft = isLeft; this.hp = 100; this.sp = 0; this.skinColor = config.skin;
                 this.clothColor = config.cloth; this.projColor = config.projColor; this.projType = config.projType;
                 this.specialAttackType = config.special; this.fatalityType = config.fatality; this.state = 'idle';
-                this.maxHp = config.maxHp || 150;
+                this.maxHp = (config.maxHp || 150) + (this.id === 'p1' && typeof state !== 'undefined' && state.upgrades ? state.upgrades.hp * 15 : 0);
+                this.hp = this.maxHp;
                 this.charId = config.charId || 'lozko';
                 this.logo = config.logo || null;
                 this.hairColor = config.hairColor || this.clothColor;
@@ -30,7 +31,8 @@
             }
             update() {
                 if (this.sp < 100) this.sp += 0.055;
-                if (this.weaponCharge < 100) this.weaponCharge = Math.min(100, this.weaponCharge + (this.hp < this.maxHp * 0.6 ? 0.085 : 0.03));
+                const chargeMult = (this.id === 'p1' && typeof state !== 'undefined' && state.upgrades) ? (1 + state.upgrades.charge * 0.10) : 1;
+                if (this.weaponCharge < 100) this.weaponCharge = Math.min(100, this.weaponCharge + (this.hp < this.maxHp * 0.6 ? 0.085 : 0.03) * chargeMult);
                 if (this.isBot()) {
                     if (this.weaponTimer > 0) {
                         this.weaponTimer--;

@@ -98,15 +98,15 @@
         }
         function spawnWeather(lvl) {
             if (lvl.weather === 'rain' && Math.random() < 0.52) {
-                state.particles.push(new Particle(Math.random() * CANVAS.width, 0, -2.5, 10 + Math.random() * 4, 1, 'rgba(160,200,240,0.48)', 60, 'rain'));
+                addParticle(new Particle(Math.random() * CANVAS.width, 0, -2.5, 10 + Math.random() * 4, 1, 'rgba(160,200,240,0.48)', 60, 'rain'));
             } else if (lvl.weather === 'leaves' && Math.random() < 0.08) {
-                state.particles.push(new Particle(Math.random() * CANVAS.width, 0, -1 - Math.random() * 2.5, 1.2 + Math.random() * 2, 3.5 + Math.random() * 3, 'rgba(200,120,60,0.75)', 185, 'leaves'));
+                addParticle(new Particle(Math.random() * CANVAS.width, 0, -1 - Math.random() * 2.5, 1.2 + Math.random() * 2, 3.5 + Math.random() * 3, 'rgba(200,120,60,0.75)', 185, 'leaves'));
             } else if (lvl.weather === 'chestnuts' && Math.random() < 0.05) {
-                state.particles.push(new Particle(Math.random() * CANVAS.width, 0, -0.6 - Math.random(), 2 + Math.random() * 3, 4.5, '#5c3d2e', 160, 'chestnuts'));
+                addParticle(new Particle(Math.random() * CANVAS.width, 0, -0.6 - Math.random(), 2 + Math.random() * 3, 4.5, '#5c3d2e', 160, 'chestnuts'));
             } else if (lvl.weather === 'diplomas' && Math.random() < 0.05) {
-                state.particles.push(new Particle(Math.random() * CANVAS.width, 0, -1 - Math.random(), 1 + Math.random() * 2, 3.5, '#ffffff', 150, 'diplomas'));
+                addParticle(new Particle(Math.random() * CANVAS.width, 0, -1 - Math.random(), 1 + Math.random() * 2, 3.5, '#ffffff', 150, 'diplomas'));
             } else if (lvl.weather === 'wind' && Math.random() < 0.14) {
-                state.particles.push(new Particle(CANVAS.width, Math.random() * GROUND_Y, -5.5 - Math.random() * 3, 0, 1.5 + Math.random() * 1.5, 'rgba(255,255,255,0.09)', 120, 'wind'));
+                addParticle(new Particle(CANVAS.width, Math.random() * GROUND_Y, -5.5 - Math.random() * 3, 0, 1.5 + Math.random() * 1.5, 'rgba(255,255,255,0.09)', 120, 'wind'));
             }
         }
         function drawScene(lvlIndex) {

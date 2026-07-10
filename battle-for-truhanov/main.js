@@ -194,12 +194,25 @@
             state.isRunning = false; showRoundResults(roundWinner);
         }
         function showRoundResults(winner) {
+            // Win streak tracking
+            if (state.p1Wins === 2) {
+                state.winStreak++;
+                localStorage.setItem('truhanov_win_streak', state.winStreak.toString());
+            } else if (state.p2Wins === 2) {
+                state.winStreak = 0;
+                localStorage.setItem('truhanov_win_streak', '0');
+            }
+            updateHUDStreakDisplay();
+
             if (winner && winner.id === 'p1') {
-                let earned = 50;
-                if (state.p1Wins === 2) earned += 100;
+                let baseEarned = 50;
+                if (state.p1Wins === 2) baseEarned += 100;
+                const multiplier = 1 + state.winStreak * 0.20;
+                const earned = Math.floor(baseEarned * multiplier);
                 state.coins += earned;
                 localStorage.setItem('truhanov_coins', state.coins.toString());
-                showFloatingText(`+${earned} COINS!`, CANVAS.width / 2 - 55, CANVAS.height / 2 - 50, '#00ffcc');
+                const bonusText = state.winStreak > 0 ? `+${earned} COINS (x${multiplier.toFixed(1)} STREAK!)` : `+${earned} COINS!`;
+                showFloatingText(bonusText, CANVAS.width / 2 - 85, CANVAS.height / 2 - 50, '#00ffcc');
             }
             const resScreen = document.getElementById('screen-result'); const title = document.getElementById('result-title'); const desc = document.getElementById('result-desc'); const nextBtn = document.getElementById('btn-next');
             resScreen.classList.remove('hidden'); document.getElementById('hud').style.display = 'none'; document.getElementById('timer-box').style.display = 'none';
@@ -313,12 +326,12 @@
             document.getElementById('screen-shop').classList.add('hidden');
             document.getElementById('screen-menu').classList.remove('hidden');
             document.getElementById('shop-coins-display').innerText = state.coins;
-            updateLevelDropdownLocks();
+            updateHUDStreakDisplay();
         }
         
         function selectShopTab(tabName) {
             shopCurrentTab = tabName;
-            ['weapons', 'skins', 'levels'].forEach(t => {
+            ['weapons', 'skins', 'upgrades'].forEach(t => {
                 const btn = document.getElementById(`tab-shop-${t}`);
                 if (btn) {
                     if (t === tabName) {
@@ -343,11 +356,14 @@
             let items = [];
             if (shopCurrentTab === 'weapons') items = SHOP_WEAPONS;
             else if (shopCurrentTab === 'skins') items = SHOP_SKINS;
-            else if (shopCurrentTab === 'levels') items = SHOP_LEVELS;
+            else if (shopCurrentTab === 'upgrades') items = SHOP_UPGRADES;
             
             items.forEach(item => {
                 let isOwned = false;
                 let isEquipped = false;
+                let isMaxed = false;
+                let currentLvl = 0;
+                let currentPrice = item.price;
                 
                 if (shopCurrentTab === 'weapons') {
                     isOwned = state.ownedWeapons.includes(item.id);
@@ -355,8 +371,10 @@
                 } else if (shopCurrentTab === 'skins') {
                     isOwned = state.ownedSkins.includes(item.id);
                     isEquipped = state.equippedSkin === item.id;
-                } else if (shopCurrentTab === 'levels') {
-                    isOwned = state.ownedLevels.includes(item.id);
+                } else if (shopCurrentTab === 'upgrades') {
+                    currentLvl = state.upgrades[item.id] || 0;
+                    isMaxed = currentLvl >= item.max;
+                    currentPrice = item.price + currentLvl * 50; // Dynamic scale price
                 }
                 
                 const card = document.createElement('div');
@@ -371,12 +389,15 @@
                 card.style.textAlign = 'center';
                 
                 let btnHTML = '';
-                if (isOwned) {
-                    if (shopCurrentTab === 'levels') {
-                        btnHTML = `<button style="background:#111; border-color:#333; color:#888; width:100%; cursor:default; padding: 4px;" disabled>РОЗБЛОКОВАНО</button>`;
+                if (shopCurrentTab === 'upgrades') {
+                    if (isMaxed) {
+                        btnHTML = `<button style="background:#111; border-color:#333; color:#555; width:100%; cursor:default; padding: 4px;" disabled>МАКС. РІВЕНЬ</button>`;
                     } else {
-                        btnHTML = `<button onclick="equipShopItem('${item.id}')" style="background:${isEquipped ? '#006655' : '#333'}; border-color:${isEquipped ? '#00ffcc' : '#555'}; color:white; width:100%; cursor:pointer; padding: 4px;">${isEquipped ? 'ЕКІПІРОВАНО' : 'ВИБРАТИ'}</button>`;
+                        const canAfford = state.coins >= currentPrice;
+                        btnHTML = `<button onclick="buyShopUpgrade('${item.id}', ${currentPrice})" style="background:${canAfford ? '#006655' : '#333'}; border-color:${canAfford ? '#00ffcc' : '#444'}; color:${canAfford ? 'white' : '#888'}; width:100%; cursor:${canAfford ? 'pointer' : 'not-allowed'}; padding: 4px;" ${canAfford ? '' : 'disabled'}>ПОКРАЩИТИ: ${currentPrice} 🪙</button>`;
                     }
+                } else if (isOwned) {
+                    btnHTML = `<button onclick="equipShopItem('${item.id}')" style="background:${isEquipped ? '#006655' : '#333'}; border-color:${isEquipped ? '#00ffcc' : '#555'}; color:white; width:100%; cursor:pointer; padding: 4px;">${isEquipped ? 'ЕКІПІРОВАНО' : 'ВИБРАТИ'}</button>`;
                 } else {
                     const canAfford = state.coins >= item.price;
                     btnHTML = `<button onclick="buyShopItem('${item.id}', ${item.price})" style="background:${canAfford ? '#660099' : '#333'}; border-color:${canAfford ? '#8800cc' : '#444'}; color:${canAfford ? 'white' : '#888'}; width:100%; cursor:${canAfford ? 'pointer' : 'not-allowed'}; padding: 4px;" ${canAfford ? '' : 'disabled'}>КУПИТИ: ${item.price} 🪙</button>`;
@@ -387,15 +408,17 @@
                     previewHTML = `<span style="font-size:28px; margin-bottom:4px;">${item.id === 'sausage' ? '🥖' : (item.id === 'bow' ? '🏹' : (item.id === 'nunchucks' ? '⛓️' : (item.id === 'spear' ? '🔱' : '⚔️')))}</span>`;
                 } else if (shopCurrentTab === 'skins') {
                     previewHTML = `<div style="width:24px; height:24px; border-radius:50%; background:${item.cloth}; border:2px solid ${item.line || '#fff'}; margin-bottom:6px;"></div>`;
-                } else if (shopCurrentTab === 'levels') {
-                    previewHTML = `<span style="font-size:28px; margin-bottom:4px;">🗺️</span>`;
+                } else if (shopCurrentTab === 'upgrades') {
+                    previewHTML = `<span style="font-size:28px; margin-bottom:4px;">${item.id === 'hp' ? '❤️' : (item.id === 'dmg' ? '⚔️' : '⚡')}</span>`;
                 }
 
+                const displayName = shopCurrentTab === 'upgrades' ? `${item.name} (${currentLvl}/${item.max})` : item.name;
+
                 card.innerHTML = `
-                    \${previewHTML}
-                    <div style="font-size:10px; font-weight:bold; color:#ffcc00; margin-bottom:2px;">\${item.name}</div>
-                    <div style="font-size:8px; color:#aaa; margin-bottom:8px; height:32px; overflow:hidden;">\${item.desc}</div>
-                    \${btnHTML}
+                    ${previewHTML}
+                    <div style="font-size:10px; font-weight:bold; color:#ffcc00; margin-bottom:2px;">${displayName}</div>
+                    <div style="font-size:8px; color:#aaa; margin-bottom:8px; height:32px; overflow:hidden;">${item.desc}</div>
+                    ${btnHTML}
                 `;
                 container.appendChild(card);
             });
@@ -418,14 +441,33 @@
                 localStorage.setItem('truhanov_owned_skins', JSON.stringify(state.ownedSkins));
                 state.equippedSkin = id;
                 localStorage.setItem('truhanov_equipped_skin', id);
-            } else if (shopCurrentTab === 'levels') {
-                const lvlIdx = parseInt(id);
-                state.ownedLevels.push(lvlIdx);
-                localStorage.setItem('truhanov_owned_levels', JSON.stringify(state.ownedLevels));
             }
             AudioSys.superHit();
             renderShopItems();
-            updateLevelDropdownLocks();
+        }
+        
+        function buyShopUpgrade(id, price) {
+            if (state.coins < price) return;
+            const currentLvl = state.upgrades[id] || 0;
+            const maxLvl = id === 'hp' || id === 'dmg' ? 5 : 5; // Default max is 5
+            if (currentLvl >= maxLvl) return;
+            
+            state.coins -= price;
+            localStorage.setItem('truhanov_coins', state.coins.toString());
+            state.upgrades[id] = currentLvl + 1;
+            localStorage.setItem('truhanov_upgrades', JSON.stringify(state.upgrades));
+            
+            document.getElementById('shop-modal-coins').innerText = state.coins;
+            document.getElementById('shop-coins-display').innerText = state.coins;
+            
+            // Instantly apply HP upgrade to state player if game runs
+            if (id === 'hp' && state.player) {
+                state.player.maxHp = 150 + state.upgrades.hp * 15;
+                state.player.hp = state.player.maxHp;
+            }
+            
+            AudioSys.superHit();
+            renderShopItems();
         }
         
         function equipShopItem(id) {
@@ -440,23 +482,21 @@
             renderShopItems();
         }
         
-        function updateLevelDropdownLocks() {
-            for (let i = 10; i <= 12; i++) {
-                const opt = document.getElementById(`opt-level-${i}`);
-                if (opt) {
-                    if (state.ownedLevels.includes(i)) {
-                        opt.disabled = false;
-                        opt.innerText = LEVELS[i].name;
-                    } else {
-                        opt.disabled = true;
-                        opt.innerText = `🔒 ` + LEVELS[i].name;
-                    }
+        function updateHUDStreakDisplay() {
+            const badge = document.getElementById('streak-badge-p1');
+            const val = document.getElementById('streak-val-p1');
+            if (badge && val) {
+                if (state.winStreak > 0) {
+                    badge.style.display = 'inline-block';
+                    val.innerText = state.winStreak;
+                } else {
+                    badge.style.display = 'none';
                 }
             }
         }
         
         // Setup initial coin displays and option locks
-        updateLevelDropdownLocks();
+        updateHUDStreakDisplay();
         setTimeout(() => {
             const coinsLabel = document.getElementById('shop-coins-display');
             if (coinsLabel) coinsLabel.innerText = state.coins;

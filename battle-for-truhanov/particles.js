@@ -28,6 +28,12 @@
                 CTX.restore();
             }
         }
+        function addParticle(p) {
+            if (state.particles.length >= 150) {
+                state.particles.shift();
+            }
+            state.particles.push(p);
+        }
         function showFloatingText(text, x, y, color = '#ffcc00') { state.floatingTexts.push({ text, x, y, vy: -2.2, alpha: 1, color }) }
         function createImpactBurst(x, y, color, direction = 1) {
             for (let i = 0; i < 10; i++) {
@@ -35,26 +41,26 @@
                 const angle = (Math.random() * Math.PI * 0.9) - Math.PI / 1.8;
                 const vx = Math.cos(angle) * spread * direction;
                 const vy = Math.sin(angle) * spread - 1.5;
-                state.particles.push(new Particle(x, y, vx, vy, 1.8 + Math.random() * 2.4, color, 14 + Math.random() * 10, 'spark'));
+                addParticle(new Particle(x, y, vx, vy, 1.8 + Math.random() * 2.4, color, 14 + Math.random() * 10, 'spark'));
             }
         }
         function createBloodSplatter(x, y, isLeft, multiplier = 1) {
             const count = 24 * multiplier;
             for (let i = 0; i < count; i++) {
                 const dir = isLeft ? 1 : -1; const vx = (dir * 3.0) + (Math.random() * 5 - 2.5); const vy = -3.0 + (Math.random() * 6 - 3.0); const size = 2.5 + Math.random() * 3.5;
-                state.particles.push(new Particle(x, y, vx, vy, size, 'rgba(220,0,30,0.95)', 25 + Math.random() * 25, 'blood'));
+                addParticle(new Particle(x, y, vx, vy, size, 'rgba(220,0,30,0.95)', 25 + Math.random() * 25, 'blood'));
             }
         }
         function createBlockSparks(x, y) {
             for (let i = 0; i < 14; i++) {
                 const vx = Math.random() * 7 - 3.5; const vy = Math.random() * 7 - 3.5; const size = 1.5 + Math.random() * 2.0;
-                state.particles.push(new Particle(x, y, vx, vy, size, '#00ffcc', 15 + Math.random() * 10, 'spark'));
+                addParticle(new Particle(x, y, vx, vy, size, '#00ffcc', 15 + Math.random() * 10, 'spark'));
             }
         }
         function createElementalBurst(x, y, type) {
             const colors = { water: '#00ccff', energy: '#ff00ff', lightning: '#ffee00', fire: '#ff5500' }; const col = colors[type] || '#fff';
             for (let i = 0; i < 18; i++) {
                 const vx = (Math.random() - 0.5) * 9; const vy = (Math.random() - 0.5) * 9;
-                state.particles.push(new Particle(x, y, vx, vy, 2.2 + Math.random() * 3, col, 20 + Math.random() * 15, 'spark'));
+                addParticle(new Particle(x, y, vx, vy, 2.2 + Math.random() * 3, col, 20 + Math.random() * 15, 'spark'));
             }
         }

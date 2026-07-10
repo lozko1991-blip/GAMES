@@ -79,6 +79,9 @@
                 defender.vx = pushDir * 3.2; // Push opponent back slightly on block
                 createImpactBurst(defender.x + defender.width / 2, defender.y + 50, '#00ffcc', attacker.isLeft ? 1 : -1);
             } else {
+                if (attacker.id === 'p1' && typeof state !== 'undefined' && state.upgrades) {
+                    finalDmg = Math.round(finalDmg * (1 + state.upgrades.dmg * 0.08));
+                }
                 createBloodSplatter(defender.x + defender.width / 2, defender.y + 45, attacker.isLeft, type === 'sword' ? 3.5 : (type === 'super' || type === 'hook' || type === 'heavy_kick' || type === 'projectile' ? 1.8 : 1));
                 if (type === 'lasso_pull') {
                     AudioSys.superHit();
