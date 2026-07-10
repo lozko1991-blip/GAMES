@@ -49,7 +49,7 @@
                 // Defensive pressure logic
                 if (pressure) {
                     // Block low if player performs a slide sweep kick
-                    if (lastMove === 'sweep' && absDist < 120) {
+                    if ((lastMove === 'sweep' || lastMove === 'special_slide') && absDist < 130) {
                         this.queueAction(() => {
                             bot.state = 'crouch';
                             bot.isBlocking = true;
@@ -57,8 +57,8 @@
                         return;
                     }
                     
-                    // General blocking logic
-                    if (absDist < 88 && Math.random() < (diff === 0 ? 0.60 : 0.90)) {
+                    // General blocking logic for all close-range attacks under pressure
+                    if (absDist < 125 && Math.random() < (diff === 0 ? 0.65 : 0.92)) {
                         this.queueAction(() => { bot.isBlocking = true }, reactionDelay);
                         return;
                     }
@@ -85,7 +85,8 @@
                     return;
                 }
 
-                if ((lastMove === 'kick' || lastMove === 'heavy_kick') && absDist < 115 && Math.random() < (diff === 0 ? 0.55 : 0.85)) {
+                // Protect against standard strikes and kicks
+                if ((lastMove === 'punch' || lastMove === 'kick' || lastMove === 'hook' || lastMove === 'heavy_kick' || lastMove === 'jump_punch' || lastMove === 'jump_kick') && absDist < 125 && Math.random() < (diff === 0 ? 0.60 : 0.90)) {
                     this.queueAction(() => { bot.isBlocking = true }, reactionDelay);
                     return;
                 }

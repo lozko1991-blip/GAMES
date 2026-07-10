@@ -198,7 +198,16 @@
                 const time = Date.now() * 0.007;
                 let targetHeadY = 0; let targetLArm = 0.3; let targetRArm = -0.3; let targetLLeg = 0.1; let targetRLeg = -0.1; let targetRot = 0;
                 const dir = this.isLeft ? 1 : -1;
-                if (this.state === 'idle') {
+                if (this.isBlocking && this.state !== 'hitstun' && this.state !== 'launched' && this.state !== 'knockdown' && this.state !== 'dead' && this.attackState === 0) {
+                    targetHeadY = this.state === 'crouch' ? 18 : 3;
+                    targetLArm = -1.35 * dir;
+                    targetRArm = 1.35 * dir;
+                    if (this.state === 'crouch') {
+                        targetLLeg = 0.6; targetRLeg = -0.6;
+                    } else {
+                        targetLLeg = 0.05; targetRLeg = -0.05;
+                    }
+                } else if (this.state === 'idle') {
                     targetHeadY = Math.sin(time) * 2.5; targetLArm = 0.4 + Math.sin(time) * 0.1; targetRArm = -0.4 - Math.sin(time) * 0.1; targetLLeg = 0.1; targetRLeg = -0.1;
                 } else if (this.state === 'move') {
                     targetHeadY = Math.sin(time * 1.8) * 2; targetLArm = Math.sin(time * 1.5) * 0.9; targetRArm = -Math.sin(time * 1.5) * 0.9; targetLLeg = Math.sin(time * 1.5) * 0.8; targetRLeg = -Math.sin(time * 1.5) * 0.8;
@@ -216,9 +225,23 @@
                     targetHeadY = 15; targetLArm = 1.5; targetRArm = -1.5; targetLLeg = 0.2; targetRLeg = -0.2; targetRot = (Math.PI / 2) * dir;
                 }
                 if (this.attackState === 1) {
-                    targetLArm = (-Math.PI / 1.7) * dir; targetRArm = -0.2 * dir;
+                    const t = this.attackTimer;
+                    if (t >= 14) {
+                        targetLArm = (Math.PI / 6) * dir; targetRArm = -0.4 * dir; targetRot = -0.08 * dir; targetHeadY = 2;
+                    } else if (t >= 7) {
+                        targetLArm = (-Math.PI / 1.1) * dir; targetRArm = -0.1 * dir; targetRot = 0.15 * dir; targetHeadY = 4;
+                    } else {
+                        targetLArm = (-Math.PI / 2.2) * dir; targetRArm = -0.3 * dir; targetRot = 0.05 * dir;
+                    }
                 } else if (this.attackState === 2) {
-                    targetLLeg = (-Math.PI / 2) * dir; targetRLeg = 0.3 * dir;
+                    const t = this.attackTimer;
+                    if (t >= 18) {
+                        targetLLeg = (Math.PI / 4) * dir; targetRLeg = -0.2 * dir; targetHeadY = -4; targetLArm = 0.5 * dir; targetRArm = -0.5 * dir;
+                    } else if (t >= 8) {
+                        targetLLeg = (-Math.PI / 1.1) * dir; targetRLeg = 0.25 * dir; targetHeadY = 4; targetLArm = 0.3 * dir; targetRArm = -0.7 * dir;
+                    } else {
+                        targetLLeg = (-Math.PI / 3) * dir; targetRLeg = 0.1 * dir;
+                    }
                 } else if (this.attackState === 3) {
                     const t = this.attackTimer;
                     if (t >= 22) { targetLArm = 1.2 * dir; targetRArm = -0.8 * dir; targetHeadY = 16; } 
@@ -245,9 +268,23 @@
                 } else if (this.attackState === 9) {
                     targetLLeg = (-Math.PI / 1.3) * dir; targetRLeg = 0.15 * dir; targetHeadY = 8;
                 } else if (this.attackState === 12) {
-                    targetLArm = 0.5 * dir; targetRArm = -0.5 * dir; targetHeadY = 10;
+                    const t = this.attackTimer;
+                    if (t >= 12) {
+                        targetLArm = (Math.PI / 4) * dir; targetRArm = -0.2 * dir; targetHeadY = -6;
+                    } else if (t >= 6) {
+                        targetLArm = (-Math.PI / 1.0) * dir; targetRArm = -0.1 * dir; targetHeadY = 6;
+                    } else {
+                        targetLArm = (-Math.PI / 1.8) * dir; targetRArm = -0.2 * dir;
+                    }
                 } else if (this.attackState === 13) {
-                    targetRLeg = 1.2 * dir; targetLLeg = -0.4 * dir; targetRArm = -0.6 * dir; targetLArm = 0.8 * dir; targetHeadY = 5;
+                    const t = this.attackTimer;
+                    if (t >= 14) {
+                        targetLLeg = (Math.PI / 3) * dir; targetRLeg = -0.1 * dir;
+                    } else if (t >= 6) {
+                        targetLLeg = (-Math.PI / 1.0) * dir; targetRLeg = 0.4 * dir; targetHeadY = 8;
+                    } else {
+                        targetLLeg = (-Math.PI / 2.2) * dir; targetRLeg = 0.2 * dir;
+                    }
                 } else if (this.attackState === 10) {
                     const t = this.attackTimer;
                     if (t >= 16) { 

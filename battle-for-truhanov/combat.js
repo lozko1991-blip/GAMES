@@ -116,19 +116,25 @@
                 } else {
                     const isKick = type === 'kick';
                     if (type === 'hook') {
-                        AudioSys.superHit(); defender.state = 'hitstun'; defender.hitstunTimer = 16; defender.vx = pushDir * 10.5; state.screenShake = 12; state.hitstopFrames = 10; defender.lastHitType = 'hook';
+                        AudioSys.superHit(); defender.state = 'knockdown'; defender.knockdownTimer = 55; defender.vy = -3.0; defender.vx = pushDir * 6.5; state.screenShake = 12; state.hitstopFrames = 10; defender.lastHitType = 'hook';
                         showFloatingText("HOOK!", defender.x + 30, defender.y + 6, '#ffcc00');
                         createImpactBurst(defender.x + defender.width / 2, defender.y + 40, '#ffcc00', attacker.isLeft ? 1 : -1);
                     } else if (type === 'heavy_kick') {
-                        AudioSys.punch(); defender.state = 'hitstun'; defender.hitstunTimer = 18; defender.vx = pushDir * 12.5; state.screenShake = 14; state.hitstopFrames = 12; defender.lastHitType = 'heavy_kick';
-                        showFloatingText("KICK!", defender.x + 30, defender.y + 6, '#ffcc00');
-                        createImpactBurst(defender.x + defender.width / 2, defender.y + 48, '#ffcc00', attacker.isLeft ? 1 : -1);
+                        AudioSys.superHit(); defender.state = 'knockdown'; defender.knockdownTimer = 60; defender.vy = -3.2; defender.vx = pushDir * 7.5; state.screenShake = 14; state.hitstopFrames = 12; defender.lastHitType = 'heavy_kick';
+                        showFloatingText("HEAVY KICK!", defender.x + 30, defender.y + 6, '#ff9900');
+                        createImpactBurst(defender.x + defender.width / 2, defender.y + 48, '#ff9900', attacker.isLeft ? 1 : -1);
                     } else if (type === 'sword') {
                         AudioSys.superHit(); defender.state = 'hitstun'; defender.hitstunTimer = 22; defender.vx = pushDir * 14.0; state.screenShake = 18; state.hitstopFrames = 15; defender.lastHitType = 'sword';
                         showFloatingText("SLASH!", defender.x + 24, defender.y + 4, '#ffcc00');
                         createImpactBurst(defender.x + defender.width / 2, defender.y + 42, '#ffcc00', attacker.isLeft ? 1 : -1);
                     } else {
-                        AudioSys.punch(); defender.state = 'hitstun'; defender.hitstunTimer = isKick ? 14 : 11; defender.vx = pushDir * (isKick ? 8.2 : 6.4); state.screenShake = isKick ? 7 : 5; state.hitstopFrames = isKick ? 6 : 4; defender.lastHitType = type;
+                        AudioSys.punch(); defender.state = 'hitstun'; defender.hitstunTimer = isKick ? 14 : 11;
+                        if (isKick) {
+                            defender.vy = -3.8; defender.vx = pushDir * 8.2; // Hop back on kick
+                        } else {
+                            defender.vx = pushDir * 6.4; // Regular slide on punch
+                        }
+                        state.screenShake = isKick ? 7 : 5; state.hitstopFrames = isKick ? 6 : 4; defender.lastHitType = type;
                         createImpactBurst(defender.x + defender.width / 2, defender.y + 48, isKick ? '#ffcc00' : '#ffffff', attacker.isLeft ? 1 : -1);
                     }
                 }
