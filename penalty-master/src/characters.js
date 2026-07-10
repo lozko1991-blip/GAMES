@@ -558,6 +558,7 @@ class SkeletalCharacter {
             projectedJoints[jointKey] = projected;
         }
 
+        if (!projectedJoints.pelvis) return; // Захист від помилки, якщо таз не потрапив у камеру (off-screen)
         const scale = projectedJoints.pelvis.scale;
         if (scale < 1.0) return;
 
