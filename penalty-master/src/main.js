@@ -470,6 +470,7 @@ class PenaltyMasterGame {
                     this.player.position = this.player.position.add(runDir.scale(runSpeed * scaledDeltaTime));
                     if (Math.random() < 0.15) {
                         this.pitchStains.push({ position: this.player.position.clone(), radius: 0.05 + Math.random() * 0.05 });
+                        if (this.pitchStains.length > 40) this.pitchStains.shift();
                     }
                 } else {
                     this.gameState = 'kick';
