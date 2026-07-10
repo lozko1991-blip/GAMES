@@ -199,11 +199,11 @@ class PenaltyMasterGame {
             { id: 'top-right', position: new Vector3(GOAL_WIDTH/2 - 0.5, GOAL_HEIGHT - 0.5, 0), active: true }
         ];
 
-        // Спеціальні інтерактивні об'єкти біля воріт (збільшені нагороди за влучання)
+        // Спеціальні інтерактивні об'єкти біля воріт (збільшені нагороди за влучання, підтримка фізики)
         this.customTargets = [
-            { id: 'dartboard', name: 'Мішень-Дартс', position: new Vector3(5.2, 1.6, -0.8), radius: 0.8, active: true },
-            { id: 'dummy', name: 'Манекен', position: new Vector3(-5.0, 0.9, -0.2), radius: 0.5, active: true },
-            { id: 'photographer', name: 'Фотограф', position: new Vector3(-4.5, 0.5, -2.5), radius: 0.6, active: true }
+            { id: 'dartboard', name: 'Мішень-Дартс', position: new Vector3(5.2, 1.6, -0.8), originPos: new Vector3(5.2, 1.6, -0.8), radius: 0.8, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0 },
+            { id: 'dummy', name: 'Манекен', position: new Vector3(-5.0, 0.9, -0.2), originPos: new Vector3(-5.0, 0.9, -0.2), radius: 0.5, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0 },
+            { id: 'photographer', name: 'Фотограф', position: new Vector3(-4.5, 0.5, -2.5), originPos: new Vector3(-4.5, 0.5, -2.5), radius: 0.6, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0 }
         ];
 
         // Масив слідів бутс та падінь на полі (Pitch Degradation)
@@ -453,6 +453,27 @@ class PenaltyMasterGame {
         const playerMultiplier = this.gameState === 'runup' ? 1.2 : 1.0;
         this.player.update(scaledDeltaTime, playerMultiplier);
 
+        // Фізичне оновлення збитих мішеней (падання, обертання під дією сили тяжіння)
+        if (this.customTargets) {
+            this.customTargets.forEach(target => {
+                if (target.hitState) {
+                    target.position.coordinateX += target.hitVelocity.coordinateX * scaledDeltaTime;
+                    target.position.coordinateY += target.hitVelocity.coordinateY * scaledDeltaTime;
+                    target.position.coordinateZ += target.hitVelocity.coordinateZ * scaledDeltaTime;
+                    
+                    target.hitVelocity.coordinateY -= 9.8 * scaledDeltaTime; // сила тяжіння
+                    target.hitRotation += target.hitAngularVelocity * scaledDeltaTime;
+                    
+                    if (target.position.coordinateY < 0.05) {
+                        target.position.coordinateY = 0.05;
+                        target.hitVelocity.set(0, 0, 0);
+                        target.hitAngularVelocity = 0;
+                        // Залишаємо лежати
+                    }
+                }
+            });
+        }
+
         switch(this.gameState) {
             case 'aiming': {
                 const startZ = PENALTY_SPOT_Z + 2.8;
@@ -675,7 +696,16 @@ class PenaltyMasterGame {
                                 target.active = false;
                                 this.ball.didHitTarget = true;
                                 gameVFX.spawnTargetHitExplosion(target.position);
-                                this.camera.triggerShake(1.0);
+                                this.camera.triggerShake(1.2);
+
+                                // Надаємо фізичного імпульсу від удару м'яча
+                                target.hitState = target.id === 'dartboard' ? 'spinning' : 'falling';
+                                target.hitVelocity = new Vector3(
+                                    this.ball.velocity.coordinateX * (target.id === 'dummy' ? 0.35 : 0.18),
+                                    6.5 + Math.random() * 2.5,
+                                    this.ball.velocity.coordinateZ * 0.18
+                                );
+                                target.hitAngularVelocity = target.id === 'dartboard' ? 22.0 : (target.id === 'photographer' ? -4.5 : 6.0);
 
                                 if (target.id === 'dummy') {
                                     gameAudio.playNetRustle();
@@ -1060,7 +1090,16 @@ class PenaltyMasterGame {
         // Reactivate goal targets
         this.targets.forEach(t => t.active = true);
         if (this.customTargets) {
-            this.customTargets.forEach(t => t.active = true);
+            this.customTargets.forEach(t => {
+                t.active = true;
+                t.hitState = null;
+                t.hitRotation = 0;
+                t.position.coordinateX = t.originPos.coordinateX;
+                t.position.coordinateY = t.originPos.coordinateY;
+                t.position.coordinateZ = t.originPos.coordinateZ;
+                t.hitVelocity.set(0, 0, 0);
+                t.hitAngularVelocity = 0;
+            });
         }
 
         // Відображаємо картку Ultimate Team гравця при прицілюванні
@@ -1167,6 +1206,20 @@ class PenaltyMasterGame {
             simBallVel.coordinateZ += this.windZ * 0.05 * timeStep;
 
             simBallPos = simBallPos.add(simBallVel.scale(timeStep));
+
+            // Перевіряємо зачеплення будь-якої цілі для кольорової підсвітки траєкторії (Real-time target locking)
+            this.targets.forEach(t => {
+                if (t.active && simBallPos.subtract(t.position).length() < (TARGET_RADIUS + BALL_RADIUS)) {
+                    this.aimLockedTarget = t;
+                }
+            });
+            if (this.customTargets) {
+                this.customTargets.forEach(t => {
+                    if (t.active && simBallPos.subtract(t.position).length() < (t.radius + BALL_RADIUS)) {
+                        this.aimLockedTarget = t;
+                    }
+                });
+            }
         }
 
         return trajectoryPoints;
@@ -1701,9 +1754,43 @@ class PenaltyMasterGame {
             const aimProj = this.camera.project(aimWorld, width, height);
 
             if (aimProj) {
+                // Скидаємо блокування цілі перед розрахунком траєкторії
+                this.aimLockedTarget = null;
                 const trajPoints = this.getTrajectoryPoints(width, height);
+
+                // Визначаємо кольори підсвічування
+                let traceColorGlow = 'rgba(0, 255, 204, 0.15)';
+                let traceColorLine = 'rgba(0, 255, 204, 0.65)';
+                let crosshairColor = '#00ffcc';
+                let crosshairColorGlow = 'rgba(0, 255, 204, 0.8)';
+
+                if (this.aimLockedTarget) {
+                    if (this.aimLockedTarget.id === 'dartboard') {
+                        traceColorGlow = 'rgba(255, 215, 0, 0.2)';
+                        traceColorLine = 'rgba(255, 215, 0, 0.7)';
+                        crosshairColor = '#ffd700';
+                        crosshairColorGlow = 'rgba(255, 215, 0, 0.85)';
+                    } else if (this.aimLockedTarget.id === 'dummy') {
+                        traceColorGlow = 'rgba(255, 102, 0, 0.2)';
+                        traceColorLine = 'rgba(255, 102, 0, 0.7)';
+                        crosshairColor = '#ff6600';
+                        crosshairColorGlow = 'rgba(255, 102, 0, 0.85)';
+                    } else if (this.aimLockedTarget.id === 'photographer') {
+                        traceColorGlow = 'rgba(0, 204, 255, 0.2)';
+                        traceColorLine = 'rgba(0, 204, 255, 0.7)';
+                        crosshairColor = '#00ccff';
+                        crosshairColorGlow = 'rgba(0, 204, 255, 0.85)';
+                    } else {
+                        // Звичайні мішені у кутах
+                        traceColorGlow = 'rgba(255, 0, 127, 0.2)';
+                        traceColorLine = 'rgba(255, 0, 127, 0.7)';
+                        crosshairColor = '#ff007f';
+                        crosshairColorGlow = 'rgba(255, 0, 127, 0.85)';
+                    }
+                }
+
                 if (trajPoints.length > 1) {
-                    this.ctx.strokeStyle = 'rgba(0, 255, 204, 0.15)';
+                    this.ctx.strokeStyle = traceColorGlow;
                     this.ctx.lineWidth = 6;
                     this.ctx.beginPath();
                     this.ctx.moveTo(trajPoints[0].x, trajPoints[0].y);
@@ -1712,7 +1799,7 @@ class PenaltyMasterGame {
                     }
                     this.ctx.stroke();
 
-                    this.ctx.strokeStyle = 'rgba(0, 255, 204, 0.65)';
+                    this.ctx.strokeStyle = traceColorLine;
                     this.ctx.lineWidth = 2.5;
                     this.ctx.setLineDash([6, 8]);
                     this.ctx.beginPath();
@@ -1727,18 +1814,18 @@ class PenaltyMasterGame {
                 if (trajPoints.length > 0) {
                     const lastPt = trajPoints[trajPoints.length - 1];
                     
-                    this.ctx.fillStyle = 'rgba(0, 255, 204, 0.25)';
+                    this.ctx.fillStyle = traceColorGlow;
                     this.ctx.beginPath();
                     this.ctx.arc(lastPt.x, lastPt.y, 9, 0, Math.PI * 2);
                     this.ctx.fill();
 
-                    this.ctx.fillStyle = '#00ffcc';
+                    this.ctx.fillStyle = crosshairColor;
                     this.ctx.beginPath();
                     this.ctx.arc(lastPt.x, lastPt.y, 4.5, 0, Math.PI * 2);
                     this.ctx.fill();
                 }
 
-                this.ctx.strokeStyle = 'rgba(0, 255, 204, 0.8)';
+                this.ctx.strokeStyle = crosshairColorGlow;
                 this.ctx.lineWidth = 3;
                 this.ctx.beginPath();
                 
@@ -1751,6 +1838,7 @@ class PenaltyMasterGame {
                 this.ctx.lineTo(aimProj.x + 8, aimProj.y);
                 this.ctx.moveTo(aimProj.x, aimProj.y - 8);
                 this.ctx.lineTo(aimProj.x, aimProj.y + 8);
+                this.ctx.strokeStyle = crosshairColor;
                 this.ctx.stroke();
             }
         }
