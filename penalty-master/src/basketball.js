@@ -159,12 +159,55 @@ class BasketballGame {
             }
         };
 
+        // Touch Drag aiming for mobile
+        this.touchstartHandler = (e) => {
+            if (!this.isPlaying || this.ball.state !== 'held') return;
+            const touch = e.touches[0];
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = (touch.clientX - rect.left) * (this.width / rect.width);
+            const mouseY = (touch.clientY - rect.top) * (this.height / rect.height);
+
+            const dist = Math.hypot(mouseX - this.ball.x, mouseY - this.ball.y);
+            if (dist < 55) {
+                this.isMouseDragging = true;
+                this.isAimingKeyboard = false;
+                if (e.cancelable) e.preventDefault();
+            }
+        };
+
+        this.touchmoveHandler = (e) => {
+            if (!this.isPlaying || !this.isMouseDragging) return;
+            const touch = e.touches[0];
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = (touch.clientX - rect.left) * (this.width / rect.width);
+            const mouseY = (touch.clientY - rect.top) * (this.height / rect.height);
+
+            const dx = this.ball.x - mouseX;
+            const dy = this.ball.y - mouseY;
+            
+            this.aimAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+            this.aimPower = Math.min(650, Math.hypot(dx, dy) * 2.8);
+            if (e.cancelable) e.preventDefault();
+        };
+
+        this.touchendHandler = (e) => {
+            if (this.isMouseDragging) {
+                this.isMouseDragging = false;
+                this.shootBall();
+                if (e.cancelable) e.preventDefault();
+            }
+        };
+
         window.addEventListener('keydown', this.keydownHandler);
         window.addEventListener('keyup', this.keyupHandler);
         
         this.canvas.addEventListener('mousedown', this.mousedownHandler);
         this.canvas.addEventListener('mousemove', this.mousemoveHandler);
         window.addEventListener('mouseup', this.mouseupHandler);
+
+        this.canvas.addEventListener('touchstart', this.touchstartHandler, { passive: false });
+        this.canvas.addEventListener('touchmove', this.touchmoveHandler, { passive: false });
+        this.canvas.addEventListener('touchend', this.touchendHandler, { passive: false });
 
         // Bind control buttons
         const btnLeft = document.getElementById('basket-btn-left');

@@ -41,6 +41,47 @@ class PlayerControls {
         window.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
         });
+
+        // Touch aiming directly on the game canvas
+        const canvas = document.getElementById('game-canvas');
+        if (canvas) {
+            let isTouching = false;
+            
+            const handleTouchAim = (touchX, touchY) => {
+                const rect = canvas.getBoundingClientRect();
+                const relativeX = (touchX - rect.left) / rect.width;
+                const relativeY = (touchY - rect.top) / rect.height;
+                
+                // Map relative touch coordinates [0..1] to wider aiming bounds
+                this.aimX = (relativeX - 0.5) * 14.5;
+                this.aimY = (1.0 - relativeY) * 4.6;
+                
+                this.aimX = Math.max(-6.46, Math.min(6.46, this.aimX));
+                this.aimY = Math.max(0.05, Math.min(4.24, this.aimY));
+            };
+
+            canvas.addEventListener('touchstart', (e) => {
+                const state = activeGameInstance ? activeGameInstance.gameState : '';
+                if (state === 'aiming' || state === 'runup') {
+                    isTouching = true;
+                    const touch = e.touches[0];
+                    handleTouchAim(touch.clientX, touch.clientY);
+                    if (e.cancelable) e.preventDefault();
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (isTouching) {
+                    const touch = e.touches[0];
+                    handleTouchAim(touch.clientX, touch.clientY);
+                    if (e.cancelable) e.preventDefault();
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', () => {
+                isTouching = false;
+            });
+        }
     }
 
     reset() {
@@ -2892,6 +2933,75 @@ document.getElementById('btn-basketball-back').addEventListener('click', () => {
         showScreen('screen-main-menu');
     }
 });
+
+// FULLSCREEN & MOBILE GAMEPAD CONTROLS BINDINGS
+const btnFullscreen = document.getElementById('btn-fullscreen');
+if (btnFullscreen) {
+    btnFullscreen.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.warn(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+            btnFullscreen.innerText = '📺 Згорнути';
+        } else {
+            document.exitFullscreen();
+            btnFullscreen.innerText = '📱 У весь екран';
+        }
+    });
+}
+
+// Big Kick Button on mobile layout
+const btnKick = document.getElementById('mobile-btn-kick');
+if (btnKick) {
+    const startCharge = (e) => {
+        if (activeGameInstance && gameControls) {
+            gameControls.isChargingPower = true;
+        }
+        if (e.cancelable) e.preventDefault();
+    };
+    const endCharge = (e) => {
+        if (activeGameInstance && gameControls && gameControls.isChargingPower) {
+            gameControls.isChargingPower = false;
+            if (activeGameInstance.gameState === 'aiming' || (activeGameInstance.gameState === 'runup' && !activeGameInstance.isRunUpStarted)) {
+                activeGameInstance.startRunUp();
+            }
+        }
+        if (e.cancelable) e.preventDefault();
+    };
+
+    btnKick.addEventListener('touchstart', startCharge, { passive: false });
+    btnKick.addEventListener('touchend', endCharge);
+    btnKick.addEventListener('mousedown', startCharge);
+    btnKick.addEventListener('mouseup', endCharge);
+}
+
+// Q/E buttons on mobile layout
+const btnQ = document.getElementById('mobile-btn-q');
+const btnE = document.getElementById('mobile-btn-e');
+if (btnQ && btnE) {
+    const startQ = (e) => { if(gameControls) gameControls.keys['KeyQ'] = true; if(e.cancelable) e.preventDefault(); };
+    const endQ = () => { if(gameControls) gameControls.keys['KeyQ'] = false; };
+    btnQ.addEventListener('touchstart', startQ, { passive: false });
+    btnQ.addEventListener('touchend', endQ);
+    btnQ.addEventListener('mousedown', startQ);
+    btnQ.addEventListener('mouseup', endQ);
+
+    const startE = (e) => { if(gameControls) gameControls.keys['KeyE'] = true; if(e.cancelable) e.preventDefault(); };
+    const endE = () => { if(gameControls) gameControls.keys['KeyE'] = false; };
+    btnE.addEventListener('touchstart', startE, { passive: false });
+    btnE.addEventListener('touchend', endE);
+    btnE.addEventListener('mousedown', startE);
+    btnE.addEventListener('mouseup', endE);
+}
+
+// Auto-detect touch capability or small layout to show gamepad
+const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+const gamepad = document.getElementById('mobile-gamepad');
+if (gamepad) {
+    if (isTouchDevice || window.innerWidth < 850) {
+        gamepad.style.display = 'flex';
+    }
+}
 
 // MULTIPLAYER INTERACTIVE BINDINGS
 document.getElementById('btn-online-menu').addEventListener('click', () => {

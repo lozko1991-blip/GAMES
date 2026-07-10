@@ -104,10 +104,30 @@ class MatrixRunGame {
         const btnJump = document.getElementById('matrix-btn-jump');
         const btnSlide = document.getElementById('matrix-btn-slide');
         const btnShoot = document.getElementById('matrix-btn-shoot');
+        const btnBrake = document.getElementById('matrix-btn-brake');
+        const btnBoost = document.getElementById('matrix-btn-boost');
 
         if (btnJump) btnJump.onclick = () => this.jump();
         if (btnSlide) btnSlide.onclick = () => this.slide();
         if (btnShoot) btnShoot.onclick = () => this.shoot();
+
+        if (btnBrake) {
+            const startBrake = (e) => { this.keysPressed['ArrowLeft'] = true; if(e.cancelable) e.preventDefault(); };
+            const endBrake = () => { this.keysPressed['ArrowLeft'] = false; };
+            btnBrake.addEventListener('touchstart', startBrake, { passive: false });
+            btnBrake.addEventListener('touchend', endBrake);
+            btnBrake.addEventListener('mousedown', startBrake);
+            btnBrake.addEventListener('mouseup', endBrake);
+        }
+
+        if (btnBoost) {
+            const startBoost = (e) => { this.keysPressed['ArrowRight'] = true; if(e.cancelable) e.preventDefault(); };
+            const endBoost = () => { this.keysPressed['ArrowRight'] = false; };
+            btnBoost.addEventListener('touchstart', startBoost, { passive: false });
+            btnBoost.addEventListener('touchend', endBoost);
+            btnBoost.addEventListener('mousedown', startBoost);
+            btnBoost.addEventListener('mouseup', endBoost);
+        }
     }
 
     unbindEvents() {
