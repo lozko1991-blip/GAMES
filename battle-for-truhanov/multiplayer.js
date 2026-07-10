@@ -410,11 +410,17 @@
         }
 
         function startLocalPvPGame() {
+            // Sync values from selectors before starting game
+            document.getElementById('char-select').value = document.getElementById('char-select-local-p1').value;
+            document.getElementById('char2-select').value = document.getElementById('char-select-local-p2').value;
+            document.getElementById('level-select').value = document.getElementById('level-select-local').value;
             state.difficulty = 'pvp';
             startGame();
         }
 
         function startOnlineGame() {
+            // Sync value from selector before starting game
+            document.getElementById('char-select').value = document.getElementById('char-select-online').value;
             state.difficulty = 'online';
             startGame();
         }
