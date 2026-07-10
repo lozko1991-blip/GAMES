@@ -1827,6 +1827,61 @@ class PenaltyMasterGame {
         runner.start();
     }
 
+    triggerBasketballGame() {
+        const screen = document.getElementById('screen-basketball');
+        if (!screen) return;
+
+        // Ховаємо основний інтерфейс
+        document.getElementById('hud-container').classList.remove('active');
+        showScreen('screen-basketball');
+
+        const canvas = document.getElementById('basketball-canvas');
+        const bgame = new BasketballGame(
+            canvas,
+            () => {
+                screen.classList.remove('active');
+                showScreen('screen-main-menu');
+            }
+        );
+        this.activeBasketballInstance = bgame;
+        bgame.start();
+    }
+
+    showBasketballRewardOverlay(coinsReward) {
+        this.coins += coinsReward;
+        this.saveStatsToStorage();
+        this.updateHUD();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'basketball-reward-popup';
+        overlay.style.cssText = 'position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(13,5,24,0.92); z-index:100; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#ff3399; font-family:"Outfit", sans-serif;';
+        
+        overlay.innerHTML = `
+            <div class="menu-card" style="border-color:#ff3399; background:#0d0518; max-width:480px; box-shadow:0 0 35px rgba(255,51,153,0.3);">
+                <h1 style="color:#ff3399; text-shadow:0 0 10px #ff3399; font-weight:900; font-family:\'Outfit\';">БАСКЕТБОЛЬНИЙ ФІНІШ</h1>
+                <p style="color:#fff; font-size:1.1rem; margin:15px 0;">Чудові кидки! Ви успішно заробили монети на баскетбольному майданчику.</p>
+                <div style="font-size:2rem; font-weight:bold; color:#00ffff; margin:15px 0; text-shadow:0 0 10px #00ffff;">
+                    🪙 +${coinsReward} МОНЕТ
+                </div>
+                <div style="display:flex; gap:15px; justify-content:center; margin-top:20px;">
+                    <button class="menu-button" id="btn-basket-replay" style="border-color:#00ffff; color:#00ffff; margin:0; padding:10px 20px;">Зіграти знову</button>
+                    <button class="menu-button" id="btn-basket-continue" style="border-color:#ff3399; color:#ff3399; margin:0; padding:10px 20px;">У меню</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        document.getElementById('btn-basket-replay').onclick = () => {
+            document.body.removeChild(overlay);
+            this.triggerBasketballGame();
+        };
+
+        document.getElementById('btn-basket-continue').onclick = () => {
+            document.body.removeChild(overlay);
+            showScreen('screen-main-menu');
+        };
+    }
+
     startMatrixCutscene(coinsReward) {
         this.gameState = 'matrix_headshot_cutscene';
         this.timeScale = 0.12; // Ефект надповільного часу
@@ -2496,6 +2551,26 @@ document.getElementById('btn-matrix-run').addEventListener('click', () => {
 
 document.getElementById('btn-matrix-back').addEventListener('click', () => {
     showScreen('screen-main-menu');
+});
+
+document.getElementById('btn-basketball-menu').addEventListener('click', () => {
+    gameAudio.init();
+    if (!activeGameInstance) {
+        activeGameInstance = new PenaltyMasterGame();
+        activeGameInstance.start();
+    }
+    activeGameInstance.triggerBasketballGame();
+});
+
+document.getElementById('btn-basketball-back').addEventListener('click', () => {
+    if (activeGameInstance && activeGameInstance.activeBasketballInstance) {
+        activeGameInstance.activeBasketballInstance.isPlaying = false;
+        activeGameInstance.activeBasketballInstance.unbindEvents();
+        const coins = activeGameInstance.activeBasketballInstance.coinsEarned;
+        activeGameInstance.showBasketballRewardOverlay(coins);
+    } else {
+        showScreen('screen-main-menu');
+    }
 });
 
 // MULTIPLAYER INTERACTIVE BINDINGS

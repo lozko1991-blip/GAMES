@@ -762,4 +762,29 @@ input:checked + .slider:before {
     image-rendering: pixelated;
 }
 
+/* БАСКЕТБОЛ - МІНІ ГРА */
+#screen-basketball .menu-card {
+    background: rgba(13, 5, 24, 0.96);
+    border-color: #ff3399;
+    box-shadow: 0 0 40px rgba(255, 51, 153, 0.25);
+}
+
+.basketball-controls .menu-button {
+    font-family: monospace;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(255, 51, 153, 0.03);
+    transition: all 0.2s ease;
+}
+
+.basketball-controls .menu-button:hover {
+    background: rgba(255, 51, 153, 0.2);
+    box-shadow: 0 0 15px rgba(255, 51, 153, 0.4);
+}
+
+#basketball-canvas {
+    image-rendering: pixelated;
+}
+
 
