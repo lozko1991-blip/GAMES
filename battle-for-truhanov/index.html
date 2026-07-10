@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-    <title>Труханів Острів: Шлях Бійця — Kyiv Edition</title>
+    <title>Труханів Острів: Шлях Бійця �    <!-- Google Fonts for premium visuals -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./style.css">
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
@@ -19,117 +22,231 @@
     <div id="game-wrapper">
         <button id="fs-toggle-btn" onclick="toggleFullscreen()">⛶ ФУЛСКРІН</button>
         
-        <div id="screen-menu" class="screen">
-            <h2>Турнір Київських Районів</h2>
-            <div class="menu-grid">
-                <div class="panel">
-                    <h3>Оновлені Спеціальні Удари</h3>
-                    <ul class="controls-list">
-                        <li><b>A/D / Стрілки ◄ ►</b> — Рух вліво/вправо</li>
-                        <li><b>Space / Стрілка ▲</b> — Стрибок (з A/D — Сальто)</li>
-                        <li><b>S / Стрілка ▼</b> — Присідання / Блок (назад)</li>
-                        <li><b>W / w</b> — Аперкот (підкидає противника)</li>
-                        <li><b>S + D / S + A</b> — Низька підсічка</li>
-                        <li><b>E / Num 4 / ЛКМ</b> — Удар кулаком (4x ЛКМ: Комбо-Ласо)</li>
-                        <li><b>F / Num 5 / ПКМ</b> — Удар ногою (4x ПКМ: Супер-Ласо)</li>
-                        <li><b>Shift</b> — Фігурки з неба (затиснути: Блискавка)</li>
-                        <li><b>C / I / Колесико</b> — Дістати/змінити зброю</li>
+        <!-- MAIN MENU -->
+        <div id="screen-main-menu" class="screen active">
+            <div class="menu-card">
+                <h1 style="background: linear-gradient(135deg, #ff0055 0%, #00ffcc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Outfit'; font-weight: 900; letter-spacing: 2px; font-size: 2.2rem; margin-bottom: 5px;">ТРУХАНІВ БАТЛ</h1>
+                <p style="margin-bottom: 25px; color: rgba(255,255,255,0.6); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;">
+                    Kyiv Fighting Championship
+                </p>
+                <button class="menu-button" id="btn-mode-sp" onclick="showScreen('screen-select-sp')">Одиночна гра (VS Бот)</button>
+                <button class="menu-button" id="btn-mode-local" onclick="showScreen('screen-select-local')">Бій на одному ПК (PvP)</button>
+                <button class="menu-button" id="btn-mode-online" onclick="showScreen('screen-online-lobby')">Грати Онлайн (PvP)</button>
+                <button class="menu-button" id="btn-mode-shop" onclick="openShop()" style="border-color: #ff0055; color: #ff0055;">🏪 Магазин спорядження</button>
+                <button class="menu-button" id="btn-mode-instruct" onclick="showScreen('screen-instructions')" style="border-color: #00ffcc; color: #00ffcc;">Як грати / Прийоми</button>
+                <button class="menu-button" id="btn-mode-fullscreen" onclick="toggleFullscreen()">Повний екран</button>
+            </div>
+        </div>
+
+        <!-- SELECT SINGLE PLAYER -->
+        <div id="screen-select-sp" class="screen hidden">
+            <div class="menu-card">
+                <h2>Одиночна гра</h2>
+                
+                <div class="select-group">
+                    <label>ОБЕРІТЬ БІЙЦЯ:</label>
+                    <select id="char-select">
+                        <option value="lozko">Лозко (Труханів / Вода)</option>
+                        <option value="demchuk">Демчук (Шулявка / Енергія)</option>
+                        <option value="kolomiiets">Коломієць (КНЕУ / Блискавка)</option>
+                        <option value="palazhchenko">Палажченко (Борщага / Вогонь)</option>
+                        <option value="andriushka">Андрюшка (Антропік / Код)</option>
+                        <option value="olezhka">Олєжка (Джойстик / Блондин)</option>
+                        <option value="jonik">Джонік (Рижий кіт)</option>
+                        <option value="isnusha">Існуша (Маламут)</option>
+                        <option value="sofiika">Софійка (Офіс / Рожева енергія)</option>
+                    </select>
+                </div>
+
+                <div class="select-group">
+                    <label>СУПРОТИВНИК:</label>
+                    <select id="char2-select">
+                        <option value="random" selected>Випадковий бієць</option>
+                        <option value="lozko">Лозко (Труханів / Вода)</option>
+                        <option value="demchuk">Демчук (Шулявка / Енергія)</option>
+                        <option value="kolomiiets">Коломієць (КНЕУ / Блискавка)</option>
+                        <option value="palazhchenko">Палажченко (Борщага / Вогонь)</option>
+                        <option value="andriushka">Андрюшка (Антропік / Код)</option>
+                        <option value="olezhka">Олєжка (Джойстик / Блондин)</option>
+                        <option value="jonik">Джонік (Рижий кіт)</option>
+                        <option value="isnusha">Існуша (Маламут)</option>
+                        <option value="sofiika">Софійка (Офіс / Рожева енергія)</option>
+                    </select>
+                </div>
+
+                <div class="select-group">
+                    <label>АРЕНА:</label>
+                    <select id="level-select">
+                        <option value="random">Випадкова арена</option>
+                        <option value="0">Труханів Острів (Пляж)</option>
+                        <option value="1">Хрещатик (Захід сонця)</option>
+                        <option value="2">Гідропарк (Качалка)</option>
+                        <option value="3">Шулявський шляхопровід</option>
+                        <option value="4">Головний Корпус КНЕУ</option>
+                        <option value="5">Борщагівка (Панельки)</option>
+                        <option value="6">Київстар (Офіс)</option>
+                        <option value="7">Магазин BRAIN / ITbox</option>
+                        <option value="8">Бортницька станція аерації</option>
+                        <option value="9">Село Дубище</option>
+                        <option value="10" id="opt-level-10">Пристроми (Укрпромпостач)</option>
+                        <option value="11" id="opt-level-11">Переяслав (Дзвіниця)</option>
+                        <option value="12" id="opt-level-12">Березань (Вітальна арка)</option>
+                    </select>
+                </div>
+
+                <div class="select-group">
+                    <label>СКЛАДНІСТЬ:</label>
+                    <select id="diff-select">
+                        <option value="0" selected>Студент (Норм)</option>
+                        <option value="1">Майстер (Складн)</option>
+                    </select>
+                </div>
+
+                <button onclick="startSinglePlayerGame()" style="background: #ff0055; border-color: #ff0055; margin-top: 15px;">ПОЧАТИ БІЙ</button>
+                <button onclick="showScreen('screen-main-menu')" style="background: #333; border-color: #444; margin-top: 5px;">Назад</button>
+            </div>
+        </div>
+
+        <!-- SELECT LOCAL PVP -->
+        <div id="screen-select-local" class="screen hidden">
+            <div class="menu-card">
+                <h2>Бій на одному ПК</h2>
+                
+                <div class="select-group">
+                    <label>ГРАВЕЦЬ 1:</label>
+                    <!-- Reuse the main char select ID, but wait: local PvP uses this dropdown for Player 1, which works! -->
+                    <select id="char-select-local-p1" onchange="document.getElementById('char-select').value = this.value">
+                        <option value="lozko">Лозко (Труханів / Вода)</option>
+                        <option value="demchuk">Демчук (Шулявка / Енергія)</option>
+                        <option value="kolomiiets">Коломієць (КНЕУ / Блискавка)</option>
+                        <option value="palazhchenko">Палажченко (Борщага / Вогонь)</option>
+                        <option value="andriushka">Андрюшка (Антропік / Код)</option>
+                        <option value="olezhka">Олєжка (Джойстик / Блондин)</option>
+                        <option value="jonik">Джонік (Рижий кіт)</option>
+                        <option value="isnusha">Існуша (Маламут)</option>
+                        <option value="sofiika">Софійка (Офіс / Рожева енергія)</option>
+                    </select>
+                </div>
+
+                <div class="select-group">
+                    <label>ГРАВЕЦЬ 2:</label>
+                    <!-- Reuse the main char2 select ID, but wait: local PvP uses this dropdown for Player 2, which works! -->
+                    <select id="char-select-local-p2" onchange="document.getElementById('char2-select').value = this.value">
+                        <option value="lozko" selected>Лозко (Труханів / Вода)</option>
+                        <option value="demchuk" selected>Демчук (Шулявка / Енергія)</option>
+                        <option value="kolomiiets">Коломієць (КНЕУ / Блискавка)</option>
+                        <option value="palazhchenko">Палажченко (Борщага / Вогонь)</option>
+                        <option value="andriushka">Андрюшка (Антропік / Код)</option>
+                        <option value="olezhka">Олєжка (Джойстик / Блондин)</option>
+                        <option value="jonik">Джонік (Рижий кіт)</option>
+                        <option value="isnusha">Існуша (Маламут)</option>
+                        <option value="sofiika">Софійка (Офіс / Рожева енергія)</option>
+                    </select>
+                </div>
+
+                <div class="select-group">
+                    <label>АРЕНА:</label>
+                    <select id="level-select-local" onchange="document.getElementById('level-select').value = this.value">
+                        <option value="random">Випадкова арена</option>
+                        <option value="0">Труханів Острів (Пляж)</option>
+                        <option value="1">Хрещатик (Захід сонця)</option>
+                        <option value="2">Гідропарк (Качалка)</option>
+                        <option value="3">Шулявський шляхопровід</option>
+                        <option value="4">Головний Корпус КНЕУ</option>
+                        <option value="5">Борщагівка (Панельки)</option>
+                        <option value="6">Київстар (Офіс)</option>
+                        <option value="7">Магазин BRAIN / ITbox</option>
+                        <option value="8">Бортницька станція аерації</option>
+                        <option value="9">Село Дубище</option>
+                        <option value="10">Пристроми (Укрпромпостач)</option>
+                        <option value="11">Переяслав (Дзвіниця)</option>
+                        <option value="12">Березань (Вітальна арка)</option>
+                    </select>
+                </div>
+
+                <button onclick="startLocalPvPGame()" style="background: #00ffcc; border-color: #00ffcc; color: #000; margin-top: 15px;">ПОЧАТИ БІЙ</button>
+                <button onclick="showScreen('screen-main-menu')" style="background: #333; border-color: #444; margin-top: 5px;">Назад</button>
+            </div>
+        </div>
+
+        <!-- ONLINE LOBBY SCREEN -->
+        <div id="screen-online-lobby" class="screen hidden">
+            <div class="menu-card" style="max-width: 520px;">
+                <h2>Грати Онлайн</h2>
+                
+                <div class="select-group" style="margin-bottom: 10px;">
+                    <label>ОБЕРІТЬ СВОГО БІЙЦЯ:</label>
+                    <select id="char-select-online" onchange="document.getElementById('char-select').value = this.value">
+                        <option value="lozko">Лозко (Труханів / Вода)</option>
+                        <option value="demchuk">Демчук (Шулявка / Енергія)</option>
+                        <option value="kolomiiets">Коломієць (КНЕУ / Блискавка)</option>
+                        <option value="palazhchenko">Палажченко (Борщага / Вогонь)</option>
+                        <option value="andriushka">Андрюшка (Антропік / Код)</option>
+                        <option value="olezhka">Олєжка (Джойстик / Блондин)</option>
+                        <option value="jonik">Джонік (Рижий кіт)</option>
+                        <option value="isnusha">Існуша (Маламут)</option>
+                        <option value="sofiika">Софійка (Офіс / Рожева енергія)</option>
+                    </select>
+                </div>
+
+                <div class="lobby-section" style="border: 1px dashed rgba(255,0,85,0.4); padding: 10px; border-radius: 8px; background: rgba(255,0,85,0.03); margin-bottom: 10px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #ff0055; display: block; margin-bottom: 6px;">ШВИДКІ ЛОБІ (PeerJS):</span>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="joinLobby(1)" style="margin: 0; padding: 6px; font-size: 10px; background: #004466; border-color: #0088cc; flex: 1;">ЛОБІ 1</button>
+                        <button onclick="joinLobby(2)" style="margin: 0; padding: 6px; font-size: 10px; background: #551a3b; border-color: #883366; flex: 1;">ЛОБІ 2</button>
+                    </div>
+                </div>
+
+                <div class="lobby-section" style="border: 1px dashed rgba(0,255,204,0.4); padding: 10px; border-radius: 8px; background: rgba(0,255,204,0.03); margin-bottom: 10px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #00ffcc; display: block; margin-bottom: 4px;">КОРИСТУВАЦЬКІ КІМНАТИ:</span>
+                    <button id="btn-custom-online-toggle" onclick="toggleCustomOnlinePanel()" style="margin: 0; padding: 6px; font-size: 9px; background: #222; border-color: #444;">Показати налаштування кімнат</button>
+                    
+                    <div id="custom-online-panel" class="hidden" style="margin-top: 6px; padding: 6px; border: 1px solid #00ffcc; border-radius: 6px; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 6px;">
+                        <button onclick="hostRoom()" style="padding: 6px; margin: 0; font-size: 10px; width: 100%;">Створити кімнату</button>
+                        <div id="host-info" class="hidden">
+                            <span style="font-size: 9px; color: #ccc;">Код вашої кімнати:</span>
+                            <div id="room-id-display" style="font-size: 14px; font-weight: bold; color: #00ffcc; background: rgba(0,0,0,0.8); padding: 6px; margin: 4px 0; border: 1px dashed #00ffcc; text-align: center; cursor: pointer; border-radius: 4px;">Завантаження...</div>
+                        </div>
+                        <input type="text" id="join-room-id" placeholder="Код кімнати" style="padding: 6px; width: calc(100% - 14px); background: #111; color: #fff; border: 1px solid #444; border-radius: 4px; margin-bottom: 4px; text-align: center; font-size: 10px;" />
+                        <button onclick="joinRoom()" style="padding: 6px; background: #333; border-color: #555; width: 100%; font-size: 10px; margin: 0;">Приєднатись</button>
+                    </div>
+                </div>
+
+                <button id="btn-start-online-game" class="hidden" onclick="startOnlineGame()" style="margin: 8px 0 0 0; padding: 8px; font-size: 11px; background: #ffcc00; color: #000; border-color: #ffcc00; font-weight: 800;">ПОЧАТИ ОНЛАЙН БІЙ</button>
+                <div id="online-status" style="margin-top: 6px; font-size: 10px; color: #ffcc00; text-align: center; min-height: 15px;">Оберіть режим</div>
+                
+                <button onclick="showScreen('screen-main-menu')" style="background: #333; border-color: #444; margin-top: 10px;">Назад</button>
+            </div>
+        </div>
+
+        <!-- SCREEN INSTRUCTIONS -->
+        <div id="screen-instructions" class="screen hidden">
+            <div class="menu-card" style="max-width: 600px;">
+                <h2>Керування та прийоми</h2>
+                <div class="tutorial-text" style="max-height: 280px; overflow-y: auto; text-align: left; font-size: 11px; line-height: 1.5; color: #ccc; margin-bottom: 15px;">
+                    <p style="color:#ffcc00; font-weight:bold; margin-bottom: 8px;">⌨️ КЕРУВАННЯ НА ПК:</p>
+                    <ul style="padding-left: 15px; margin-bottom: 12px;">
+                        <li><b>A/D / Стрілки◄ ►</b> — Рух бійця вліво/вправо</li>
+                        <li><b>Space / Стрілка ▲</b> — Стрибок (з A/D — Сальто вбік)</li>
+                        <li><b>S / Стрілка ▼</b> — Присідання / Блок (назад від удару)</li>
+                        <li><b>W / клавіша w</b> — Аперкот (підбиває ворога в повітря)</li>
+                        <li><b>S + D / S + A</b> — Низька підсічка (збиває з ніг)</li>
+                        <li><b>E / Num 4 / ЛКМ</b> — Удар рукою (4 швидких натискання: Комбо-Ласо)</li>
+                        <li><b>F / Num 5 / ПКМ</b> — Удар ногою (4 швидких натискання: Супер-Ласо)</li>
+                        <li><b>Shift</b> — Кинути фігурки з неба (затиснути: Блискавка)</li>
+                        <li><b>C / I / Num 0 / Коліщатко</b> — Дістати / змінити зброю</li>
+                    </ul>
+                    <p style="color:#ffcc00; font-weight:bold; margin-bottom: 8px;">⚔️ КЕРУВАННЯ ЗБРОЄЮ:</p>
+                    <ul style="padding-left: 15px;">
+                        <li><b>Коліщатко / Num 0 / Shift</b> — Зміна зброї в руках</li>
+                        <li><b>ЛКМ / E</b> — Основна атака зброєю (постріл з лука)</li>
+                        <li><b>ПКМ / F</b> — Швидкий удар зблизька</li>
                     </ul>
                 </div>
-                <div class="panel" style="max-height: none; display: flex; flex-direction: column; gap: 8px;">
-                    <!-- Character selection -->
-                    <div style="display: flex; flex-direction: column; gap: 2px;">
-                        <span style="font-size: 10px; color: #ffcc00; font-weight: bold;">ОБЕРІТЬ БІЙЦЯ:</span>
-                        <select id="char-select" style="margin: 0;">
-                            <option value="lozko">Лозко (Труханів / Вода)</option>
-                            <option value="demchuk">Демчук (Шулявка / Енергія)</option>
-                            <option value="kolomiiets">Коломієць (КНЕУ / Блискавка)</option>
-                            <option value="palazhchenko">Палажченко (Борщага / Вогонь)</option>
-                            <option value="andriushka">Андрюшка (Антропік / Код)</option>
-                            <option value="olezhka">Олєжка (Джойстик / Блондин)</option>
-                            <option value="jonik">Джонік (Рижий кіт)</option>
-                            <option value="isnusha">Існуша (Маламут)</option>
-                            <option value="sofiika">Софійка (Офіс / Рожева енергія)</option>
-                        </select>
-                    </div>
-
-                    <!-- Opponent Selection -->
-                    <div style="display: flex; flex-direction: column; gap: 2px;">
-                        <span style="font-size: 10px; color: #ffcc00; font-weight: bold;">ОБЕРІТЬ СУПРОТИВНИКА / ГРАВЦЯ 2:</span>
-                        <select id="char2-select" style="margin: 0;">
-                            <option value="random" selected>Випадковий бієць</option>
-                            <option value="lozko">Лозко (Труханів / Вода)</option>
-                            <option value="demchuk">Демчук (Шулявка / Енергія)</option>
-                            <option value="kolomiiets">Коломієць (КНЕУ / Блискавка)</option>
-                            <option value="palazhchenko">Палажченко (Борщага / Вогонь)</option>
-                            <option value="andriushka">Андрюшка (Антропік / Код)</option>
-                            <option value="olezhka">Олєжка (Джойстик / Блондин)</option>
-                            <option value="jonik">Джонік (Рижий кіт)</option>
-                            <option value="isnusha">Існуша (Маламут)</option>
-                            <option value="sofiika">Софійка (Офіс / Рожева енергія)</option>
-                        </select>
-                    </div>
-
-                    <!-- Arena Selection -->
-                    <div style="display: flex; flex-direction: column; gap: 2px;">
-                        <span style="font-size: 10px; color: #ffcc00; font-weight: bold;">АРЕНА:</span>
-                        <select id="level-select" style="margin: 0;">
-                            <option value="random">Випадкова арена</option>
-                            <option value="0">Труханів Острів (Пляж)</option>
-                            <option value="1">Хрещатик (Захід сонця)</option>
-                            <option value="2">Гідропарк (Качалка)</option>
-                            <option value="3">Шулявський шляхопровід</option>
-                            <option value="4">Головний Корпус КНЕУ</option>
-                            <option value="5">Борщагівка (Панельки)</option>
-                            <option value="6">Київстар (Офіс)</option>
-                            <option value="7">Магазин BRAIN / ITbox</option>
-                            <option value="8">Бортницька станція аерації</option>
-                            <option value="9">Село Дубище</option>
-                            <option value="10" id="opt-level-10">Пристроми (Укрпромпостач)</option>
-                            <option value="11" id="opt-level-11">Переяслав (Дзвіниця)</option>
-                            <option value="12" id="opt-level-12">Березань (Вітальна арка)</option>
-                        </select>
-                    </div>
-
-                    <!-- Shop Launcher & Coins Display -->
-                    <div style="display: flex; gap: 4px; align-items: center; justify-content: space-between; margin-top: 4px; padding: 4px; border: 1px solid rgba(0,255,204,0.3); border-radius: 4px; background: rgba(0,0,0,0.6);">
-                        <span style="font-size: 9px; color: #ffcc00; font-weight: bold;">КОЇНИ: <span id="shop-coins-display" style="color: #00ffcc; font-size: 11px;">200</span> 🪙</span>
-                        <button id="btn-shop-menu" onclick="openShop()" style="margin: 0; padding: 4px 10px; font-size: 10px; font-weight: bold; background: #660099; border-color: #8800cc; color: #fff; border-radius: 4px; cursor: pointer;">🏪 МАГАЗИН</button>
-                    </div>
-
-                    <!-- Mode 1: Single Player -->
-                    <div style="border: 1px dashed rgba(255,0,85,0.4); padding: 8px; border-radius: 6px; background: rgba(255,0,85,0.03);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                            <span style="font-size: 11px; font-weight: bold; color: #ff0055;">1 ГРАВЕЦЬ (VS БОТ)</span>
-                            <select id="diff-select" style="width: 120px; padding: 4px; margin: 0; font-size: 9px; height: 22px;">
-                                <option value="0" selected>Студент (Норм)</option>
-                                <option value="1">Майстер (Складн)</option>
-                            </select>
-                        </div>
-                        <button onclick="startSinglePlayerGame()" style="margin: 0; padding: 6px; font-size: 10px; background: #990033; border-color: #bb0044;">ГРАТИ ПРОТИ БОТА</button>
-                    </div>
-
-                    <!-- Mode 2: Local PvP -->
-                    <div style="border: 1px dashed rgba(0,255,204,0.4); padding: 8px; border-radius: 6px; background: rgba(0,255,204,0.03);">
-                        <span style="font-size: 11px; font-weight: bold; color: #00ffcc; display: block; margin-bottom: 4px;">2 ГРАВЦІ (1 КОМП'ЮТЕР)</span>
-                        <button onclick="startLocalPvPGame()" style="margin: 0; padding: 6px; font-size: 10px; background: #006655; border-color: #008877;">ГРАТИ НА ОДНОМУ ПК</button>
-                    </div>
-
-                    <!-- Mode 3: Online PvP -->
-                    <div style="border: 1px dashed rgba(255,204,0,0.4); padding: 8px; border-radius: 6px; background: rgba(255,204,0,0.03);">
-                        <span style="font-size: 11px; font-weight: bold; color: #ffcc00; display: block; margin-bottom: 4px;">ГРАТИ ОНЛАЙН (PvP)</span>
-                        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
-                            <button onclick="joinLobby(1)" style="margin: 0; padding: 6px; font-size: 10px; background: #004466; border-color: #0088cc; flex: 1;">ЛОБІ 1</button>
-                            <button onclick="joinLobby(2)" style="margin: 0; padding: 6px; font-size: 10px; background: #551a3b; border-color: #883366; flex: 1;">ЛОБІ 2</button>
-                        </div>
-                        <button id="btn-custom-online-toggle" onclick="toggleCustomOnlinePanel()" style="margin: 0; padding: 4px; font-size: 8px; background: #222; border-color: #444;">Користувацькі кімнати (з кодом)</button>
-                        
-                        <!-- Collapsible custom online panel -->
-                        <div id="custom-online-panel" class="hidden" style="margin-top: 6px; padding: 6px; border: 1px solid #ffcc00; border-radius: 4px; background: rgba(0,0,0,0.7); display: flex; flex-direction: column; gap: 4px;">
-                            <button onclick="hostRoom()" style="padding: 4px; margin-bottom: 4px; font-size: 9px; width: 100%;">Створити кімнату</button>
-                            <div id="host-info" class="hidden">
-                                <span style="font-size: 9px; color: #ccc;">Код вашої кімнати:</span>
-                                <div id="room-id-display" style="font-size: 12px; font-weight: bold; color: #00ffcc; background: rgba(0,0,0,0.8); padding: 3px; margin: 2px 0; border: 1px dashed #00ffcc; text-align: center; cursor: pointer;">Завантаження...</div>
+                <button onclick="showScreen('screen-main-menu')" style="background: #333; border-color: #444;">Назад</button>
+            </div>
+        </div>
+ze: 12px; font-weight: bold; color: #00ffcc; background: rgba(0,0,0,0.8); padding: 3px; margin: 2px 0; border: 1px dashed #00ffcc; text-align: center; cursor: pointer;">Завантаження...</div>
                             </div>
                             <input type="text" id="join-room-id" placeholder="Введіть код кімнати" style="padding: 4px; width: calc(100% - 10px); background: #111; color: #fff; border: 1px solid #444; border-radius: 4px; margin-bottom: 4px; text-align: center; font-size: 9px;" />
                             <button onclick="joinRoom()" style="padding: 4px; background: #333; border-color: #555; width: 100%; font-size: 9px;">Приєднатись</button>
@@ -172,18 +289,20 @@
             
             <button onclick="closeShop()" style="width: 220px; background: #333; border-color: #444; color: white; margin: 0 auto; display: block; font-size: 11px; cursor: pointer; padding: 8px;">Назад до меню</button>
         </div>
-        <div id="controls-hint" style="position:absolute; top:70px; left:50%; transform:translateX(-50%); z-index:1000; line-height:1.6; text-align:center; width:90%; max-width:840px; background:rgba(0,0,0,0.75); padding:10px; border:1px solid #666; border-radius:8px; box-shadow: 0 4px 10px rgba(0,0,0,0.8);">
-            <button onclick="document.getElementById('controls-hint').style.display='none'" style="position:absolute; top:-12px; right:-12px; background:#ff0055; color:white; border:2px solid #fff; border-radius:50%; width:30px; height:30px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow: 0 0 5px #000;">X</button>
-            <b style="color:#ffcc00;font-size:11px;">&#9000; КЕРУВАННЯ ПК (Гравець 1 / Гравець 2):</b><br>
-            <span style="color:#00ffcc">A/D / Стрілки</span> — рух &nbsp;|&nbsp; <span style="color:#00ffcc">Space / ▲</span> — стрибок (з A/D — Сальто) &nbsp;|&nbsp; <span style="color:#00ffcc">W</span> — аперкот &nbsp;|&nbsp; <span style="color:#00ffcc">S+D</span> — підсічка<br>
-            <span style="color:#ffcc00">E / Num 4 / ЛКМ</span> — кулак (4x: Ласо притягнути) &nbsp;|&nbsp; <span style="color:#ffcc00">F / Num 5 / ПКМ</span> — нога (4x: Ласо збити)<br>
-            <span style="color:#55ff55">Shift</span> — фігурки з неба (затиснути: Блискавка) &nbsp;|&nbsp; <span style="color:#55ff55">C/I / Num 0 / Колесико</span> — зброя
+        <div id="controls-hint" style="display: none;">
+            <button onclick="document.getElementById('controls-hint').style.display='none'" class="controls-hint-close">X</button>
+            <b style="color:#ffcc00;font-size:11px;">⌨️ КЕРУВАННЯ НА ПК (Гр1 / Гр2):</b><br>
+            <span style="color:#00ffcc">A/D / Стрілки</span> — рух | <span style="color:#00ffcc">Space / ▲</span> — стрибок (з A/D — Сальто)<br>
+            <span style="color:#00ffcc">W</span> — аперкот | <span style="color:#00ffcc">S+D / S+A</span> — підсічка<br>
+            <span style="color:#ffcc00">E / Num 4 / ЛКМ</span> — кулак (4x: Ласо притягнути)<br>
+            <span style="color:#ffcc00">F / Num 5 / ПКМ</span> — нога (4x: Ласо збити)<br>
+            <span style="color:#55ff55">Shift</span> — предмети (затиснути: Блискавка) | <span style="color:#55ff55">C/I / Num 0</span> — зброя
         </div>
         <div id="weapon-controls-hint" style="display: none;">
-            <span style="color:#ffcc00; font-weight:bold;">⚔️ КЕРУВАННЯ ЗБРОЄЮ:</span> 
-            Колесико мишки / Shift (Гр1) або Num 0 (Гр2) — Зміна &nbsp;|&nbsp; 
-            ЛКМ / E — Вогонь / Атака 1 &nbsp;|&nbsp; 
-            ПКМ / F — Мелі / Атака 2
+            <b style="color:#ffcc00; font-size:11px;">⚔️ КЕРУВАННЯ ЗБРОЄЮ:</b><br>
+            <span style="color:#00ffcc">Коліщатко / Shift / Num 0</span> — Зміна<br>
+            <span style="color:#ffcc00">ЛКМ / E</span> — Атака 1 (Постріл з лука)<br>
+            <span style="color:#ffcc00">ПКМ / F</span> — Швидкий удар зблизька
         </div>
         <div id="hud">
             <div class="player-hud" id="hud-p1">

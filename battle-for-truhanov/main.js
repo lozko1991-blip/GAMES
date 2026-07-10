@@ -1,3 +1,20 @@
+function showScreen(screenId) {
+    const screens = ['screen-main-menu', 'screen-select-sp', 'screen-select-local', 'screen-online-lobby', 'screen-instructions', 'screen-shop'];
+    screens.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === screenId) {
+                el.classList.remove('hidden');
+                el.classList.add('active');
+            } else {
+                el.classList.add('hidden');
+                el.classList.remove('active');
+            }
+        }
+    });
+}
+window.showScreen = showScreen;
+
         function toggleFullscreen() {
             const w = document.getElementById('game-wrapper'); const btn = document.getElementById('fs-toggle-btn');
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -76,7 +93,7 @@
             state.isMatchEnding = false; state.screenShake = 0; state.hitstopFrames = 0; state.toastyTimer = 0; state.controlGestures = {}; state.frameCount = 0;
             state.particles = []; state.projectiles = []; state.floatingTexts = [];
             clearTimeout(state.finishHimTimeout); clearInterval(state.timerInterval);
-            document.getElementById('screen-menu').classList.add('hidden'); startNewRoundSequence();
+            showScreen('none'); document.getElementById('fs-toggle-btn').classList.add('hidden'); startNewRoundSequence();
         }
         function startNewRoundSequence() {
             clearTimeout(state.finishHimTimeout); clearInterval(state.timerInterval);
@@ -296,7 +313,7 @@
         function showMenu() {
             state.isRunning = false; AudioSys.stopBGM(); clearTimeout(state.finishHimTimeout); clearInterval(state.timerInterval); state.controlGestures = {};
             document.getElementById('screen-result').classList.add('hidden'); document.getElementById('hud').style.display = 'none'; document.getElementById('timer-box').style.display = 'none';
-            document.getElementById('screen-menu').classList.remove('hidden'); drawScene(0);
+            showScreen('screen-main-menu'); document.getElementById('fs-toggle-btn').classList.remove('hidden'); drawScene(0);
             const hint = document.getElementById('controls-hint');
             if (hint) hint.style.display = 'none';
             const wHint = document.getElementById('weapon-controls-hint');
@@ -316,15 +333,13 @@
         let shopCurrentTab = 'weapons';
         
         function openShop() {
-            document.getElementById('screen-menu').classList.add('hidden');
-            document.getElementById('screen-shop').classList.remove('hidden');
+            showScreen('screen-shop');
             document.getElementById('shop-modal-coins').innerText = state.coins;
             renderShopItems();
         }
         
         function closeShop() {
-            document.getElementById('screen-shop').classList.add('hidden');
-            document.getElementById('screen-menu').classList.remove('hidden');
+            showScreen('screen-main-menu');
             document.getElementById('shop-coins-display').innerText = state.coins;
             updateHUDStreakDisplay();
         }

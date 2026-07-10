@@ -135,7 +135,7 @@
         window.addEventListener('mousedown', (e) => {
             const p = (state.isOnline && !state.isHost) ? state.bot : state.player;
             if (!state.isRunning || !p || p.state === 'dead' || state.isMatchEnding) return;
-            if (e.target.tagName === 'BUTTON' || e.target.closest('#res-screen') || e.target.closest('#screen-menu')) return;
+            if (e.target.tagName === 'BUTTON' || e.target.closest('#res-screen') || e.target.closest('.screen')) return;
             if (state.difficulty === 'pvp' && !state.isOnline) return;
             
             if (e.button === 0) {
