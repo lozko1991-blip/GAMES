@@ -23,30 +23,30 @@ const PENALTY_SPOT_Z = 11.0; // відстань пенальті до ворі�
 const DIFFICULTY_PRESETS = {
     EASY: {
         name: 'EASY',
-        reactionDelay: 0.5,
-        diveSpeed: 4.8,
-        predictionError: 1.2,
-        mistakeChance: 0.30
+        reactionDelay: 0.55,
+        diveSpeed: 4.0,
+        predictionError: 1.4,
+        mistakeChance: 0.38
     },
     MEDIUM: {
         name: 'MEDIUM',
-        reactionDelay: 0.32,
-        diveSpeed: 6.5,
-        predictionError: 0.55,
-        mistakeChance: 0.12
+        reactionDelay: 0.20,   // Швидка реакція (0.32 → 0.20 с)
+        diveSpeed: 8.5,        // Швидкість ривка (6.5 → 8.5)
+        predictionError: 0.28, // Менше помилок предбачення (0.55 → 0.28)
+        mistakeChance: 0.07    // Менше хаотичних помилок (0.12 → 0.07)
     },
     HARD: {
         name: 'HARD',
-        reactionDelay: 0.12,
-        diveSpeed: 9.6,
-        predictionError: 0.15,
-        mistakeChance: 0.02
+        reactionDelay: 0.08,   // Блискавич (0.12 → 0.08 с)
+        diveSpeed: 12.0,       // Дуже швидкий ривок (9.6 → 12.0)
+        predictionError: 0.06, // Майже ідеальне предбачення (0.15 → 0.06)
+        mistakeChance: 0.01
     },
     LEGEND: {
         name: 'LEGEND',
         reactionDelay: 0.01,
-        diveSpeed: 13.5,
-        predictionError: 0.01,
+        diveSpeed: 16.0,
+        predictionError: 0.00,
         mistakeChance: 0.00
     }
 };

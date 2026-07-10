@@ -102,7 +102,7 @@ class PlayerControls {
     ====================================================
     */
     update(deltaTime, isRunUpStarted, gameState) {
-        const aimSpeed = 4.8; // Збільшена швидкість прицілювання для чутливості
+        const aimSpeed = 7.5; // Швидкість прицілювання збільшена для плавного охоплення всіх кутів воріт
 
         // Дозволяємо цілитися під час вибору старту розбігу ТА під час самого розбігу
         if (gameState === 'aiming' || gameState === 'runup' || isRunUpStarted) {
@@ -126,16 +126,16 @@ class PlayerControls {
                 console.warn('Error reading equipped cap sway: ', e);
             }
 
-            // Розраховуємо силу коливання прицілу (sway) залежно від точності гравця
-            let swayAmplitude = Math.max(0.01, 1.25 * (1.0 - shoStat / 100));
+            // Sway знижено на 40% — приціл тепер стабільніший, але не мертвий
+            let swayAmplitude = Math.max(0.005, 0.75 * (1.0 - shoStat / 100));
             swayAmplitude *= (1.0 - capSwayReduction);
 
-            const swaySpeed = Math.max(0.4, 3.2 * (1.0 - shoStat / 100));
+            const swaySpeed = Math.max(0.3, 2.0 * (1.0 - shoStat / 100));
             const time = performance.now() * 0.001 * swaySpeed;
 
-            // Додаємо постійне коливання (коли гравець утримує або не утримує приціл)
+            // Постійне коливання (зменшено, щоб не заважало доводити приціл у кути)
             this.aimX += Math.sin(time * 2.0) * swayAmplitude * deltaTime;
-            this.aimY += Math.cos(time * 1.6) * swayAmplitude * 0.7 * deltaTime;
+            this.aimY += Math.cos(time * 1.6) * swayAmplitude * 0.5 * deltaTime;
 
             if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
                 this.aimX = Math.max(-GOAL_WIDTH/2 - 2.8, this.aimX - aimSpeed * deltaTime);
@@ -146,11 +146,12 @@ class PlayerControls {
                 this.sideSpin = Math.min(1.0, this.sideSpin + 1.5 * deltaTime);
             }
             if (this.keys['ArrowUp'] || this.keys['KeyW']) {
-                this.aimY = Math.min(GOAL_HEIGHT + 1.8, this.aimY + aimSpeed * 0.8 * deltaTime);
+                // Вертикальна швидкість збільшена до 1.35x — легше доводити до верхніх кутів
+                this.aimY = Math.min(GOAL_HEIGHT + 1.8, this.aimY + aimSpeed * 1.35 * deltaTime);
                 this.topSpin = Math.max(-1.0, this.topSpin - 1.2 * deltaTime);
             }
             if (this.keys['ArrowDown'] || this.keys['KeyS']) {
-                this.aimY = Math.max(0.05, this.aimY - aimSpeed * 0.8 * deltaTime);
+                this.aimY = Math.max(0.05, this.aimY - aimSpeed * 1.1 * deltaTime);
                 this.topSpin = Math.min(1.0, this.topSpin + 1.2 * deltaTime);
             }
 

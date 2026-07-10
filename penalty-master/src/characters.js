@@ -887,7 +887,8 @@ class GoalkeeperAI {
             if (this.correctionTimer >= this.correctionInterval) {
                 this.correctionTimer = 0;
                 const refined = this.simulateBallToGoal(ball);
-                const blendFactor = 0.55;
+                // Більша вага до оновленого розрахунку — воротар точніше слідкує за м'ячем
+                const blendFactor = 0.72;
                 this.predictedTargetX = this.predictedTargetX * (1 - blendFactor) + refined.x * blendFactor;
                 this.predictedTargetY = this.predictedTargetY * (1 - blendFactor) + refined.y * blendFactor;
             }
@@ -897,7 +898,8 @@ class GoalkeeperAI {
             this.hasJumped = true;
             const distanceToTarget = Math.abs(this.predictedTargetX - this.keeper.position.coordinateX);
 
-            if (distanceToTarget > 0.45) {
+            // Знижено поріг з 0.45 на 0.25 — воротар тепер підстрибує навіть при невеликому зміщенні
+            if (distanceToTarget > 0.25) {
                 const isLeft = this.predictedTargetX < this.keeper.position.coordinateX;
                 const isHigh = this.predictedTargetY > 0.95;
                 
@@ -928,10 +930,12 @@ class GoalkeeperAI {
 
         if (this.divePhase >= 1) {
             const deltaX = this.predictedTargetX - this.keeper.position.coordinateX;
-            const maxStep = (this.difficulty ? this.difficulty.diveSpeed : 6.5) * 1.8 * deltaTime;
+            // Збільшено з 1.8 до 2.45 — швидше покриває горизонтальну дистанцію
+            const maxStep = (this.difficulty ? this.difficulty.diveSpeed : 6.5) * 2.45 * deltaTime;
             this.keeper.position.coordinateX += Math.sign(deltaX) * Math.min(Math.abs(deltaX), maxStep);
 
-            this.diveVelocityY -= PHYSICS_GRAVITY * 1.4 * deltaTime;
+            // Знижено гравітацію з 1.4 до 1.2 — воротар здіймає вищий стрибок для верхніх кутів
+            this.diveVelocityY -= PHYSICS_GRAVITY * 1.2 * deltaTime;
             this.keeper.position.coordinateY += this.diveVelocityY * deltaTime;
 
             if (this.keeper.position.coordinateY <= 0.0) {
@@ -966,8 +970,8 @@ class GoalkeeperAI {
         const distR    = ball.position.distanceTo(handRPos);
         const distBody = ball.position.distanceTo(spinePos);
 
-        const saveRadiusHands = 0.34;
-        const saveRadiusBody  = 0.48;
+        const saveRadiusHands = 0.42;  // Збільшено з 0.34 — воротар точніше дотягується до м'яча
+        const saveRadiusBody  = 0.60;  // Збільшено з 0.48 — тіло перекриває більше випадків
 
         const keeperVel = new Vector3(this.diveVelocityX, this.diveVelocityY, 0);
 
@@ -976,7 +980,11 @@ class GoalkeeperAI {
             const rawN = ball.position.subtract(closestHand);
             const contactNormal = rawN.length() > 0.001 ? rawN.normalize() : new Vector3(0, 1, 1).normalize();
 
-            const catchChance = this.difficulty ? (this.difficulty.name === 'EASY' ? 0.28 : (this.difficulty.name === 'MEDIUM' ? 0.60 : 0.75)) : 0.6;
+            const catchChance = this.difficulty ? (
+            this.difficulty.name === 'EASY'   ? 0.22 :
+            this.difficulty.name === 'MEDIUM' ? 0.72 :  // 60% → 72%
+            0.88  // HARD/LEGEND: частіше затримує, рідко відбиває назад
+        ) : 0.65;
             const type = Math.random() < catchChance ? 'save' : 'punch';
             return { type, contactNormal, keeperVel };
         }
