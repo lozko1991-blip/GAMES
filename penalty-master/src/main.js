@@ -74,8 +74,21 @@ class PlayerControls {
                 console.warn('Error reading SHO stat: ', e);
             }
 
+            // Зчитуємо вплив кепки на точність прицілювання (aiming sway reduction)
+            let capSwayReduction = 0.0;
+            try {
+                const equippedCap = safeStorage.getItem('pm_equipped_cap') || 'none';
+                if (equippedCap === 'cap_forward') capSwayReduction = 0.05;
+                else if (equippedCap === 'cap_backward') capSwayReduction = 0.10;
+                else if (equippedCap === 'crown') capSwayReduction = 0.20;
+            } catch (e) {
+                console.warn('Error reading equipped cap sway: ', e);
+            }
+
             // Розраховуємо силу коливання прицілу (sway) залежно від точності гравця
-            const swayAmplitude = Math.max(0.01, 1.25 * (1.0 - shoStat / 100));
+            let swayAmplitude = Math.max(0.01, 1.25 * (1.0 - shoStat / 100));
+            swayAmplitude *= (1.0 - capSwayReduction);
+
             const swaySpeed = Math.max(0.4, 3.2 * (1.0 - shoStat / 100));
             const time = performance.now() * 0.001 * swaySpeed;
 
@@ -2375,3 +2388,87 @@ resizeGameCanvas();
 window.addEventListener('click', () => {
     gameAudio.init();
 }, { once: false });
+
+// Автоматичний тест економії та трансферів
+// Автоматичний тест економії та трансферів
+function runEconomyTestIfRequested() {
+    if (window.location.search.includes('run_test_economy=true') || window.RUN_TEST_ECONOMY_OVERRIDE) {
+        console.log('[TEST] Starting economy and career mode integration test synchronously...');
+        // Stub window.alert to prevent thread blocking in headless browser
+        const originalAlert = window.alert;
+        window.alert = (msg) => {
+            console.log('[TEST] Intercepted window.alert:', msg);
+        };
+        try {
+            // 1. Скидаємо/налаштовуємо тестовий стан
+            safeStorage.setItem('pm_coins', '1000');
+            safeStorage.setItem('pm_prestige', '500');
+            safeStorage.setItem('pm_selected_club', 'polissya');
+            safeStorage.setItem('pm_owned_balls', JSON.stringify(['classic']));
+            safeStorage.setItem('pm_owned_cards', JSON.stringify(['c_palazhchenko']));
+
+            // Перевіряємо початкові дані
+            if (getPlayerCoins() !== 1000) throw new Error('Initial coins incorrect');
+            if (getPlayerPrestige() !== 500) throw new Error('Initial prestige incorrect');
+
+            // 2. Симулюємо покупку товару в магазину (М'яч)
+            // Вогняний м'яч коштує 200 монет
+            const fireBall = SHOP_ITEMS.balls.find(b => b.id === 'fire');
+            if (!fireBall) throw new Error('Fire ball item config not found');
+            
+            // Клік по покупці
+            handleShopItemClick(fireBall, false, false, 'pm_owned_balls', 'pm_equipped_ball');
+
+            // Перевіряємо баланс після покупки (1000 - 200 = 800)
+            const afterBallCoins = getPlayerCoins();
+            if (afterBallCoins !== 800) throw new Error(`Coins balance after ball buy is incorrect: expected 800, got ${afterBallCoins}`);
+
+            // Перевіряємо що вогняний м'яч тепер серед куплених
+            const ownedBalls = JSON.parse(safeStorage.getItem('pm_owned_balls'));
+            if (!ownedBalls.includes('fire')) throw new Error('Owned balls does not include fire ball after purchase');
+
+            // 3. Симулюємо трансфер (перехід у клуб Ювентус)
+            // Ювентус коштує 350 монет, вимагає 250 престижу
+            const juve = CLUB_PRESETS.find(c => c.id === 'juventus');
+            if (!juve) throw new Error('Juventus club preset not found');
+
+            // Змінюємо вибір та здійснюємо покупку контракту
+            // Спочатку перевіримо, чи спрацює покупка контракту (ми маємо 800 монет і 500 престижу)
+            renderCareerScreen();
+            
+            const transferBtn = document.querySelector('.transfer-buy-btn[data-id="juventus"]');
+            if (!transferBtn) throw new Error('Juventus transfer button not found in rendered career screen');
+
+            // Клікаємо кнопку підписання контракту
+            transferBtn.click();
+
+            // Перевіряємо баланс після переходу (800 - 350 = 450)
+            const afterTransferCoins = getPlayerCoins();
+            if (afterTransferCoins !== 450) throw new Error(`Coins balance after transfer is incorrect: expected 450, got ${afterTransferCoins}`);
+
+            // Перевіряємо обраний клуб
+            const selectedClub = safeStorage.getItem('pm_selected_club');
+            if (selectedClub !== 'juventus') throw new Error(`Active club after transfer is incorrect: expected juventus, got ${selectedClub}`);
+
+            // 4. Перевіряємо блокування клубу з високими вимогами (Баварія - потрібен 500 престижу, 700 монет. Ми маємо 450 монет)
+            // Баварія не повинна бути доступна для покупки
+            renderCareerScreen();
+            const bayernBtn = document.querySelector('.transfer-buy-btn[data-id="bayern"]');
+            if (bayernBtn && !bayernBtn.disabled) {
+                throw new Error('Bayern club is purchasable but player has insufficient coins');
+            }
+
+            console.log('✔ [TEST] ALL ECONOMY AND CAREER MODE INTEGRATION TESTS PASSED!');
+            fetch('http://localhost:12345/pass').catch(() => {});
+        } catch (err) {
+            console.error('❌ [TEST] ECONOMY AND CAREER MODE INTEGRATION TEST FAILED:', err.message);
+            fetch('http://localhost:12345/fail?error=' + encodeURIComponent(err.message)).catch(() => {});
+        }
+    }
+}
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    runEconomyTestIfRequested();
+} else {
+    window.addEventListener('DOMContentLoaded', runEconomyTestIfRequested);
+}

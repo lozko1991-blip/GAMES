@@ -194,21 +194,22 @@ Helper object
 safeStorage
 ====================================================
 */
+const safeStorageInMemory = {};
 const safeStorage = {
     getItem(key) {
         try {
-            return localStorage.getItem(key);
+            const val = localStorage.getItem(key);
+            if (val !== null) return val;
+            return safeStorageInMemory[key] !== undefined ? safeStorageInMemory[key] : null;
         } catch (e) {
-            console.warn('LocalStorage is blocked or disabled: ', e);
-            return null;
+            return safeStorageInMemory[key] !== undefined ? safeStorageInMemory[key] : null;
         }
     },
     setItem(key, value) {
         try {
             localStorage.setItem(key, value);
-        } catch (e) {
-            console.warn('LocalStorage is blocked or disabled: ', e);
-        }
+        } catch (e) {}
+        safeStorageInMemory[key] = String(value);
     }
 };
 

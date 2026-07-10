@@ -836,10 +836,22 @@ class Ball3D {
             this.position.coordinateY = BALL_RADIUS;
             
             const incomingSpeed = Math.abs(this.velocity.coordinateY);
-            const dynamicRestitution = Math.max(0.42, 0.75 - incomingSpeed * 0.018);
-            this.velocity.coordinateY = incomingSpeed * dynamicRestitution;
+            let dynamicRestitution = Math.max(0.42, 0.75 - incomingSpeed * 0.018);
+            let frictionFactor = 0.72;
 
-            const frictionFactor = 0.72;
+            try {
+                const equippedStadiumId = safeStorage.getItem('pm_equipped_stadium') || 'default';
+                const stadium = SHOP_ITEMS.stadiums.find(s => s.id === equippedStadiumId);
+                if (stadium && stadium.weather === 'foggy') {
+                    // Волога трава зменшує тертя (збільшує ковзання) та злегка гасить відскік
+                    frictionFactor = 0.88;
+                    dynamicRestitution *= 0.88;
+                }
+            } catch (e) {
+                console.warn('Error reading stadium weather for bounce: ', e);
+            }
+
+            this.velocity.coordinateY = incomingSpeed * dynamicRestitution;
             this.velocity.coordinateX *= frictionFactor;
             this.velocity.coordinateZ *= frictionFactor;
 
