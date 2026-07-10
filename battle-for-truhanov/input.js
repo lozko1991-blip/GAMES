@@ -321,14 +321,14 @@
                         const now = Date.now();
                         if (keyName === 'ArrowRight') {
                             if (now - p.lastTapTime.right < 240) {
-                                p.state = 'dash'; p.dashTimer = 11; p.vx = 8.6; p.isLeft = true;
+                                p.state = 'dash'; p.dashTimer = 10; p.vx = 13.0; p.isLeft = true;
                                 AudioSys.whoosh();
                                 showFloatingText("DASH!", p.x + 15, p.y - 10, '#00ffcc');
                             }
                             p.lastTapTime.right = now;
                         } else if (keyName === 'ArrowLeft') {
                             if (now - p.lastTapTime.left < 240) {
-                                p.state = 'dash'; p.dashTimer = 11; p.vx = -8.6; p.isLeft = false;
+                                p.state = 'dash'; p.dashTimer = 10; p.vx = -13.0; p.isLeft = false;
                                 AudioSys.whoosh();
                                 showFloatingText("DASH!", p.x + 15, p.y - 10, '#00ffcc');
                             }

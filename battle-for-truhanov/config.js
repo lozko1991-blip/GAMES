@@ -80,10 +80,10 @@
                 const isDashRight = key === 'd' || code === 'keyd' || (!state.isOnline && state.difficulty !== 'pvp' && key === 'arrowright');
                 const isDashLeft = key === 'a' || code === 'keya' || (!state.isOnline && state.difficulty !== 'pvp' && key === 'arrowleft');
                 if (isDashRight) {
-                    if (now - localP.lastTapTime.right < 240) { localP.state = 'dash'; localP.dashTimer = 11; localP.vx = 8.6; localP.isLeft = true; AudioSys.whoosh(); showFloatingText("DASH!", localP.x + 15, localP.y - 10, '#00ffcc'); }
+                    if (now - localP.lastTapTime.right < 240) { localP.state = 'dash'; localP.dashTimer = 10; localP.vx = 13.0; localP.isLeft = true; AudioSys.whoosh(); showFloatingText("DASH!", localP.x + 15, localP.y - 10, '#00ffcc'); }
                     localP.lastTapTime.right = now;
                 } else if (isDashLeft) {
-                    if (now - localP.lastTapTime.left < 240) { localP.state = 'dash'; localP.dashTimer = 11; localP.vx = -8.6; localP.isLeft = false; AudioSys.whoosh(); showFloatingText("DASH!", localP.x + 15, localP.y - 10, '#00ffcc'); }
+                    if (now - localP.lastTapTime.left < 240) { localP.state = 'dash'; localP.dashTimer = 10; localP.vx = -13.0; localP.isLeft = false; AudioSys.whoosh(); showFloatingText("DASH!", localP.x + 15, localP.y - 10, '#00ffcc'); }
                     localP.lastTapTime.left = now;
                 }
             }
@@ -92,10 +92,10 @@
                 const p2 = state.bot;
                 if (p2 && p2.state !== 'dead' && p2.state !== 'hitstun' && p2.state !== 'launched' && p2.state !== 'knockdown' && p2.attackState === 0 && !state.isMatchEnding) {
                     if (key === 'arrowright') {
-                        if (now - p2.lastTapTime.right < 240) { p2.state = 'dash'; p2.dashTimer = 11; p2.vx = 8.6; p2.isLeft = true; AudioSys.whoosh(); showFloatingText("DASH!", p2.x + 15, p2.y - 10, '#00ffcc'); }
+                        if (now - p2.lastTapTime.right < 240) { p2.state = 'dash'; p2.dashTimer = 10; p2.vx = 13.0; p2.isLeft = true; AudioSys.whoosh(); showFloatingText("DASH!", p2.x + 15, p2.y - 10, '#00ffcc'); }
                         p2.lastTapTime.right = now;
                     } else if (key === 'arrowleft') {
-                        if (now - p2.lastTapTime.left < 240) { p2.state = 'dash'; p2.dashTimer = 11; p2.vx = -8.6; p2.isLeft = false; AudioSys.whoosh(); showFloatingText("DASH!", p2.x + 15, p2.y - 10, '#00ffcc'); }
+                        if (now - p2.lastTapTime.left < 240) { p2.state = 'dash'; p2.dashTimer = 10; p2.vx = -13.0; p2.isLeft = false; AudioSys.whoosh(); showFloatingText("DASH!", p2.x + 15, p2.y - 10, '#00ffcc'); }
                         p2.lastTapTime.left = now;
                     }
                 }

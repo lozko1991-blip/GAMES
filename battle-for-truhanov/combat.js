@@ -82,7 +82,7 @@
                 if (attacker.id === 'p1' && typeof state !== 'undefined' && state.upgrades) {
                     finalDmg = Math.round(finalDmg * (1 + state.upgrades.dmg * 0.08));
                 }
-                createBloodSplatter(defender.x + defender.width / 2, defender.y + 45, attacker.isLeft, type === 'sword' ? 3.5 : (type === 'super' || type === 'hook' || type === 'heavy_kick' || type === 'projectile' ? 1.8 : 1));
+                createBloodSplatter(defender.x + defender.width / 2, defender.y + 45, attacker.isLeft, type === 'greatsword' ? 4.5 : (type === 'sword' || type === 'spear' ? 3.5 : (type === 'super' || type === 'hook' || type === 'heavy_kick' || type === 'projectile' ? 1.8 : 1)));
                 if (type === 'lasso_pull') {
                     AudioSys.superHit();
                     defender.state = 'dazed';
@@ -126,6 +126,22 @@
                         AudioSys.superHit(); defender.state = 'knockdown'; defender.knockdownTimer = 60; defender.vy = -3.2; defender.vx = pushDir * 7.5; state.screenShake = 14; state.hitstopFrames = 12; defender.lastHitType = 'heavy_kick';
                         showFloatingText("HEAVY KICK!", defender.x + 30, defender.y + 6, '#ff9900');
                         createImpactBurst(defender.x + defender.width / 2, defender.y + 48, '#ff9900', attacker.isLeft ? 1 : -1);
+                    } else if (type === 'greatsword') {
+                        AudioSys.superHit(); defender.state = 'knockdown'; defender.knockdownTimer = 65; defender.vy = -6.0; defender.vx = pushDir * 18.0; state.screenShake = 22; state.hitstopFrames = 25; defender.lastHitType = 'greatsword';
+                        showFloatingText("HEAVY SLASH!", defender.x + 24, defender.y + 4, '#ff1100');
+                        createImpactBurst(defender.x + defender.width / 2, defender.y + 42, '#ff1100', attacker.isLeft ? 1 : -1);
+                    } else if (type === 'spear') {
+                        AudioSys.superHit(); defender.state = 'hitstun'; defender.hitstunTimer = 26; defender.vx = pushDir * 10.0; state.screenShake = 12; state.hitstopFrames = 12; defender.lastHitType = 'spear';
+                        showFloatingText("THRUST!", defender.x + 24, defender.y + 4, '#00ffff');
+                        createImpactBurst(defender.x + defender.width / 2, defender.y + 42, '#00ffff', attacker.isLeft ? 1 : -1);
+                    } else if (type === 'nunchucks') {
+                        AudioSys.punch(); defender.state = 'hitstun'; defender.hitstunTimer = 16; defender.vx = pushDir * 6.0; state.screenShake = 8; state.hitstopFrames = 7; defender.lastHitType = 'nunchucks';
+                        showFloatingText("RAT-A-TAT!", defender.x + 24, defender.y + 4, '#ffdd00');
+                        createImpactBurst(defender.x + defender.width / 2, defender.y + 42, '#ffdd00', attacker.isLeft ? 1 : -1);
+                    } else if (type === 'sausage') {
+                        AudioSys.punch(); defender.state = 'hitstun'; defender.hitstunTimer = 18; defender.vx = pushDir * 8.5; state.screenShake = 10; state.hitstopFrames = 9; defender.lastHitType = 'sausage';
+                        showFloatingText("BOING!", defender.x + 24, defender.y + 4, '#ff7777');
+                        createImpactBurst(defender.x + defender.width / 2, defender.y + 42, '#ff9999', attacker.isLeft ? 1 : -1);
                     } else if (type === 'sword') {
                         AudioSys.superHit(); defender.state = 'hitstun'; defender.hitstunTimer = 22; defender.vx = pushDir * 14.0; state.screenShake = 18; state.hitstopFrames = 15; defender.lastHitType = 'sword';
                         showFloatingText("SLASH!", defender.x + 24, defender.y + 4, '#ffcc00');

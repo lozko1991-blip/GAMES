@@ -83,7 +83,24 @@
                 }
                 if (this.state === 'dash') {
                     this.dashTimer--;
-                    this.vx = this.isLeft ? 8.6 : -8.6;
+                    this.vx = this.vx > 0 ? 13.0 : -13.0; // Snappy dash velocity
+                    if (this.shadows.length > 8) {
+                        this.shadows.shift();
+                    }
+                    this.shadows.push({
+                        x: this.x,
+                        y: this.y,
+                        rotation: this.rotation,
+                        squashY: this.squashY,
+                        skeleton: {
+                            headY: this.skeleton.headY,
+                            lArmAngle: this.skeleton.lArmAngle,
+                            rArmAngle: this.skeleton.rArmAngle,
+                            lLegAngle: this.skeleton.lLegAngle,
+                            rLegAngle: this.skeleton.rLegAngle
+                        },
+                        isLeft: this.isLeft
+                    });
                     if (this.dashTimer <= 0) { this.state = 'idle'; }
                 } else if (this.state === 'hitstun' || this.state === 'dazed') {
                     this.hitstunTimer--;
@@ -106,11 +123,15 @@
                 this.y += this.vy;
                 if (this.y + this.height < GROUND_Y) {
                     this.vy += GRAVITY; this.isJumping = true;
+                    // Dynamic body tilt based on vertical speed
+                    this.rotation = this.vy * 0.026 * (this.isLeft ? 1 : -1);
                 } else {
                     if (this.isJumping) {
                         this.squashY = 15; this.isJumping = false; this.isVerticalJump = false; this.vy = 0; this.y = GROUND_Y - this.height;
+                        this.rotation = 0; // Reset rotation on landing
                     } else if (this.state !== 'launched') {
                         this.y = GROUND_Y - this.height;
+                        this.rotation = 0;
                     }
                     if (this.squashY > 0) this.squashY *= 0.7;
                 }
@@ -672,17 +693,32 @@
                         }
                     } else if (wType === 'bow') {
                         CTX.save(); CTX.translate(activeHandX, activeHandY); CTX.rotate(armAngle);
-                        // Arc
+                        // Calculate drawstring tension bend
+                        let tension = 0;
+                        if (this.attackState === 11) {
+                            if (this.attackTimer >= 12) {
+                                tension = Math.min(1.0, (32 - this.attackTimer) / 18.0) * 11.0;
+                            } else if (this.attackTimer >= 10) {
+                                tension = 11.0;
+                            }
+                        }
+                        // Curved wooden arc
                         CTX.strokeStyle = '#8a5229'; CTX.lineWidth = 3.5;
                         CTX.beginPath(); CTX.arc(10, 0, 18, -Math.PI / 2, Math.PI / 2); CTX.stroke();
-                        // String
+                        // String bending back under tension
                         CTX.strokeStyle = '#cccccc'; CTX.lineWidth = 1;
-                        CTX.beginPath(); CTX.moveTo(10, -18); CTX.lineTo(10, 18); CTX.stroke();
-                        // Arrow
-                        if (this.attackState === 11 && this.attackTimer >= 10 && this.attackTimer <= 13) {
+                        CTX.beginPath();
+                        CTX.moveTo(10, -18);
+                        CTX.lineTo(10 - tension, 0);
+                        CTX.lineTo(10, 18);
+                        CTX.stroke();
+                        // Arrow resting on the string
+                        if (this.attackState === 11 && this.attackTimer >= 10) {
                             CTX.fillStyle = '#ffcc00';
-                            CTX.fillRect(2, -1.5, 20, 3);
-                            CTX.beginPath(); CTX.moveTo(22, -4); CTX.lineTo(28, 0); CTX.lineTo(22, 4); CTX.closePath(); CTX.fill();
+                            CTX.fillRect(10 - tension, -1.5, 20, 3);
+                            CTX.beginPath();
+                            CTX.moveTo(30 - tension, -4); CTX.lineTo(36 - tension, 0); CTX.lineTo(30 - tension, 4); CTX.closePath();
+                            CTX.fill();
                         }
                         CTX.restore();
                     } else if (wType === 'nunchucks') {
@@ -929,13 +965,47 @@
                 else if (type === 'super' && this.sp >= 100) { this.attackState = 5; this.attackTimer = 38; this.sp = 0; AudioSys.superHit() }
                 else if (type === 'weapon_pipe_light') {
                     this.attackState = 10; this.attackTimer = 18; AudioSys.whoosh();
-                    this.weaponDamage = 7.5; this.weaponHitType = 'pipe'; this.weaponHitBoxWidth = 110;
-                    this.vx = this.isLeft ? 2.5 : -2.5;
+                    const w = this.weaponSelected;
+                    if (w === 'greatsword') {
+                        this.weaponDamage = 13.0; this.weaponHitType = 'greatsword'; this.weaponHitBoxWidth = 145;
+                        this.vx = this.isLeft ? 1.0 : -1.0;
+                        this.attackTimer = 26;
+                    } else if (w === 'spear') {
+                        this.weaponDamage = 9.0; this.weaponHitType = 'spear'; this.weaponHitBoxWidth = 160;
+                        this.vx = this.isLeft ? 4.0 : -4.0;
+                    } else if (w === 'nunchucks') {
+                        this.weaponDamage = 6.0; this.weaponHitType = 'nunchucks'; this.weaponHitBoxWidth = 100;
+                        this.vx = this.isLeft ? 3.0 : -3.0;
+                        this.attackTimer = 14;
+                    } else if (w === 'sausage') {
+                        this.weaponDamage = 8.0; this.weaponHitType = 'sausage'; this.weaponHitBoxWidth = 115;
+                        this.vx = this.isLeft ? 2.5 : -2.5;
+                    } else {
+                        this.weaponDamage = 7.5; this.weaponHitType = 'pipe'; this.weaponHitBoxWidth = 110;
+                        this.vx = this.isLeft ? 2.5 : -2.5;
+                    }
                 }
                 else if (type === 'weapon_pipe_spin') {
                     this.attackState = 10; this.attackTimer = 32; AudioSys.superHit();
-                    this.weaponDamage = 16.0; this.weaponHitType = 'heavy_kick'; this.weaponHitBoxWidth = 140;
-                    this.vx = this.isLeft ? 6.5 : -6.5;
+                    const w = this.weaponSelected;
+                    if (w === 'greatsword') {
+                        this.weaponDamage = 22.0; this.weaponHitType = 'greatsword'; this.weaponHitBoxWidth = 155;
+                        this.vx = this.isLeft ? 5.0 : -5.0;
+                        this.attackTimer = 40;
+                    } else if (w === 'spear') {
+                        this.weaponDamage = 17.0; this.weaponHitType = 'spear'; this.weaponHitBoxWidth = 165;
+                        this.vx = this.isLeft ? 7.0 : -7.0;
+                    } else if (w === 'nunchucks') {
+                        this.weaponDamage = 13.0; this.weaponHitType = 'nunchucks'; this.weaponHitBoxWidth = 120;
+                        this.vx = this.isLeft ? 8.0 : -8.0;
+                        this.attackTimer = 24;
+                    } else if (w === 'sausage') {
+                        this.weaponDamage = 15.0; this.weaponHitType = 'sausage'; this.weaponHitBoxWidth = 130;
+                        this.vx = this.isLeft ? 5.5 : -5.5;
+                    } else {
+                        this.weaponDamage = 16.0; this.weaponHitType = 'heavy_kick'; this.weaponHitBoxWidth = 140;
+                        this.vx = this.isLeft ? 6.5 : -6.5;
+                    }
                 }
                 else if (type === 'weapon_rifle_burst') {
                     AudioSys.projectileLaunch();
@@ -978,8 +1048,25 @@
                 }
                 else if (type === 'weapon_pipe_heavy') {
                     this.attackState = 10; this.attackTimer = 26; AudioSys.superHit();
-                    this.weaponDamage = 13.0; this.weaponHitType = 'heavy_kick'; this.weaponHitBoxWidth = 125;
-                    this.vx = this.isLeft ? 4.0 : -4.0;
+                    const w = this.weaponSelected;
+                    if (w === 'greatsword') {
+                        this.weaponDamage = 18.0; this.weaponHitType = 'greatsword'; this.weaponHitBoxWidth = 150;
+                        this.vx = this.isLeft ? 3.0 : -3.0;
+                        this.attackTimer = 34;
+                    } else if (w === 'spear') {
+                        this.weaponDamage = 13.0; this.weaponHitType = 'spear'; this.weaponHitBoxWidth = 160;
+                        this.vx = this.isLeft ? 5.0 : -5.0;
+                    } else if (w === 'nunchucks') {
+                        this.weaponDamage = 9.0; this.weaponHitType = 'nunchucks'; this.weaponHitBoxWidth = 110;
+                        this.vx = this.isLeft ? 5.0 : -5.0;
+                        this.attackTimer = 20;
+                    } else if (w === 'sausage') {
+                        this.weaponDamage = 11.0; this.weaponHitType = 'sausage'; this.weaponHitBoxWidth = 120;
+                        this.vx = this.isLeft ? 4.0 : -4.0;
+                    } else {
+                        this.weaponDamage = 13.0; this.weaponHitType = 'heavy_kick'; this.weaponHitBoxWidth = 125;
+                        this.vx = this.isLeft ? 4.0 : -4.0;
+                    }
                 }
                 else if (type === 'weapon_rifle_melee') {
                     this.attackState = 10; this.attackTimer = 20; AudioSys.punch();

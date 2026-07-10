@@ -4,6 +4,9 @@
                 this.decisionTimer = 0;
                 this.lastSeenPlayerActionFrame = -1;
                 this.botComboQueue = [];
+                this.shouldPunish = false;
+                this.footsiesTimer = 0;
+                this.footsiesDir = 1;
             }
             update(bot, player) {
                 if (!bot || !player) return;
@@ -28,7 +31,6 @@
                 bot.isBlocking = false;
                 
                 const diff = parseInt(state.difficulty);
-                // Difficulty settings: 0 = Student (Normal) - 8 frames delay, 1 = Master (Hard) - 3 frames delay
                 const reactionDelay = diff === 0 ? 8 : 3;
                 
                 const pressure = player.attackState > 0;
@@ -38,10 +40,31 @@
                     this.lastSeenPlayerActionFrame = player.lastActionFrame;
                 }
 
-                // Mortal Kombat logic: Anti-air uppercut reaction!
-                if (player.isJumping && absDist < 100 && !bot.isJumping && bot.state !== 'crouch') {
-                    if (Math.random() < (diff === 0 ? 0.55 : 0.85)) {
-                        this.queueAction(() => { bot.action('uppercut') }, reactionDelay);
+                // If bot is blocking player's attack close by, trigger shouldPunish
+                if (bot.isBlocking && pressure && absDist < 130) {
+                    this.shouldPunish = true;
+                }
+
+                // Block-Punishing: If player finished attacking and bot blocked, launch a fast retaliating combo
+                if (this.shouldPunish && !pressure && absDist < 125) {
+                    this.shouldPunish = false;
+                    const punishCombo = Math.random() < 0.5 ? ['punch', 'hook'] : ['kick', 'sweep'];
+                    this.botComboQueue = punishCombo;
+                    this.decisionTimer = 1;
+                    return;
+                }
+
+                // Mortal Kombat logic: Low-profile anti-air uppercut reaction!
+                if (player.isJumping && absDist < 120 && !bot.isJumping) {
+                    if (Math.random() < (diff === 0 ? 0.60 : 0.90)) {
+                        this.queueAction(() => { 
+                            bot.state = 'crouch'; // Crouch to dodge air hitboxes
+                            setTimeout(() => {
+                                if (bot.state !== 'dead' && bot.state !== 'hitstun') {
+                                    bot.action('uppercut');
+                                }
+                            }, 80);
+                        }, reactionDelay);
                         return;
                     }
                 }
@@ -127,7 +150,6 @@
 
                 this.decisionTimer--;
                 if (this.decisionTimer <= 0) {
-                    // Capped decision rate: Master attacks more frequently (+50% difficulty)
                     this.decisionTimer = diff === 0 ? (10 + Math.random() * 8) : (4 + Math.random() * 6);
                     
                     if (absDist > 260) {
@@ -136,22 +158,28 @@
                         else if (rnd < 0.85) { bot.vx = dist > 0 ? 4.2 : -4.2; bot.state = 'move' }
                         else {
                             bot.state = 'dash';
-                            bot.dashTimer = 11;
-                            bot.vx = dist > 0 ? 8.6 : -8.6;
+                            bot.dashTimer = 10;
+                            bot.vx = dist > 0 ? 13.0 : -13.0;
                             bot.isLeft = dist > 0;
                             AudioSys.whoosh();
                         }
                     } else if (absDist > 120) {
                         const rnd = Math.random();
-                        if (rnd < 0.35) { // Dash in and sweep combo
+                        if (rnd < 0.35) { // Snappy dash in and sweep combo
                             bot.state = 'dash';
-                            bot.dashTimer = 11;
-                            bot.vx = dist > 0 ? 8.6 : -8.6;
+                            bot.dashTimer = 10;
+                            bot.vx = dist > 0 ? 13.0 : -13.0;
                             bot.isLeft = dist > 0;
                             AudioSys.whoosh();
                             this.queueAction(() => { bot.action('sweep') }, 6);
                         } else if (rnd < 0.70) {
-                            bot.vx = dist > 0 ? 4.6 : -4.6;
+                            // Spacing / Footsies back-and-forth movement drift
+                            this.footsiesTimer--;
+                            if (this.footsiesTimer <= 0) {
+                                this.footsiesTimer = 15 + Math.random() * 25;
+                                this.footsiesDir = Math.random() < 0.65 ? (dist > 0 ? -1 : 1) : (dist > 0 ? 1 : -1);
+                            }
+                            bot.vx = this.footsiesDir * 3.8;
                             bot.state = 'move';
                         } else {
                             bot.action('projectile');
@@ -163,7 +191,7 @@
                         const desperate = bot.hp < bot.maxHp * 0.35;
                         const isUnarmed = bot.weaponTimer <= 0 || !bot.weaponActiveType;
                         
-                        // Decide to perform unarmed lasso combo
+                        // Decide to perform combo
                         if (isUnarmed && rand < (diff === 0 ? 0.15 : 0.35)) {
                             this.botComboQueue = Math.random() < 0.5 ? ['punch', 'punch', 'punch', 'punch'] : ['kick', 'kick', 'kick', 'kick'];
                             this.decisionTimer = 1;
