@@ -2,11 +2,12 @@
  * MATRIX STRIKER RUN - 2D VECTOR MINI-GAME
  *********************************************************************/
 class MatrixRunGame {
-    constructor(canvas, onWin, onFail) {
+    constructor(canvas, onWin, onFail, clubPreset) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.onWin = onWin;
         this.onFail = onFail;
+        this.clubPreset = clubPreset || { color: '#00ff66', shortColor: '#ffffff' };
 
         this.width = canvas.width;
         this.height = canvas.height;
@@ -502,11 +503,55 @@ class MatrixRunGame {
     draw() {
         this.ctx.clearRect(0, 0, this.width, this.height);
 
-        // 1. Код Матриці на фоні
-        this.ctx.fillStyle = '#020b05';
+        // Розраховуємо тему локації на основі подоланої дистанції (0-400 метрів)
+        let theme = {
+            bg: '#020b05',
+            codeColor: 'rgba(0, 255, 102, 0.13)',
+            primary: '#00ff66',
+            shadow: '#00ff66',
+            gridColor: 'rgba(0, 255, 102, 0.15)',
+            laserColor: '#ff0033',
+            name: 'МАТРИЦЯ ГРІД (ЗЕЛЕНА)'
+        };
+
+        if (this.distance > 300) {
+            theme = {
+                bg: '#0f0202',
+                codeColor: 'rgba(255, 51, 0, 0.14)',
+                primary: '#ff3300',
+                shadow: '#ff3300',
+                gridColor: 'rgba(255, 51, 0, 0.2)',
+                laserColor: '#ffd700',
+                name: 'ПЕКЕЛЬНИЙ СТАДІОН (ЧЕРВОНИЙ)'
+            };
+        } else if (this.distance > 200) {
+            theme = {
+                bg: '#02070f',
+                codeColor: 'rgba(0, 255, 255, 0.14)',
+                primary: '#00ffff',
+                shadow: '#00ffff',
+                gridColor: 'rgba(255, 255, 0, 0.2)',
+                laserColor: '#ff3399',
+                name: 'НЕОНОВИЙ РЕЙВ (БЛАКИЙ/ЖОВТИЙ)'
+            };
+        } else if (this.distance > 100) {
+            theme = {
+                bg: '#0a010a',
+                codeColor: 'rgba(255, 0, 128, 0.14)',
+                primary: '#ff0080',
+                shadow: '#ff0080',
+                gridColor: 'rgba(255, 0, 128, 0.2)',
+                laserColor: '#00ffcc',
+                name: 'НЕОНОВИЙ КІБЕРПАНК (РОЖЕВИЙ)'
+            };
+        }
+
+        // 1. Заливка фону відповідно до теми локації
+        this.ctx.fillStyle = theme.bg;
         this.ctx.fillRect(0, 0, this.width, this.height);
 
-        this.ctx.fillStyle = 'rgba(0, 255, 102, 0.12)';
+        // 2. Двійковий дощ на фоні
+        this.ctx.fillStyle = theme.codeColor;
         this.ctx.font = '10px monospace';
         this.matrixStreams.forEach(stream => {
             stream.chars.forEach((char, idx) => {
@@ -514,9 +559,16 @@ class MatrixRunGame {
             });
         });
 
-        // 2. Векторна лінія землі
-        this.ctx.strokeStyle = '#00ff66';
-        this.ctx.shadowColor = '#00ff66';
+        // Малюємо назву поточної локації у верхньому лівому кутку
+        this.ctx.fillStyle = theme.primary;
+        this.ctx.shadowColor = theme.shadow;
+        this.ctx.shadowBlur = 8;
+        this.ctx.font = "bold 9px monospace";
+        this.ctx.fillText(`ЛОКАЦІЯ: ${theme.name}`, 20, 45);
+
+        // 3. Векторна лінія землі
+        this.ctx.strokeStyle = theme.primary;
+        this.ctx.shadowColor = theme.shadow;
         this.ctx.shadowBlur = 10;
         this.ctx.lineWidth = 3;
 
@@ -526,7 +578,7 @@ class MatrixRunGame {
         this.ctx.stroke();
 
         // 3D-сітка для ефекту глибини
-        this.ctx.strokeStyle = 'rgba(0, 255, 102, 0.15)';
+        this.ctx.strokeStyle = theme.gridColor;
         this.ctx.lineWidth = 1;
         this.ctx.shadowBlur = 0;
         const lineCount = 15;
@@ -538,52 +590,50 @@ class MatrixRunGame {
             this.ctx.stroke();
         }
 
-        // 3. Збірні предмети
+        // 4. Збірні предмети
         this.collectibles.forEach(col => {
             if (col.type === 'ball') {
                 this.ctx.strokeStyle = '#00ffff';
                 this.ctx.shadowColor = '#00ffff';
-                this.ctx.shadowBlur = 8;
+                this.ctx.shadowBlur = 10;
                 this.ctx.lineWidth = 2;
                 this.ctx.beginPath();
-                this.ctx.arc(col.x + col.width/2, col.y + col.height/2, 9, 0, Math.PI * 2);
+                this.ctx.arc(col.x, col.y, 8, 0, Math.PI * 2);
                 this.ctx.stroke();
-                this.ctx.fillStyle = 'rgba(0,255,255,0.2)';
-                this.ctx.fill();
-            } else if (col.type === 'coin') {
-                // Малювання монети
+                
+                // Візерунок м'яча
+                this.ctx.beginPath();
+                this.ctx.moveTo(col.x - 5, col.y - 2);
+                this.ctx.lineTo(col.x + 5, col.y + 2);
+                this.ctx.stroke();
+            } else {
+                // Монета
                 this.ctx.strokeStyle = '#ffd700';
                 this.ctx.shadowColor = '#ffd700';
                 this.ctx.shadowBlur = 10;
-                this.ctx.lineWidth = 2.5;
-                
+                this.ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+                this.ctx.lineWidth = 2;
                 this.ctx.beginPath();
-                this.ctx.arc(col.x + col.width/2, col.y + col.height/2, 8, 0, Math.PI * 2);
+                this.ctx.arc(col.x, col.y, 7, 0, Math.PI * 2);
                 this.ctx.stroke();
-                this.ctx.fillStyle = 'rgba(255, 215, 0, 0.35)';
                 this.ctx.fill();
-                
-                // Внутрішній контур монети
-                this.ctx.beginPath();
-                this.ctx.arc(col.x + col.width/2, col.y + col.height/2, 4, 0, Math.PI * 2);
-                this.ctx.stroke();
             }
         });
 
-        // 4. Снаряди
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.shadowColor = '#00ff66';
-        this.ctx.shadowBlur = 12;
-        this.ctx.lineWidth = 2;
+        // 5. Проектилі (м'ячі, які ми запустили)
         this.projectiles.forEach(proj => {
+            this.ctx.strokeStyle = '#00ffcc';
+            this.ctx.shadowColor = '#00ffcc';
+            this.ctx.shadowBlur = 8;
+            this.ctx.lineWidth = 2;
             this.ctx.beginPath();
             this.ctx.arc(proj.x, proj.y, proj.radius, 0, Math.PI * 2);
             this.ctx.stroke();
-            this.ctx.fillStyle = '#00ff66';
+            this.ctx.fillStyle = '#00ffcc';
             this.ctx.fill();
         });
 
-        // 5. Перешкоди
+        // 6. Перешкоди
         this.obstacles.forEach(obs => {
             if (obs.shattered) return;
 
@@ -601,8 +651,8 @@ class MatrixRunGame {
                 this.ctx.lineTo(obs.x + obs.width, this.groundY - obs.y);
                 this.ctx.stroke();
             } else if (obs.type === 'laser') {
-                this.ctx.strokeStyle = '#ff0033';
-                this.ctx.shadowColor = '#ff0033';
+                this.ctx.strokeStyle = theme.laserColor;
+                this.ctx.shadowColor = theme.laserColor;
                 this.ctx.shadowBlur = 12;
                 this.ctx.lineWidth = 3;
                 this.ctx.beginPath();
@@ -610,8 +660,8 @@ class MatrixRunGame {
                 this.ctx.lineTo(obs.x + obs.width, this.groundY - obs.y - obs.height/2);
                 this.ctx.stroke();
             } else if (obs.type === 'spike') {
-                this.ctx.strokeStyle = '#ff6600';
-                this.ctx.shadowColor = '#ff6600';
+                this.ctx.strokeStyle = theme.primary;
+                this.ctx.shadowColor = theme.shadow;
                 this.ctx.shadowBlur = 8;
                 this.ctx.lineWidth = 2;
                 this.ctx.beginPath();
@@ -620,7 +670,7 @@ class MatrixRunGame {
                 this.ctx.lineTo(obs.x + obs.width, this.groundY);
                 this.ctx.closePath();
                 this.ctx.stroke();
-                this.ctx.fillStyle = 'rgba(255, 102, 0, 0.1)';
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
                 this.ctx.fill();
             } else {
                 this.ctx.strokeStyle = '#ffcc00';
@@ -631,7 +681,7 @@ class MatrixRunGame {
             }
         });
 
-        // 6. Частки
+        // 7. Частки
         this.particles.forEach(p => {
             this.ctx.fillStyle = p.color || '#00ffcc';
             this.ctx.shadowColor = p.color || '#00ffcc';
@@ -650,11 +700,21 @@ class MatrixRunGame {
         if (this.player.invulnerableTimer > 0 && Math.floor(performance.now() / 100) % 2 === 0) {
             // Мерехтіння при невразливості
         } else {
-            this.ctx.strokeStyle = '#00ff66';
-            this.ctx.shadowColor = '#00ff66';
+            // Хребет / Футболка (колір клубу)
+            this.ctx.strokeStyle = this.clubPreset.color;
+            this.ctx.shadowColor = this.clubPreset.color;
             this.ctx.shadowBlur = 10;
-            this.ctx.lineWidth = 3;
+            this.ctx.lineWidth = 3.5;
+            
+            this.ctx.beginPath();
+            this.ctx.moveTo(pX + 15, pY - 47);
+            this.ctx.lineTo(pX + 13, pY - 26);
+            this.ctx.stroke();
 
+            // Рукава / Руки
+            this.ctx.strokeStyle = theme.primary;
+            this.ctx.shadowColor = theme.shadow;
+            this.ctx.lineWidth = 3;
             this.ctx.beginPath();
             if (this.player.isSliding) {
                 // Модель слайду
@@ -669,17 +729,33 @@ class MatrixRunGame {
 
                 // Голова
                 this.ctx.arc(pX + 15, pY - 54, 7, 0, Math.PI*2);
-                // Хребет
-                this.ctx.moveTo(pX + 15, pY - 47);
-                this.ctx.lineTo(pX + 13, pY - 26);
-                // Ліва нога
+                this.ctx.stroke();
+
+                // Шорти (колір шортів клубу)
+                this.ctx.strokeStyle = this.clubPreset.shortColor;
+                this.ctx.shadowColor = this.clubPreset.shortColor;
+                this.ctx.lineWidth = 3.5;
+                this.ctx.beginPath();
                 this.ctx.moveTo(pX + 13, pY - 26);
+                this.ctx.lineTo(pX + 13 - Math.sin(legAngle) * 5, pY - 19);
+                this.ctx.moveTo(pX + 13, pY - 26);
+                this.ctx.lineTo(pX + 13 + Math.sin(legAngle) * 5, pY - 19);
+                this.ctx.stroke();
+
+                // Ноги (основний колір теми)
+                this.ctx.strokeStyle = theme.primary;
+                this.ctx.shadowColor = theme.shadow;
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                // Ліва нога
+                this.ctx.moveTo(pX + 13 - Math.sin(legAngle) * 5, pY - 19);
                 this.ctx.lineTo(pX + 13 - Math.sin(legAngle) * 16, pY - 13);
                 this.ctx.lineTo(pX + 13 - Math.sin(legAngle) * 26, pY - 2);
                 // Права нога
-                this.ctx.moveTo(pX + 13, pY - 26);
+                this.ctx.moveTo(pX + 13 + Math.sin(legAngle) * 5, pY - 19);
                 this.ctx.lineTo(pX + 13 + Math.sin(legAngle) * 16, pY - 13);
                 this.ctx.lineTo(pX + 13 + Math.sin(legAngle) * 26, pY - 2);
+                
                 // Руки
                 this.ctx.moveTo(pX + 15, pY - 43);
                 this.ctx.lineTo(pX + 3, pY - 32);
@@ -690,7 +766,7 @@ class MatrixRunGame {
             
             // Малюємо м'яч біля ніг, якщо гравець не в стрибку і не в слайді
             if (!this.player.isJumping && !this.player.isSliding) {
-                this.ctx.strokeStyle = '#00ff66';
+                this.ctx.strokeStyle = theme.primary;
                 this.ctx.beginPath();
                 this.ctx.arc(pX + 25 + Math.sin(performance.now() * 0.02) * 4, pY - 4, 5, 0, Math.PI * 2);
                 this.ctx.stroke();

@@ -2134,6 +2134,9 @@ class PenaltyMasterGame {
         document.getElementById('hud-container').classList.remove('active');
         showScreen('screen-matrix-run');
 
+        const currentClubId = safeStorage.getItem('pm_selected_club') || 'polissya';
+        const activeClub = CLUB_PRESETS.find(c => c.id === currentClubId) || CLUB_PRESETS[CLUB_PRESETS.length - 1];
+
         const canvas = document.getElementById('matrix-canvas');
         const runner = new MatrixRunGame(
             canvas,
@@ -2147,7 +2150,8 @@ class PenaltyMasterGame {
             },
             () => {
                 this.showMatrixDefeatOverlay();
-            }
+            },
+            activeClub
         );
         runner.start();
     }
