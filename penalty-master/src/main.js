@@ -97,15 +97,15 @@ class PlayerControls {
             this.aimY += Math.cos(time * 1.6) * swayAmplitude * 0.7 * deltaTime;
 
             if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
-                this.aimX = Math.max(-GOAL_WIDTH/2 - 0.8, this.aimX - aimSpeed * deltaTime);
+                this.aimX = Math.max(-GOAL_WIDTH/2 - 2.8, this.aimX - aimSpeed * deltaTime);
                 this.sideSpin = Math.max(-1.0, this.sideSpin - 1.5 * deltaTime);
             }
             if (this.keys['ArrowRight'] || this.keys['KeyD']) {
-                this.aimX = Math.min(GOAL_WIDTH/2 + 0.8, this.aimX + aimSpeed * deltaTime);
+                this.aimX = Math.min(GOAL_WIDTH/2 + 2.8, this.aimX + aimSpeed * deltaTime);
                 this.sideSpin = Math.min(1.0, this.sideSpin + 1.5 * deltaTime);
             }
             if (this.keys['ArrowUp'] || this.keys['KeyW']) {
-                this.aimY = Math.min(GOAL_HEIGHT + 0.6, this.aimY + aimSpeed * 0.8 * deltaTime);
+                this.aimY = Math.min(GOAL_HEIGHT + 1.8, this.aimY + aimSpeed * 0.8 * deltaTime);
                 this.topSpin = Math.max(-1.0, this.topSpin - 1.2 * deltaTime);
             }
             if (this.keys['ArrowDown'] || this.keys['KeyS']) {
@@ -113,17 +113,17 @@ class PlayerControls {
                 this.topSpin = Math.min(1.0, this.topSpin + 1.2 * deltaTime);
             }
 
-            // Надійно лімітуємо координати прицілювання
-            this.aimX = Math.max(-GOAL_WIDTH/2 - 0.8, Math.min(GOAL_WIDTH/2 + 0.8, this.aimX));
-            this.aimY = Math.max(0.05, Math.min(GOAL_HEIGHT + 0.6, this.aimY));
+            // Надійно лімітуємо координати прицілювання (розширені межі для об'єктів біля воріт)
+            this.aimX = Math.max(-GOAL_WIDTH/2 - 2.8, Math.min(GOAL_WIDTH/2 + 2.8, this.aimX));
+            this.aimY = Math.max(0.05, Math.min(GOAL_HEIGHT + 1.8, this.aimY));
         }
 
-        // Керуємо стартовим офсетом зміщення гравця тільки коли прицілювання чисте (сила 0)
+        // Керуємо стартовим офсетом зміщення гравця за допомогою Q / E (для уникнення конфліктів з прицілюванням)
         if (gameState === 'aiming' && this.power === 0) {
-            if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
+            if (this.keys['KeyQ']) {
                 this.playerStartingOffsetX = Math.max(-2.5, this.playerStartingOffsetX - 2.5 * deltaTime);
             }
-            if (this.keys['ArrowRight'] || this.keys['KeyD']) {
+            if (this.keys['KeyE']) {
                 this.playerStartingOffsetX = Math.min(2.5, this.playerStartingOffsetX + 2.5 * deltaTime);
             }
         }
@@ -197,6 +197,13 @@ class PenaltyMasterGame {
         this.targets = [
             { id: 'top-left',  position: new Vector3(-GOAL_WIDTH/2 + 0.5, GOAL_HEIGHT - 0.5, 0), active: true },
             { id: 'top-right', position: new Vector3(GOAL_WIDTH/2 - 0.5, GOAL_HEIGHT - 0.5, 0), active: true }
+        ];
+
+        // Спеціальні інтерактивні об'єкти біля воріт (збільшені нагороди за влучання)
+        this.customTargets = [
+            { id: 'dartboard', name: 'Мішень-Дартс', position: new Vector3(5.2, 1.6, -0.8), radius: 0.8, active: true },
+            { id: 'dummy', name: 'Манекен', position: new Vector3(-5.0, 0.9, -0.2), radius: 0.5, active: true },
+            { id: 'photographer', name: 'Фотограф', position: new Vector3(-4.5, 0.5, -2.5), radius: 0.6, active: true }
         ];
 
         // Масив слідів бутс та падінь на полі (Pitch Degradation)
@@ -658,6 +665,54 @@ class PenaltyMasterGame {
                     });
                 }
 
+                // Спеціальні цілі біля воріт (Дартс, Манекен, Фотограф)
+                if (isLocalOrStriker && !this.ball.didHitTarget && this.customTargets) {
+                    this.customTargets.forEach(target => {
+                        if (target.active) {
+                            const dv = this.ball.position.subtract(target.position);
+                            const distance = dv.length();
+                            if (distance < (target.radius + BALL_RADIUS)) {
+                                target.active = false;
+                                this.ball.didHitTarget = true;
+                                gameVFX.spawnTargetHitExplosion(target.position);
+                                this.camera.triggerShake(1.0);
+
+                                if (target.id === 'dummy') {
+                                    gameAudio.playNetRustle();
+                                    this.coins += 50;
+                                    this.saveStatsToStorage();
+                                    this.updateHUD();
+                                    this.showCustomHitText("МАНЕКЕН ЗБИТО! 🎯 +50 МОНЕТ", '#ff6600');
+                                } else if (target.id === 'photographer') {
+                                    gameAudio.playKeeperSave();
+                                    this.coins += 75;
+                                    this.saveStatsToStorage();
+                                    this.updateHUD();
+                                    this.showCustomHitText("ФОТОГРАФ В ШОЦІ! 📸 +75 МОНЕТ", '#00ccff');
+                                } else if (target.id === 'dartboard') {
+                                    const distCenter = Math.hypot(dv.coordinateX, dv.coordinateY);
+                                    let dartCoins = 25;
+                                    let dartTitle = "ДАРТС! 🎯 +25 МОНЕТ";
+                                    
+                                    if (distCenter < 0.18) {
+                                        dartCoins = 100;
+                                        dartTitle = "БУЛЛС-АЙ! 🎯 +100 МОНЕТ";
+                                    } else if (distCenter < 0.45) {
+                                        dartCoins = 50;
+                                        dartTitle = "ДАРТС: ЦЕНТР! 🎯 +50 МОНЕТ";
+                                    }
+                                    
+                                    this.coins += dartCoins;
+                                    this.saveStatsToStorage();
+                                    this.updateHUD();
+                                    this.showCustomHitText(dartTitle, '#ffd700');
+                                    gameAudio.playGoalCheer();
+                                }
+                            }
+                        }
+                    });
+                }
+
                 if (isLocalOrStriker) {
                     const bx = this.ball.position.coordinateX;
                     const by = this.ball.position.coordinateY;
@@ -1004,6 +1059,9 @@ class PenaltyMasterGame {
 
         // Reactivate goal targets
         this.targets.forEach(t => t.active = true);
+        if (this.customTargets) {
+            this.customTargets.forEach(t => t.active = true);
+        }
 
         // Відображаємо картку Ultimate Team гравця при прицілюванні
         const card = document.getElementById('ut-card-broadcast');
@@ -1451,6 +1509,140 @@ class PenaltyMasterGame {
             }
         });
 
+        // Малювання спеціальних інтерактивних об'єктів біля воріт
+        if (this.customTargets) {
+            this.customTargets.forEach(target => {
+                if (!target.active) return;
+                const proj = this.camera.project(target.position, width, height);
+                if (!proj) return;
+
+                const radius = target.radius * proj.scale;
+                this.ctx.save();
+
+                if (target.id === 'dartboard') {
+                    // Малюємо класичну мішень дартсу
+                    this.ctx.shadowBlur = 15;
+                    this.ctx.shadowColor = '#ffd700';
+                    this.ctx.lineWidth = 2 * (proj.scale / 300);
+
+                    // Сектори дартсу
+                    const segments = 20;
+                    const angles = (Math.PI * 2) / segments;
+                    for (let i = 0; i < segments; i++) {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(proj.x, proj.y);
+                        this.ctx.arc(proj.x, proj.y, radius, i * angles, (i + 1) * angles);
+                        this.ctx.closePath();
+                        this.ctx.fillStyle = i % 2 === 0 ? 'rgba(0, 153, 51, 0.4)' : 'rgba(204, 0, 0, 0.4)';
+                        this.ctx.fill();
+                        this.ctx.strokeStyle = '#ffffff';
+                        this.ctx.stroke();
+                    }
+
+                    // Внутрішнє кільце
+                    this.ctx.strokeStyle = '#ffd700';
+                    this.ctx.lineWidth = 4 * (proj.scale / 300);
+                    this.ctx.beginPath();
+                    this.ctx.arc(proj.x, proj.y, radius * 0.45, 0, Math.PI * 2);
+                    this.ctx.stroke();
+
+                    // Bullseye (Червоний центр)
+                    this.ctx.fillStyle = '#ff0033';
+                    this.ctx.beginPath();
+                    this.ctx.arc(proj.x, proj.y, radius * 0.18, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Текст над дартсом
+                    this.ctx.fillStyle = '#ffd700';
+                    this.ctx.font = `bold ${Math.round(11 * (proj.scale / 300))}px monospace`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText("ДАРТС 🎯", proj.x, proj.y - radius - 8);
+                }
+                else if (target.id === 'dummy') {
+                    // Малюємо манекен (картонний щит)
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.shadowColor = '#ff6600';
+                    
+                    // Ніжка
+                    this.ctx.strokeStyle = '#855e42';
+                    this.ctx.lineWidth = 6 * (proj.scale / 300);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(proj.x, proj.y + radius);
+                    this.ctx.lineTo(proj.x, proj.y + radius * 2.1);
+                    this.ctx.stroke();
+
+                    // Манекен (тіло)
+                    this.ctx.fillStyle = 'rgba(255, 102, 0, 0.35)';
+                    this.ctx.strokeStyle = '#ff6600';
+                    this.ctx.lineWidth = 3 * (proj.scale / 300);
+                    this.ctx.beginPath();
+                    this.ctx.arc(proj.x, proj.y - radius * 0.5, radius * 0.55, 0, Math.PI * 2); // голова
+                    this.ctx.rect(proj.x - radius * 0.5, proj.y, radius, radius * 1.2); // торс
+                    this.ctx.fill();
+                    this.ctx.stroke();
+
+                    // Малюємо хрест на тілі
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                    this.ctx.lineWidth = 2 * (proj.scale / 300);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(proj.x - radius * 0.4, proj.y + radius * 0.6);
+                    this.ctx.lineTo(proj.x + radius * 0.4, proj.y + radius * 0.6);
+                    this.ctx.moveTo(proj.x, proj.y + radius * 0.2);
+                    this.ctx.lineTo(proj.x, proj.y + radius * 1.0);
+                    this.ctx.stroke();
+
+                    this.ctx.fillStyle = '#ff6600';
+                    this.ctx.font = `bold ${Math.round(11 * (proj.scale / 300))}px monospace`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText("МАНЕКЕН 🛡️", proj.x, proj.y - radius * 1.3);
+                }
+                else if (target.id === 'photographer') {
+                    // Малюємо фотографа з великою камерою
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.shadowColor = '#00ccff';
+                    this.ctx.strokeStyle = '#00ccff';
+                    this.ctx.lineWidth = 3 * (proj.scale / 300);
+                    
+                    // Голова фотографа
+                    this.ctx.beginPath();
+                    this.ctx.arc(proj.x, proj.y - radius * 0.6, radius * 0.35, 0, Math.PI * 2);
+                    this.ctx.stroke();
+
+                    // Тіло та ноги (сидяче положення)
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(proj.x, proj.y - radius * 0.25);
+                    this.ctx.lineTo(proj.x - radius * 0.2, proj.y + radius * 0.4); // спина/таз
+                    this.ctx.lineTo(proj.x - radius * 0.5, proj.y + radius * 0.9); // ноги
+                    this.ctx.moveTo(proj.x - radius * 0.2, proj.y + radius * 0.4);
+                    this.ctx.lineTo(proj.x + radius * 0.3, proj.y + radius * 0.9);
+                    this.ctx.stroke();
+
+                    // Великий об'єктив камери
+                    this.ctx.fillStyle = '#333333';
+                    this.ctx.strokeStyle = '#ffffff';
+                    this.ctx.lineWidth = 2 * (proj.scale / 300);
+                    this.ctx.fillRect(proj.x + radius * 0.1, proj.y - radius * 0.7, radius * 0.7, radius * 0.35);
+                    this.ctx.strokeRect(proj.x + radius * 0.1, proj.y - radius * 0.7, radius * 0.7, radius * 0.35);
+
+                    // Фото-штатив (тринога)
+                    this.ctx.strokeStyle = '#888888';
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(proj.x + radius * 0.4, proj.y - radius * 0.35);
+                    this.ctx.lineTo(proj.x + radius * 0.1, proj.y + radius * 0.9);
+                    this.ctx.moveTo(proj.x + radius * 0.4, proj.y - radius * 0.35);
+                    this.ctx.lineTo(proj.x + radius * 0.7, proj.y + radius * 0.9);
+                    this.ctx.stroke();
+
+                    this.ctx.fillStyle = '#00ccff';
+                    this.ctx.font = `bold ${Math.round(11 * (proj.scale / 300))}px monospace`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText("ФОТОГРАФ 📸", proj.x, proj.y - radius * 1.2);
+                }
+
+                this.ctx.restore();
+            });
+        }
+
         const postLeftBase = new Vector3(-GOAL_WIDTH / 2, 0, 0);
         const postLeftTop = new Vector3(-GOAL_WIDTH / 2, GOAL_HEIGHT, 0);
         const postRightBase = new Vector3(GOAL_WIDTH / 2, 0, 0);
@@ -1880,6 +2072,46 @@ class PenaltyMasterGame {
             document.body.removeChild(overlay);
             showScreen('screen-main-menu');
         };
+    }
+
+    showCustomHitText(text, color) {
+        const div = document.createElement('div');
+        div.style.cssText = `
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: ${color};
+            font-size: 2.2rem;
+            font-weight: 900;
+            font-family: 'Outfit', sans-serif;
+            text-shadow: 0 0 15px ${color}, 0 0 30px ${color};
+            z-index: 99;
+            pointer-events: none;
+            text-transform: uppercase;
+            animation: hitTextAnim 2.2s forwards cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        `;
+        
+        if (!document.getElementById('hit-text-keyframes')) {
+            const style = document.createElement('style');
+            style.id = 'hit-text-keyframes';
+            style.innerHTML = `
+                @keyframes hitTextAnim {
+                    0% { transform: translate(-50%, 0%) scale(0.4); opacity: 0; }
+                    15% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+                    30% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+                    80% { transform: translate(-50%, -80%) scale(1.0); opacity: 1; }
+                    100% { transform: translate(-50%, -110%) scale(0.85); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        div.innerText = text;
+        document.body.appendChild(div);
+        setTimeout(() => {
+            if (div.parentNode) div.parentNode.removeChild(div);
+        }, 2200);
     }
 
     startMatrixCutscene(coinsReward) {
