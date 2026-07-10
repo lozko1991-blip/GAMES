@@ -1054,12 +1054,16 @@ class PenaltyMasterGame {
             const progEl = document.getElementById('hud-level-progress');
             if (progEl) progEl.innerText = `Голі: ${this.levelGoalsScored}/${lvl.goalsToAdvance}`;
 
-            // Кожні 4 забиті голи запускаємо міні-гру «Матричний Прорив»
-            if (this.goalsCount > 0 && this.goalsCount % 4 === 0) {
+            // Чергування міні-ігор після кожних 3 забитих голів (через 3-4 раунди)
+            if (this.goalsCount > 0 && this.goalsCount % 6 === 3) {
+                setTimeout(() => {
+                    this.triggerBasketballGame();
+                }, 4400);
+            } else if (this.goalsCount > 0 && this.goalsCount % 6 === 0) {
                 setTimeout(() => {
                     this.triggerMatrixMiniGame();
                 }, 4400);
-            } else if (this.goalsCount > 0 && this.goalsCount % 3 === 0) {
+            } else if (this.goalsCount > 0 && this.goalsCount % 5 === 0) {
                 setTimeout(() => {
                     triggerPackOpening();
                 }, 4400);

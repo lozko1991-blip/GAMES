@@ -28,7 +28,7 @@ class BasketballGame {
         this.hoop = {
             x: this.width - 120,
             y: 130, // Rim height
-            rimWidth: 50,
+            rimWidth: 65, // Увеличено с 50 для облегчения попадания
             backboardX: this.width - 70,
             backboardY1: 60,
             backboardY2: 155,
@@ -36,14 +36,15 @@ class BasketballGame {
             speed: 60
         };
 
-        // Defender Drone
+        // Defender Drone (тепер спавниться тільки іноді)
         this.defender = {
             x: this.width - 200,
             y: 110,
             width: 15,
             height: 60,
             velocityY: 80, // pixels per sec
-            direction: 1
+            direction: 1,
+            active: false
         };
 
         // Ball properties
@@ -276,6 +277,9 @@ class BasketballGame {
             this.aimPower = 380;
         }
         
+        // Дрон-захисник спавниться з шансом 45% тільки після того, як гравець закинув хоча б 2 м'ячі
+        this.defender.active = (this.baskets >= 2) && (Math.random() < 0.45);
+
         this.positionBallOnPlayer();
     }
 
@@ -355,22 +359,24 @@ class BasketballGame {
             this.hoop.backboardY2 = this.hoop.y + 25;
         }
 
-        // Defender Drone movement
-        this.defender.y += this.defender.velocityY * this.defender.direction * dt;
-        if (this.defender.y > this.groundY - this.defender.height - 20) {
-            this.defender.y = this.groundY - this.defender.height - 20;
-            this.defender.direction = -1;
-        } else if (this.defender.y < 60) {
-            this.defender.y = 60;
-            this.defender.direction = 1;
+        // Defender Drone movement (лише коли активний)
+        if (this.defender.active) {
+            this.defender.y += this.defender.velocityY * this.defender.direction * dt;
+            if (this.defender.y > this.groundY - this.defender.height - 20) {
+                this.defender.y = this.groundY - this.defender.height - 20;
+                this.defender.direction = -1;
+            } else if (this.defender.y < 60) {
+                this.defender.y = 60;
+                this.defender.direction = 1;
+            }
         }
 
         // Ball state update
         if (this.ball.state === 'held') {
             this.positionBallOnPlayer();
         } else if (this.ball.state === 'flying') {
-            // Apply wind resistance and gravity
-            this.ball.vx += this.windX * 0.15 * dt;
+            // Зменшено вплив вітру з 0.15 до 0.08 для більш передбачуваного польоту
+            this.ball.vx += this.windX * 0.08 * dt;
             this.ball.vy += this.gravity * dt;
 
             this.ball.x += this.ball.vx * dt;
@@ -472,33 +478,35 @@ class BasketballGame {
             if (window.gameAudio) window.gameAudio.playKeeperSave();
         }
 
-        // 4. Defender Drone Collision
-        const df = this.defender;
-        const hitDefenderX = this.ball.x + this.ball.radius >= df.x && this.ball.x - this.ball.radius <= df.x + df.width;
-        const hitDefenderY = this.ball.y + this.ball.radius >= df.y && this.ball.y - this.ball.radius <= df.y + df.height;
+        // 4. Defender Drone Collision (лише коли активний)
+        if (this.defender.active) {
+            const df = this.defender;
+            const hitDefenderX = this.ball.x + this.ball.radius >= df.x && this.ball.x - this.ball.radius <= df.x + df.width;
+            const hitDefenderY = this.ball.y + this.ball.radius >= df.y && this.ball.y - this.ball.radius <= df.y + df.height;
 
-        if (hitDefenderX && hitDefenderY) {
-            // Blocked!
-            this.ball.vx = -Math.abs(this.ball.vx) * 0.65;
-            this.ball.vy = (Math.random() - 0.5) * 120 - 150;
-            this.swishActive = false;
-            this.streak = 0; // Break streak
-            if (window.gameAudio) window.gameAudio.playMissGroan();
-            
-            // Blocked particle explosion
-            for (let i = 0; i < 10; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 40 + Math.random() * 80;
-                this.particles.push({
-                    x: this.ball.x,
-                    y: this.ball.y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    radius: 2 + Math.random() * 2,
-                    life: 0.3,
-                    maxLife: 0.3,
-                    color: '#ff0033'
-                });
+            if (hitDefenderX && hitDefenderY) {
+                // Blocked!
+                this.ball.vx = -Math.abs(this.ball.vx) * 0.65;
+                this.ball.vy = (Math.random() - 0.5) * 120 - 150;
+                this.swishActive = false;
+                this.streak = 0; // Break streak
+                if (window.gameAudio) window.gameAudio.playMissGroan();
+                
+                // Blocked particle explosion
+                for (let i = 0; i < 10; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 40 + Math.random() * 80;
+                    this.particles.push({
+                        x: this.ball.x,
+                        y: this.ball.y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        radius: 2 + Math.random() * 2,
+                        life: 0.3,
+                        maxLife: 0.3,
+                        color: '#ff0033'
+                    });
+                }
             }
         }
 
@@ -529,9 +537,9 @@ class BasketballGame {
             if (window.gameAudio) window.gameAudio.playKeeperSave();
         }
 
-        // 6. Score Condition: passes downward through the hoop aperture
-        if (this.ball.vy > 0 && this.ball.y >= rimY - 3 && this.ball.y <= rimY + 12 && 
-            this.ball.x >= rimX1 + 4 && this.ball.x <= rimX2 - 4) {
+        // 6. Score Condition: passes downward through the hoop aperture (межі розширено для легшого попадання)
+        if (this.ball.vy > 0 && this.ball.y >= rimY - 5 && this.ball.y <= rimY + 18 && 
+            this.ball.x >= rimX1 - 2 && this.ball.x <= rimX2 + 2) {
             if (this.ball.state === 'flying') {
                 this.handleScore();
             }
@@ -679,15 +687,17 @@ class BasketballGame {
         this.ctx.lineTo(this.hoop.x + this.hoop.rimWidth, this.hoop.y);
         this.ctx.stroke();
 
-        // Draw Defender Drone (shield)
-        const df = this.defender;
-        this.ctx.strokeStyle = '#ff0033';
-        this.ctx.shadowColor = '#ff0033';
-        this.ctx.shadowBlur = 10;
-        this.ctx.lineWidth = 2.5;
-        this.ctx.fillStyle = 'rgba(255, 0, 51, 0.15)';
-        this.ctx.strokeRect(df.x, df.y, df.width, df.height);
-        this.ctx.fillRect(df.x, df.y, df.width, df.height);
+        // Draw Defender Drone (shield) - лише коли активний
+        if (this.defender.active) {
+            const df = this.defender;
+            this.ctx.strokeStyle = '#ff0033';
+            this.ctx.shadowColor = '#ff0033';
+            this.ctx.shadowBlur = 10;
+            this.ctx.lineWidth = 2.5;
+            this.ctx.fillStyle = 'rgba(255, 0, 51, 0.15)';
+            this.ctx.strokeRect(df.x, df.y, df.width, df.height);
+            this.ctx.fillRect(df.x, df.y, df.width, df.height);
+        }
 
         // Draw Aim Trajectory guide
         if (this.ball.state === 'held' && (this.isMouseDragging || this.isAimingKeyboard)) {
@@ -703,12 +713,12 @@ class BasketballGame {
             let simVx = Math.cos(rad) * simPower;
             let simVy = Math.sin(rad) * simPower;
             
-            // Limit trajectory points based on SHO attribute (simulated)
-            const trajPointsCount = 20; 
+            // Подовжено лінію прицілювання (35 кроків замість 20) для максимальної зручності
+            const trajPointsCount = 35; 
             
             for (let i = 0; i < trajPointsCount; i++) {
                 this.ctx.lineTo(simX, simY);
-                simVx += this.windX * 0.15 * 0.035;
+                simVx += this.windX * 0.08 * 0.035; // відповідно зменшено вплив вітру в симуляції
                 simVy += this.gravity * 0.035;
                 simX += simVx * 0.035;
                 simY += simVy * 0.035;
