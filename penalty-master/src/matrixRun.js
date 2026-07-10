@@ -14,7 +14,7 @@ class MatrixRunGame {
         this.isPlaying = false;
         this.distance = 0;
         this.targetDistance = 400; // Run 400 meters to win
-        this.speed = 220; // pixels per second
+        this.speed = 220; // base pixels per second
 
         // Player properties
         this.player = {
@@ -37,6 +37,7 @@ class MatrixRunGame {
         this.lives = 3;
         this.maxLives = 3;
         this.ammo = 5;
+        this.coinsCollected = 0;
 
         this.obstacles = [];
         this.projectiles = [];
@@ -47,6 +48,7 @@ class MatrixRunGame {
         // Timers
         this.spawnTimer = 0;
         this.collectibleSpawnTimer = 0;
+        this.coinSpawnTimer = 0;
         this.lastTime = 0;
 
         this.initMatrixStreams();
@@ -67,25 +69,38 @@ class MatrixRunGame {
     }
 
     bindEvents() {
-        this.keyHandler = (e) => {
+        this.keysPressed = {};
+
+        this.keydownHandler = (e) => {
             if (!this.isPlaying) return;
+            this.keysPressed[e.code] = true;
+
+            // Space або Стрілка вгору - Стрибок
             if (e.code === 'Space' || e.code === 'KeyW' || e.code === 'ArrowUp') {
                 this.jump();
                 e.preventDefault();
             }
-            if (e.code === 'ShiftLeft' || e.code === 'KeyS' || e.code === 'ArrowDown') {
+            // Стрілка вниз - Слайд
+            if (e.code === 'KeyS' || e.code === 'ArrowDown') {
                 this.slide();
                 e.preventDefault();
             }
+            // Клавіші F або E - Удар м'ячем
             if (e.code === 'KeyF' || e.code === 'KeyE') {
                 this.shoot();
                 e.preventDefault();
             }
         };
 
-        window.addEventListener('keydown', this.keyHandler);
+        this.keyupHandler = (e) => {
+            if (!this.isPlaying) return;
+            this.keysPressed[e.code] = false;
+        };
 
-        // Bind Touch UI if elements exist
+        window.addEventListener('keydown', this.keydownHandler);
+        window.addEventListener('keyup', this.keyupHandler);
+
+        // Кнопки Touch UI
         const btnJump = document.getElementById('matrix-btn-jump');
         const btnSlide = document.getElementById('matrix-btn-slide');
         const btnShoot = document.getElementById('matrix-btn-shoot');
@@ -96,7 +111,9 @@ class MatrixRunGame {
     }
 
     unbindEvents() {
-        window.removeEventListener('keydown', this.keyHandler);
+        window.removeEventListener('keydown', this.keydownHandler);
+        window.removeEventListener('keyup', this.keyupHandler);
+        this.keysPressed = {};
     }
 
     start() {
@@ -104,15 +121,20 @@ class MatrixRunGame {
         this.distance = 0;
         this.lives = 3;
         this.ammo = 5;
+        this.coinsCollected = 0;
         this.obstacles = [];
         this.projectiles = [];
         this.particles = [];
         this.collectibles = [];
         this.player.y = 0;
+        this.player.x = 100;
         this.player.velocityY = 0;
         this.player.isJumping = false;
         this.player.isSliding = false;
         this.player.invulnerableTimer = 0;
+        this.spawnTimer = 0;
+        this.collectibleSpawnTimer = 0;
+        this.coinSpawnTimer = 0;
 
         this.lastTime = performance.now();
         this.initMatrixStreams();
@@ -124,32 +146,31 @@ class MatrixRunGame {
         if (!this.player.isJumping && !this.player.isSliding) {
             this.player.velocityY = this.jumpForce;
             this.player.isJumping = true;
-            if (window.gameAudio) window.gameAudio.playKeeperSave(); // sound indicator
+            if (window.gameAudio) window.gameAudio.playKeeperSave(); 
         }
     }
 
     slide() {
         if (!this.player.isJumping && !this.player.isSliding) {
             this.player.isSliding = true;
-            this.player.slideTimer = 0.55; // slide for 0.55 seconds
-            this.player.height = 30; // shrink bounding box
+            this.player.slideTimer = 0.55; 
+            this.player.height = 30; 
         }
     }
 
     shoot() {
         if (this.ammo > 0 && this.player.shootCooldown <= 0) {
             this.ammo--;
-            this.player.shootCooldown = 0.35; // shoot every 0.35s
+            this.player.shootCooldown = 0.35; 
 
-            // Spawn projectile
             this.projectiles.push({
                 x: this.player.x + 30,
                 y: this.groundY - this.player.y - (this.player.isSliding ? 15 : 35),
                 radius: 8,
-                velocityX: 550 // fly fast
+                velocityX: 580 
             });
 
-            if (window.gameAudio) window.gameAudio.playWhistle(); // kick sound indicator
+            if (window.gameAudio) window.gameAudio.playWhistle(); 
         }
     }
 
@@ -162,13 +183,13 @@ class MatrixRunGame {
             type: type,
             width: 30,
             height: 40,
-            y: 0, // Grounded by default
+            y: 0, 
             shattered: false
         };
 
         if (type === 'laser') {
             obs.height = 25;
-            obs.y = 45; // High up, must slide under
+            obs.y = 45; 
             obs.width = 40;
         } else if (type === 'breakable') {
             obs.height = 65;
@@ -185,16 +206,43 @@ class MatrixRunGame {
     spawnCollectible() {
         this.collectibles.push({
             x: this.width + 50,
-            y: 50 + Math.random() * 80,
+            y: this.groundY - 60 - Math.random() * 70,
             width: 20,
             height: 20,
             type: 'ball'
         });
     }
 
+    spawnCoinGroup() {
+        const patterns = ['line', 'arc', 'sine'];
+        const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+        const startX = this.width + 50;
+        const count = 3 + Math.floor(Math.random() * 3); 
+        
+        for (let i = 0; i < count; i++) {
+            let coinY = this.groundY - 30;
+            if (pattern === 'line') {
+                coinY = this.groundY - 50;
+            } else if (pattern === 'arc') {
+                const mid = (count - 1) / 2;
+                const distFromMid = i - mid;
+                coinY = this.groundY - 120 + distFromMid * distFromMid * 18;
+            } else if (pattern === 'sine') {
+                coinY = this.groundY - 70 + Math.sin(i * 1.2) * 40;
+            }
+            
+            this.collectibles.push({
+                x: startX + i * 35,
+                y: coinY,
+                width: 16,
+                height: 16,
+                type: 'coin'
+            });
+        }
+    }
+
     shatterObstacle(obs) {
         obs.shattered = true;
-        // Spawn 20 glowing green particles
         for (let i = 0; i < 20; i++) {
             const angle = Math.random() * Math.PI * 2;
             const speed = 50 + Math.random() * 150;
@@ -208,7 +256,7 @@ class MatrixRunGame {
                 maxLife: 1.0
             });
         }
-        if (window.gameAudio) window.gameAudio.playNetRustle(); // shatter sound
+        if (window.gameAudio) window.gameAudio.playNetRustle(); 
     }
 
     loop(time) {
@@ -224,24 +272,36 @@ class MatrixRunGame {
     }
 
     update(dt) {
-        // Increment distance
-        this.distance += this.speed * 0.05 * dt;
+        // Розраховуємо швидкість бігу та положення гравця залежно від стрілок
+        let speedMultiplier = 1.0;
+        if (this.keysPressed['ArrowLeft'] || this.keysPressed['KeyA']) {
+            speedMultiplier = 0.5; // Гальмування / Додатковий час на роздуми
+        } else if (this.keysPressed['ArrowRight'] || this.keysPressed['KeyD']) {
+            speedMultiplier = 1.6; // Прискорення / Ривок вперед
+        }
+
+        // Плавний нахил/зсув гравця залежно від швидкості
+        const targetX = (speedMultiplier === 0.5) ? 65 : ((speedMultiplier === 1.6) ? 165 : 100);
+        this.player.x += (targetX - this.player.x) * 6.5 * dt;
+
+        const currentRunSpeed = this.speed * speedMultiplier;
+
+        // Накопичення дистанції
+        this.distance += currentRunSpeed * 0.05 * dt;
         
-        // Win check
+        // Перемога
         if (this.distance >= this.targetDistance) {
             this.isPlaying = false;
             this.unbindEvents();
-            // Calculate coins reward based on remaining hearts
-            const coinsEarned = 100 + this.lives * 50; 
+            const coinsEarned = 100 + this.lives * 50 + this.coinsCollected; 
             this.onWin(coinsEarned);
             return;
         }
 
-        // Apply timers
+        // Таймери
         if (this.player.shootCooldown > 0) this.player.shootCooldown -= dt;
         if (this.player.invulnerableTimer > 0) this.player.invulnerableTimer -= dt;
 
-        // Player slide timer
         if (this.player.isSliding) {
             this.player.slideTimer -= dt;
             if (this.player.slideTimer <= 0) {
@@ -250,7 +310,7 @@ class MatrixRunGame {
             }
         }
 
-        // Player physics (Jump/Gravity)
+        // Гравітація та стрибок
         if (this.player.isJumping) {
             this.player.velocityY += this.gravity * dt;
             this.player.y -= this.player.velocityY * dt;
@@ -262,22 +322,29 @@ class MatrixRunGame {
             }
         }
 
-        // Spawn obstacles
+        // Спавн перешкод
         this.spawnTimer += dt;
-        const spawnInterval = Math.max(1.1, 2.0 - (this.distance / 250)); // get faster
+        const spawnInterval = Math.max(1.1, 2.0 - (this.distance / 250)) / speedMultiplier;
         if (this.spawnTimer >= spawnInterval) {
             this.spawnTimer = 0;
             this.spawnObstacle();
         }
 
-        // Spawn collectibles
+        // Спавн додаткових м'ячів
         this.collectibleSpawnTimer += dt;
-        if (this.collectibleSpawnTimer >= 3.8) {
+        if (this.collectibleSpawnTimer >= 4.2) {
             this.collectibleSpawnTimer = 0;
             this.spawnCollectible();
         }
 
-        // Update Matrix streams background
+        // Спавн груп золотих монет
+        this.coinSpawnTimer += dt;
+        if (this.coinSpawnTimer >= 2.6) {
+            this.coinSpawnTimer = 0;
+            this.spawnCoinGroup();
+        }
+
+        // Оновлення коду Матриці на фоні
         this.matrixStreams.forEach(stream => {
             stream.y += stream.speed * dt;
             if (stream.y > this.height) {
@@ -286,18 +353,16 @@ class MatrixRunGame {
             }
         });
 
-        // Update Projectiles
+        // Оновлення снарядів (ударів м'ячем)
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             const proj = this.projectiles[i];
             proj.x += proj.velocityX * dt;
             
-            // Remove offscreen
             if (proj.x > this.width + 20) {
                 this.projectiles.splice(i, 1);
                 continue;
             }
 
-            // Check hit with breakable obstacles
             for (let j = 0; j < this.obstacles.length; j++) {
                 const obs = this.obstacles[j];
                 if (obs.type === 'breakable' && !obs.shattered) {
@@ -313,12 +378,12 @@ class MatrixRunGame {
             }
         }
 
-        // Update Collectibles
+        // Оновлення збірних предметів (м'ячі, монети)
         for (let i = this.collectibles.length - 1; i >= 0; i--) {
             const col = this.collectibles[i];
-            col.x -= this.speed * dt;
+            col.x -= currentRunSpeed * dt;
 
-            // Collision with player
+            // Колізія з гравцем
             const pX = this.player.x;
             const pY = this.groundY - this.player.y - this.player.height;
             const hitX = col.x + col.width >= pX && col.x <= pX + this.player.width;
@@ -328,28 +393,46 @@ class MatrixRunGame {
                 if (col.type === 'ball') {
                     this.ammo = Math.min(10, this.ammo + 3);
                     if (window.gameAudio) window.gameAudio.playGoalCheer();
+                } else if (col.type === 'coin') {
+                    this.coinsCollected += 15; // +15 монет за кожну монету
+                    
+                    // Створюємо золоті іскри при зборі монети
+                    for (let p = 0; p < 8; p++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const speed = 40 + Math.random() * 60;
+                        this.particles.push({
+                            x: col.x + col.width / 2,
+                            y: col.y + col.height / 2,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            radius: 1.5 + Math.random() * 2,
+                            life: 0.35 + Math.random() * 0.2,
+                            maxLife: 0.55,
+                            color: '#ffd700'
+                        });
+                    }
+                    if (window.gameAudio) window.gameAudio.playNetRustle();
                 }
                 this.collectibles.splice(i, 1);
                 continue;
             }
 
-            if (col.x < -50) {
+            if (col.x < -150) {
                 this.collectibles.splice(i, 1);
             }
         }
 
-        // Update Obstacles
-        for (let i = this.obstacles.length - 1; i >= 0; i--) {
+        // Оновлення перешкод
+        for (let i = 0; i < this.obstacles.length; i++) {
             const obs = this.obstacles[i];
-            obs.x -= this.speed * dt;
+            obs.x -= currentRunSpeed * dt;
 
-            // Remove offscreen or shattered
             if (obs.x < -50 || obs.shattered) {
                 this.obstacles.splice(i, 1);
+                i--;
                 continue;
             }
 
-            // Check collision with player
             if (this.player.invulnerableTimer <= 0) {
                 const pX = this.player.x;
                 const pY = this.groundY - this.player.y - this.player.height;
@@ -357,9 +440,8 @@ class MatrixRunGame {
                 const hitY = (this.groundY - obs.y - obs.height) < pY + this.player.height && (this.groundY - obs.y) > pY;
 
                 if (hitX && hitY) {
-                    // Collision!
                     this.lives--;
-                    this.player.invulnerableTimer = 1.0; // 1s invulnerable
+                    this.player.invulnerableTimer = 1.0; 
 
                     if (window.gameAudio) window.gameAudio.playMissGroan();
 
@@ -373,24 +455,26 @@ class MatrixRunGame {
             }
         }
 
-        // Update particles
+        // Оновлення часток
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const p = this.particles[i];
             p.x += p.vx * dt;
             p.y += p.vy * dt;
-            p.vy += 200 * dt; // light gravity
+            p.vy += 200 * dt; 
             p.life -= dt;
             if (p.life <= 0) {
                 this.particles.splice(i, 1);
             }
         }
 
-        // Update indicators
+        // Оновлення HUD
         const hudDist = document.getElementById('matrix-hud-dist');
+        const hudCoins = document.getElementById('matrix-hud-coins');
         const hudHearts = document.getElementById('matrix-hud-hearts');
         const hudAmmo = document.getElementById('matrix-hud-ammo');
 
         if (hudDist) hudDist.innerText = `${Math.floor(this.distance)}m / ${this.targetDistance}m`;
+        if (hudCoins) hudCoins.innerText = `🪙 ${this.coinsCollected}`;
         if (hudHearts) hudHearts.innerHTML = '❤️'.repeat(this.lives) + '🖤'.repeat(this.maxLives - this.lives);
         if (hudAmmo) hudAmmo.innerText = `⚽ x${this.ammo}`;
     }
@@ -398,7 +482,7 @@ class MatrixRunGame {
     draw() {
         this.ctx.clearRect(0, 0, this.width, this.height);
 
-        // 1. Draw matrix coding background (Dark digital rain look)
+        // 1. Код Матриці на фоні
         this.ctx.fillStyle = '#020b05';
         this.ctx.fillRect(0, 0, this.width, this.height);
 
@@ -410,7 +494,7 @@ class MatrixRunGame {
             });
         });
 
-        // 2. Draw Vector ground grid line
+        // 2. Векторна лінія землі
         this.ctx.strokeStyle = '#00ff66';
         this.ctx.shadowColor = '#00ff66';
         this.ctx.shadowBlur = 10;
@@ -421,7 +505,7 @@ class MatrixRunGame {
         this.ctx.lineTo(this.width, this.groundY);
         this.ctx.stroke();
 
-        // 3D Grid Perspective lines for high-end feel
+        // 3D-сітка для ефекту глибини
         this.ctx.strokeStyle = 'rgba(0, 255, 102, 0.15)';
         this.ctx.lineWidth = 1;
         this.ctx.shadowBlur = 0;
@@ -434,20 +518,39 @@ class MatrixRunGame {
             this.ctx.stroke();
         }
 
-        // 3. Draw Collectibles (glowing ammo balls)
-        this.ctx.strokeStyle = '#00ffff';
-        this.ctx.shadowColor = '#00ffff';
-        this.ctx.shadowBlur = 8;
-        this.ctx.lineWidth = 2;
+        // 3. Збірні предмети
         this.collectibles.forEach(col => {
-            this.ctx.beginPath();
-            this.ctx.arc(col.x + col.width/2, col.y + col.height/2, 9, 0, Math.PI * 2);
-            this.ctx.stroke();
-            this.ctx.fillStyle = 'rgba(0,255,255,0.2)';
-            this.ctx.fill();
+            if (col.type === 'ball') {
+                this.ctx.strokeStyle = '#00ffff';
+                this.ctx.shadowColor = '#00ffff';
+                this.ctx.shadowBlur = 8;
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(col.x + col.width/2, col.y + col.height/2, 9, 0, Math.PI * 2);
+                this.ctx.stroke();
+                this.ctx.fillStyle = 'rgba(0,255,255,0.2)';
+                this.ctx.fill();
+            } else if (col.type === 'coin') {
+                // Малювання монети
+                this.ctx.strokeStyle = '#ffd700';
+                this.ctx.shadowColor = '#ffd700';
+                this.ctx.shadowBlur = 10;
+                this.ctx.lineWidth = 2.5;
+                
+                this.ctx.beginPath();
+                this.ctx.arc(col.x + col.width/2, col.y + col.height/2, 8, 0, Math.PI * 2);
+                this.ctx.stroke();
+                this.ctx.fillStyle = 'rgba(255, 215, 0, 0.35)';
+                this.ctx.fill();
+                
+                // Внутрішній контур монети
+                this.ctx.beginPath();
+                this.ctx.arc(col.x + col.width/2, col.y + col.height/2, 4, 0, Math.PI * 2);
+                this.ctx.stroke();
+            }
         });
 
-        // 4. Draw Projectiles
+        // 4. Снаряди
         this.ctx.strokeStyle = '#ffffff';
         this.ctx.shadowColor = '#00ff66';
         this.ctx.shadowBlur = 12;
@@ -460,7 +563,7 @@ class MatrixRunGame {
             this.ctx.fill();
         });
 
-        // 5. Draw Obstacles
+        // 5. Перешкоди
         this.obstacles.forEach(obs => {
             if (obs.shattered) return;
 
@@ -472,7 +575,7 @@ class MatrixRunGame {
                 this.ctx.lineWidth = 2.5;
                 this.ctx.strokeRect(obs.x, this.groundY - obs.y - obs.height, obs.width, obs.height);
                 this.ctx.fillRect(obs.x, this.groundY - obs.y - obs.height, obs.width, obs.height);
-                // Draw diagonal glass lines
+                
                 this.ctx.beginPath();
                 this.ctx.moveTo(obs.x, this.groundY - obs.y - obs.height);
                 this.ctx.lineTo(obs.x + obs.width, this.groundY - obs.y);
@@ -500,7 +603,6 @@ class MatrixRunGame {
                 this.ctx.fillStyle = 'rgba(255, 102, 0, 0.1)';
                 this.ctx.fill();
             } else {
-                // Hurdle
                 this.ctx.strokeStyle = '#ffcc00';
                 this.ctx.shadowColor = '#ffcc00';
                 this.ctx.shadowBlur = 8;
@@ -509,78 +611,72 @@ class MatrixRunGame {
             }
         });
 
-        // 6. Draw Particles (Shatter effect)
+        // 6. Частки
         this.particles.forEach(p => {
-            this.ctx.fillStyle = '#00ffcc';
-            this.ctx.shadowColor = '#00ffcc';
+            this.ctx.fillStyle = p.color || '#00ffcc';
+            this.ctx.shadowColor = p.color || '#00ffcc';
             this.ctx.shadowBlur = 6;
             this.ctx.globalAlpha = p.life / p.maxLife;
             this.ctx.beginPath();
             this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
             this.ctx.fill();
         });
-        this.ctx.globalAlpha = 1.0; // restore
+        this.ctx.globalAlpha = 1.0; 
 
-        // 7. Draw Player (Glowing Vector Line Footballer Model)
+        // 7. Гравець
         const pX = this.player.x;
         const pY = this.groundY - this.player.y;
         
-        // Blink if invulnerable
-        if (this.player.invulnerableTimer > 0 && Math.floor(time / 100) % 2 === 0) {
-            // invisible this frame
+        if (this.player.invulnerableTimer > 0 && Math.floor(performance.now() / 100) % 2 === 0) {
+            // Мерехтіння при невразливості
         } else {
             this.ctx.strokeStyle = '#00ff66';
             this.ctx.shadowColor = '#00ff66';
             this.ctx.shadowBlur = 10;
             this.ctx.lineWidth = 3;
 
-            // Draw player bones
             this.ctx.beginPath();
             if (this.player.isSliding) {
-                // Slid/Duck model
-                // Head
+                // Модель слайду
                 this.ctx.arc(pX + 15, pY - 25, 6, 0, Math.PI*2);
-                // Body
                 this.ctx.moveTo(pX + 15, pY - 19);
                 this.ctx.lineTo(pX - 10, pY - 5);
-                // Slide Leg
                 this.ctx.lineTo(pX + 25, pY - 2);
             } else {
-                // Running or Jumping model
-                const animPhase = Math.sin(time * 0.015);
+                // Модель бігу/стрибка
+                const animPhase = Math.sin(performance.now() * 0.015);
                 const legAngle = this.player.isJumping ? 0.4 : animPhase * 0.6;
 
-                // Head
+                // Голова
                 this.ctx.arc(pX + 15, pY - 54, 7, 0, Math.PI*2);
-                // Spine
+                // Хребет
                 this.ctx.moveTo(pX + 15, pY - 47);
                 this.ctx.lineTo(pX + 13, pY - 26);
-                // Leg Left
+                // Ліва нога
                 this.ctx.moveTo(pX + 13, pY - 26);
                 this.ctx.lineTo(pX + 13 - Math.sin(legAngle) * 16, pY - 13);
                 this.ctx.lineTo(pX + 13 - Math.sin(legAngle) * 26, pY - 2);
-                // Leg Right
+                // Права нога
                 this.ctx.moveTo(pX + 13, pY - 26);
                 this.ctx.lineTo(pX + 13 + Math.sin(legAngle) * 16, pY - 13);
                 this.ctx.lineTo(pX + 13 + Math.sin(legAngle) * 26, pY - 2);
-                // Arm Left
+                // Руки
                 this.ctx.moveTo(pX + 15, pY - 43);
                 this.ctx.lineTo(pX + 3, pY - 32);
-                // Arm Right
                 this.ctx.moveTo(pX + 15, pY - 43);
                 this.ctx.lineTo(pX + 25, pY - 35);
             }
             this.ctx.stroke();
             
-            // Draw ball attached to foot if not sliding/jumping
+            // Малюємо м'яч біля ніг, якщо гравець не в стрибку і не в слайді
             if (!this.player.isJumping && !this.player.isSliding) {
                 this.ctx.strokeStyle = '#00ff66';
                 this.ctx.beginPath();
-                this.ctx.arc(pX + 25 + Math.sin(time * 0.02) * 4, pY - 4, 5, 0, Math.PI * 2);
+                this.ctx.arc(pX + 25 + Math.sin(performance.now() * 0.02) * 4, pY - 4, 5, 0, Math.PI * 2);
                 this.ctx.stroke();
             }
         }
 
-        this.ctx.shadowBlur = 0; // Restore shadow
+        this.ctx.shadowBlur = 0; 
     }
 }
