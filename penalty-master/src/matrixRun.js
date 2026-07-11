@@ -101,39 +101,62 @@ class MatrixRunGame {
         window.addEventListener('keydown', this.keydownHandler);
         window.addEventListener('keyup', this.keyupHandler);
 
-        // Кнопки Touch UI
+        // Кнопки Touch UI з миттєвою реакцією без затримки 300мс
         const btnJump = document.getElementById('matrix-btn-jump');
         const btnSlide = document.getElementById('matrix-btn-slide');
         const btnShoot = document.getElementById('matrix-btn-shoot');
         const btnBrake = document.getElementById('matrix-btn-brake');
         const btnBoost = document.getElementById('matrix-btn-boost');
 
-        if (btnJump) btnJump.onclick = () => this.jump();
-        if (btnSlide) btnSlide.onclick = () => this.slide();
-        if (btnShoot) btnShoot.onclick = () => this.shoot();
+        if (btnJump) {
+            btnJump.onclick = () => this.jump();
+            btnJump.ontouchstart = (e) => { this.jump(); if(e.cancelable) e.preventDefault(); };
+        }
+        if (btnSlide) {
+            btnSlide.onclick = () => this.slide();
+            btnSlide.ontouchstart = (e) => { this.slide(); if(e.cancelable) e.preventDefault(); };
+        }
+        if (btnShoot) {
+            btnShoot.onclick = () => this.shoot();
+            btnShoot.ontouchstart = (e) => { this.shoot(); if(e.cancelable) e.preventDefault(); };
+        }
 
         if (btnBrake) {
             const startBrake = (e) => { this.keysPressed['ArrowLeft'] = true; if(e.cancelable) e.preventDefault(); };
             const endBrake = () => { this.keysPressed['ArrowLeft'] = false; };
-            btnBrake.addEventListener('touchstart', startBrake, { passive: false });
-            btnBrake.addEventListener('touchend', endBrake);
-            btnBrake.addEventListener('mousedown', startBrake);
-            btnBrake.addEventListener('mouseup', endBrake);
+            btnBrake.ontouchstart = startBrake;
+            btnBrake.ontouchend = endBrake;
+            btnBrake.onmousedown = startBrake;
+            btnBrake.onmouseup = endBrake;
         }
 
         if (btnBoost) {
             const startBoost = (e) => { this.keysPressed['ArrowRight'] = true; if(e.cancelable) e.preventDefault(); };
             const endBoost = () => { this.keysPressed['ArrowRight'] = false; };
-            btnBoost.addEventListener('touchstart', startBoost, { passive: false });
-            btnBoost.addEventListener('touchend', endBoost);
-            btnBoost.addEventListener('mousedown', startBoost);
-            btnBoost.addEventListener('mouseup', endBoost);
+            btnBoost.ontouchstart = startBoost;
+            btnBoost.ontouchend = endBoost;
+            btnBoost.onmousedown = startBoost;
+            btnBoost.onmouseup = endBoost;
         }
     }
 
     unbindEvents() {
         window.removeEventListener('keydown', this.keydownHandler);
         window.removeEventListener('keyup', this.keyupHandler);
+        
+        // Очищення мобільних обробників подій для запобігання витоку пам'яті
+        const btnJump = document.getElementById('matrix-btn-jump');
+        const btnSlide = document.getElementById('matrix-btn-slide');
+        const btnShoot = document.getElementById('matrix-btn-shoot');
+        const btnBrake = document.getElementById('matrix-btn-brake');
+        const btnBoost = document.getElementById('matrix-btn-boost');
+        
+        if (btnJump) { btnJump.onclick = null; btnJump.ontouchstart = null; }
+        if (btnSlide) { btnSlide.onclick = null; btnSlide.ontouchstart = null; }
+        if (btnShoot) { btnShoot.onclick = null; btnShoot.ontouchstart = null; }
+        if (btnBrake) { btnBrake.ontouchstart = null; btnBrake.ontouchend = null; btnBrake.onmousedown = null; btnBrake.onmouseup = null; }
+        if (btnBoost) { btnBoost.ontouchstart = null; btnBoost.ontouchend = null; btnBoost.onmousedown = null; btnBoost.onmouseup = null; }
+
         this.keysPressed = {};
     }
 
