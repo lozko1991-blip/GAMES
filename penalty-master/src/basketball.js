@@ -168,8 +168,9 @@ class BasketballGame {
             const mouseX = (touch.clientX - rect.left) * (this.width / rect.width);
             const mouseY = (touch.clientY - rect.top) * (this.height / rect.height);
 
+            // Increased touch target size for mobile to easily start aiming anywhere near player/ball (180px)
             const dist = Math.hypot(mouseX - this.ball.x, mouseY - this.ball.y);
-            if (dist < 55) {
+            if (dist < 180) {
                 this.isMouseDragging = true;
                 this.isAimingKeyboard = false;
                 if (e.cancelable) e.preventDefault();
@@ -210,16 +211,36 @@ class BasketballGame {
         this.canvas.addEventListener('touchmove', this.touchmoveHandler, { passive: false });
         this.canvas.addEventListener('touchend', this.touchendHandler, { passive: false });
 
-        // Bind control buttons
+        // Bind control buttons with smooth holding support
         const btnLeft = document.getElementById('basket-btn-left');
         const btnRight = document.getElementById('basket-btn-right');
         const btnJump = document.getElementById('basket-btn-jump');
         const btnShoot = document.getElementById('basket-btn-shoot');
 
-        if (btnLeft) btnLeft.onclick = () => this.movePlayer(-30);
-        if (btnRight) btnRight.onclick = () => this.movePlayer(30);
-        if (btnJump) btnJump.onclick = () => this.jump();
-        if (btnShoot) btnShoot.onclick = () => { if (this.ball.state === 'held') this.shootKeyboard(); };
+        if (btnLeft) {
+            const startLeft = (e) => { this.keysPressed['KeyA'] = true; if(e.cancelable) e.preventDefault(); };
+            const endLeft = () => { this.keysPressed['KeyA'] = false; };
+            btnLeft.ontouchstart = startLeft;
+            btnLeft.ontouchend = endLeft;
+            btnLeft.onmousedown = startLeft;
+            btnLeft.onmouseup = endLeft;
+        }
+        if (btnRight) {
+            const startRight = (e) => { this.keysPressed['KeyD'] = true; if(e.cancelable) e.preventDefault(); };
+            const endRight = () => { this.keysPressed['KeyD'] = false; };
+            btnRight.ontouchstart = startRight;
+            btnRight.ontouchend = endRight;
+            btnRight.onmousedown = startRight;
+            btnRight.onmouseup = endRight;
+        }
+        if (btnJump) {
+            btnJump.onclick = () => this.jump();
+            btnJump.ontouchstart = (e) => { this.jump(); if(e.cancelable) e.preventDefault(); };
+        }
+        if (btnShoot) {
+            btnShoot.onclick = () => { if (this.ball.state === 'held') this.shootKeyboard(); };
+            btnShoot.ontouchstart = (e) => { if (this.ball.state === 'held') this.shootKeyboard(); if(e.cancelable) e.preventDefault(); };
+        }
     }
 
     unbindEvents() {
@@ -228,6 +249,20 @@ class BasketballGame {
         this.canvas.removeEventListener('mousedown', this.mousedownHandler);
         this.canvas.removeEventListener('mousemove', this.mousemoveHandler);
         window.removeEventListener('mouseup', this.mouseupHandler);
+        this.canvas.removeEventListener('touchstart', this.touchstartHandler);
+        this.canvas.removeEventListener('touchmove', this.touchmoveHandler);
+        this.canvas.removeEventListener('touchend', this.touchendHandler);
+        
+        // Clean up mobile buttons listeners
+        const btnLeft = document.getElementById('basket-btn-left');
+        const btnRight = document.getElementById('basket-btn-right');
+        const btnJump = document.getElementById('basket-btn-jump');
+        const btnShoot = document.getElementById('basket-btn-shoot');
+        if (btnLeft) { btnLeft.ontouchstart = null; btnLeft.ontouchend = null; btnLeft.onmousedown = null; btnLeft.onmouseup = null; }
+        if (btnRight) { btnRight.ontouchstart = null; btnRight.ontouchend = null; btnRight.onmousedown = null; btnRight.onmouseup = null; }
+        if (btnJump) { btnJump.onclick = null; btnJump.ontouchstart = null; }
+        if (btnShoot) { btnShoot.onclick = null; btnShoot.ontouchstart = null; }
+        
         this.keysPressed = {};
     }
 

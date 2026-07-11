@@ -45,30 +45,29 @@ class PlayerControls {
             }
         });
 
-        // Touch aiming directly on the game canvas
+        // Touch aiming directly on the game canvas (Relative Swipe Control)
         const canvas = document.getElementById('game-canvas');
         if (canvas) {
             let isTouching = false;
-            
-            const handleTouchAim = (touchX, touchY) => {
-                const rect = canvas.getBoundingClientRect();
-                const relativeX = (touchX - rect.left) / rect.width;
-                const relativeY = (touchY - rect.top) / rect.height;
-                
-                // Map relative touch coordinates [0..1] to wider aiming bounds
-                this.aimX = (relativeX - 0.5) * 14.5;
-                this.aimY = (1.0 - relativeY) * 4.6;
-                
-                this.aimX = Math.max(-6.46, Math.min(6.46, this.aimX));
-                this.aimY = Math.max(0.05, Math.min(4.24, this.aimY));
-            };
+            let startTouchX = 0;
+            let startTouchY = 0;
+            let startAimX = 0;
+            let startAimY = 0;
 
             canvas.addEventListener('touchstart', (e) => {
+                // Ignore touch aiming if touch starts on mobile gamepad buttons, HUD panel, or overlay screens
+                if (e.target.closest('#mobile-gamepad') || e.target.closest('#hud-container') || e.target.closest('button') || e.target.closest('.overlay-screen')) {
+                    return;
+                }
+
                 const state = activeGameInstance ? activeGameInstance.gameState : '';
                 if (state === 'aiming' || state === 'runup') {
                     isTouching = true;
                     const touch = e.touches[0];
-                    handleTouchAim(touch.clientX, touch.clientY);
+                    startTouchX = touch.clientX;
+                    startTouchY = touch.clientY;
+                    startAimX = this.aimX;
+                    startAimY = this.aimY;
                     if (e.cancelable) e.preventDefault();
                 }
             }, { passive: false });
@@ -76,7 +75,21 @@ class PlayerControls {
             canvas.addEventListener('touchmove', (e) => {
                 if (isTouching) {
                     const touch = e.touches[0];
-                    handleTouchAim(touch.clientX, touch.clientY);
+                    const deltaX = touch.clientX - startTouchX;
+                    const deltaY = touch.clientY - startTouchY;
+                    
+                    // Relative swipe mapping (finger doesn't block the target)
+                    const sensitivityX = 14.5;
+                    const sensitivityY = 4.6;
+                    const rect = canvas.getBoundingClientRect();
+                    
+                    this.aimX = startAimX + (deltaX / rect.width) * sensitivityX;
+                    this.aimY = startAimY - (deltaY / rect.height) * sensitivityY;
+                    
+                    // Clamp values to valid bounds
+                    this.aimX = Math.max(-6.46, Math.min(6.46, this.aimX));
+                    this.aimY = Math.max(0.05, Math.min(4.24, this.aimY));
+                    
                     if (e.cancelable) e.preventDefault();
                 }
             }, { passive: false });
