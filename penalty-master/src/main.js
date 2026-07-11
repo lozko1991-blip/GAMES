@@ -40,6 +40,9 @@ class PlayerControls {
 
         window.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
+            if (e.code === 'Space') {
+                this.isChargingPower = false;
+            }
         });
 
         // Touch aiming directly on the game canvas
@@ -174,13 +177,10 @@ class PlayerControls {
             if (!isRunUpStarted) {
                 this.isChargingPower = true;
             }
-            if (this.isChargingPower) {
-                this.power = Math.min(100.0, this.power + 110.0 * deltaTime);
-            }
-        } else {
-            if (this.isChargingPower) {
-                this.isChargingPower = false;
-            }
+        }
+
+        if (this.isChargingPower) {
+            this.power = Math.min(100.0, this.power + 110.0 * deltaTime);
         }
     }
 }
@@ -228,6 +228,9 @@ class PenaltyMasterGame {
         this.goalkeeperSaves = 0;
         this.maxStreak = 0;
         this.postHits = 0;
+        this.comboChain = 0;       // Лічильник послідовних влучань для системи комбо
+        this.comboMultiplier = 1.0; // Поточний множник комбо
+        this.dartboardRotation = 0; // Поточний кут обертання дартсу
 
         this.timeScale = 1.0;
         this.slowMoEnabled = true;
@@ -244,9 +247,17 @@ class PenaltyMasterGame {
         // Спеціальні інтерактивні об'єкти біля воріт (збільшені нагороди за влучання, підтримка фізики)
         this.customTargets = [
             { id: 'dartboard', name: 'Мішень-Дартс', position: new Vector3(5.2, 1.6, -0.8), originPos: new Vector3(5.2, 1.6, -0.8), radius: 0.8, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0 },
-            { id: 'dummy', name: 'Манекен', position: new Vector3(-5.0, 0.9, -0.2), originPos: new Vector3(-5.0, 0.9, -0.2), radius: 0.5, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0 },
-            { id: 'photographer', name: 'Фотограф', position: new Vector3(-4.5, 0.5, -2.5), originPos: new Vector3(-4.5, 0.5, -2.5), radius: 0.6, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0 }
+            { id: 'dummy', name: 'Манекен', position: new Vector3(-5.0, 0.9, -0.2), originPos: new Vector3(-5.0, 0.9, -0.2), radius: 0.55, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0 },
+            { id: 'photographer', name: 'Фотограф', position: new Vector3(-4.5, 0.5, -2.5), originPos: new Vector3(-4.5, 0.5, -2.5), radius: 0.6, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0 },
+            // === НОВІ ЦІЛІ ===
+            { id: 'bottle1', name: 'Пляшка 1', position: new Vector3(-0.7, 0.25, -1.6), originPos: new Vector3(-0.7, 0.25, -1.6), radius: 0.18, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0 },
+            { id: 'bottle2', name: 'Пляшка 2', position: new Vector3( 0.0, 0.25, -1.6), originPos: new Vector3( 0.0, 0.25, -1.6), radius: 0.18, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0 },
+            { id: 'bottle3', name: 'Пляшка 3', position: new Vector3( 0.7, 0.25, -1.6), originPos: new Vector3( 0.7, 0.25, -1.6), radius: 0.18, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0 },
+            { id: 'electricMine', name: 'Електро-Міна', position: new Vector3(-2.0, 0.8, -0.5), originPos: new Vector3(0.0, 0.8, -0.5), radius: 0.38, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0, mineDir: 1, mineTimer: 0 },
+            { id: 'clown', name: 'Клоун', position: new Vector3(3.5, 0.5, -1.2), originPos: new Vector3(3.5, 0.5, -1.2), radius: 0.45, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0, clownDir: -1, clownTimer: 0 },
+            { id: 'goldenTrophy', name: 'Золотий Кубок', position: new Vector3(0.0, 1.2, -0.15), originPos: new Vector3(0.0, 1.2, -0.15), radius: 0.32, active: true, hitState: null, hitRotation: 0, hitVelocity: new Vector3(0,0,0), hitAngularVelocity: 0, trophyTimer: 0 }
         ];
+        this.bottlesHitThisRound = 0; // Лічильник збитих пляшок за один раунд
 
         // Масив слідів бутс та падінь на полі (Pitch Degradation)
         this.pitchStains = [];
@@ -569,6 +580,33 @@ class PenaltyMasterGame {
                 } else if (multiplayerState.isOnline && multiplayerState.role === 'striker') {
                     sendNetData({ type: 'sync_aim', aimX: gameControls.aimX, aimY: gameControls.aimY, power: gameControls.power });
                 }
+
+                // Рухомі цілі рухаються і під час прицілювання
+                if (this.customTargets) {
+                    this.customTargets.forEach(t => {
+                        if (!t.active) return;
+                        if (t.id === 'electricMine') {
+                            t.mineTimer = (t.mineTimer || 0) + scaledDeltaTime;
+                            t.position.coordinateX += (t.mineDir || 1) * 4.5 * scaledDeltaTime;
+                            if (t.position.coordinateX > 2.8 || t.position.coordinateX < -2.8) {
+                                t.mineDir = (t.mineDir || 1) * -1;
+                            }
+                        } else if (t.id === 'clown') {
+                            t.clownTimer = (t.clownTimer || 0) + scaledDeltaTime;
+                            if (t.clownTimer > 0.8) {
+                                t.clownDir = (t.clownDir || -1) * -1;
+                                t.clownTimer = 0;
+                            }
+                            t.position.coordinateX += (t.clownDir || -1) * 2.2 * scaledDeltaTime;
+                            t.position.coordinateX = Math.max(2.0, Math.min(5.5, t.position.coordinateX));
+                        } else if (t.id === 'goldenTrophy') {
+                            t.trophyTimer = (t.trophyTimer || 0) + scaledDeltaTime;
+                            t.position.coordinateY = t.originPos.coordinateY + Math.sin(t.trophyTimer * 2.5) * 0.08;
+                        }
+                    });
+                }
+                // Обертання дартсу
+                this.dartboardRotation = (this.dartboardRotation || 0) + scaledDeltaTime * 0.4;
                 break;
             }
 
@@ -677,6 +715,33 @@ class PenaltyMasterGame {
                 this.player.setPose(this.runupProgress < 0.4 ? 'kick_strike' : 'idle');
                 this.trackCameraToBall(scaledDeltaTime);
 
+                // === Оновлюємо позиції рухомих цілей ===
+                if (this.customTargets) {
+                    this.customTargets.forEach(t => {
+                        if (!t.active) return;
+                        if (t.id === 'electricMine') {
+                            t.mineTimer += scaledDeltaTime;
+                            t.position.coordinateX += t.mineDir * 4.5 * scaledDeltaTime;
+                            if (t.position.coordinateX > 2.8 || t.position.coordinateX < -2.8) {
+                                t.mineDir *= -1;
+                            }
+                        } else if (t.id === 'clown') {
+                            t.clownTimer += scaledDeltaTime;
+                            // Хаотичний рух: змінює напрямок кожні 0.6-1.2 секунди
+                            if (t.clownTimer > 0.6 + Math.random() * 0.6) {
+                                t.clownDir *= -1;
+                                t.clownTimer = 0;
+                            }
+                            t.position.coordinateX += t.clownDir * 2.2 * scaledDeltaTime;
+                            t.position.coordinateX = Math.max(2.0, Math.min(5.5, t.position.coordinateX));
+                        } else if (t.id === 'goldenTrophy') {
+                            t.trophyTimer += scaledDeltaTime;
+                            // Пульсує по висоті
+                            t.position.coordinateY = t.originPos.coordinateY + Math.sin(t.trophyTimer * 2.5) * 0.08;
+                        }
+                    });
+                }
+
                 const isLocalOrStriker = !multiplayerState.isOnline || multiplayerState.role === 'striker';
                 const saveResult = (isLocalOrStriker && !this._roundEnded) ? this.goalkeeperAI.checkSaveCollision(this.ball) : null;
                 if (saveResult) {
@@ -728,59 +793,113 @@ class PenaltyMasterGame {
                     });
                 }
 
-                // Спеціальні цілі біля воріт (Дартс, Манекен, Фотограф)
-                if (isLocalOrStriker && !this.ball.didHitTarget && this.customTargets) {
+                // Спеціальні цілі біля воріт (всі customTargets)
+                if (isLocalOrStriker && this.customTargets) {
                     this.customTargets.forEach(target => {
-                        if (target.active) {
-                            const dv = this.ball.position.subtract(target.position);
-                            const distance = dv.length();
-                            if (distance < (target.radius + BALL_RADIUS)) {
-                                target.active = false;
-                                this.ball.didHitTarget = true;
-                                gameVFX.spawnTargetHitExplosion(target.position);
-                                this.camera.triggerShake(1.2);
+                        if (!target.active) return;
+                        const dv = this.ball.position.subtract(target.position);
+                        const distance = dv.length();
+                        if (distance < (target.radius + BALL_RADIUS)) {
+                            target.active = false;
+                            gameVFX.spawnTargetHitExplosion(target.position);
+                            this.camera.triggerShake(1.2);
 
-                                // Надаємо фізичного імпульсу від удару м'яча
-                                target.hitState = target.id === 'dartboard' ? 'spinning' : 'falling';
-                                target.hitVelocity = new Vector3(
-                                    this.ball.velocity.coordinateX * (target.id === 'dummy' ? 0.35 : 0.18),
-                                    6.5 + Math.random() * 2.5,
-                                    this.ball.velocity.coordinateZ * 0.18
-                                );
-                                target.hitAngularVelocity = target.id === 'dartboard' ? 22.0 : (target.id === 'photographer' ? -4.5 : 6.0);
+                            target.hitState = target.id === 'dartboard' ? 'spinning' : 'falling';
+                            target.hitVelocity = new Vector3(
+                                this.ball.velocity.coordinateX * (target.id === 'dummy' ? 0.35 : 0.22),
+                                5.5 + Math.random() * 3.0,
+                                this.ball.velocity.coordinateZ * 0.2
+                            );
+                            target.hitAngularVelocity = target.id === 'dartboard' ? 24.0 : (target.id === 'photographer' ? -4.5 : (target.id === 'electricMine' ? 30.0 : 8.0));
 
-                                if (target.id === 'dummy') {
-                                    gameAudio.playNetRustle();
-                                    this.coins += 50;
-                                    this.saveStatsToStorage();
-                                    this.updateHUD();
-                                    this.showCustomHitText("МАНЕКЕН ЗБИТО! 🎯 +50 МОНЕТ", '#ff6600');
-                                } else if (target.id === 'photographer') {
-                                    gameAudio.playKeeperSave();
-                                    this.coins += 75;
-                                    this.saveStatsToStorage();
-                                    this.updateHUD();
-                                    this.showCustomHitText("ФОТОГРАФ В ШОЦІ! 📸 +75 МОНЕТ", '#00ccff');
-                                } else if (target.id === 'dartboard') {
-                                    const distCenter = Math.hypot(dv.coordinateX, dv.coordinateY);
-                                    let dartCoins = 25;
-                                    let dartTitle = "ДАРТС! 🎯 +25 МОНЕТ";
-                                    
-                                    if (distCenter < 0.18) {
-                                        dartCoins = 100;
-                                        dartTitle = "БУЛЛС-АЙ! 🎯 +100 МОНЕТ";
-                                    } else if (distCenter < 0.45) {
-                                        dartCoins = 50;
-                                        dartTitle = "ДАРТС: ЦЕНТР! 🎯 +50 МОНЕТ";
-                                    }
-                                    
-                                    this.coins += dartCoins;
-                                    this.saveStatsToStorage();
-                                    this.updateHUD();
-                                    this.showCustomHitText(dartTitle, '#ffd700');
-                                    gameAudio.playGoalCheer();
+                            let bonusCoins = 0;
+                            let bonusText = '';
+                            let bonusColor = '#ffd700';
+
+                            if (target.id === 'dummy') {
+                                // Зони попадання: голова/торс/ноги
+                                const hitY = this.ball.position.coordinateY;
+                                const topY = target.originPos.coordinateY + target.radius * 1.2;
+                                const midY = target.originPos.coordinateY;
+                                if (hitY > topY) {
+                                    bonusCoins = 100; bonusText = 'HEADSHOT! 💥 +100 МОНЕТ'; bonusColor = '#ff2244';
+                                    this.camera.triggerShake(2.0);
+                                    gameVFX.spawnTargetHitExplosion(this.ball.position);
+                                } else if (hitY > midY) {
+                                    bonusCoins = 50; bonusText = 'ТОРС! 🎯 +50 МОНЕТ'; bonusColor = '#ff6600';
+                                } else {
+                                    bonusCoins = 25; bonusText = 'НОГИ! 👟 +25 МОНЕТ'; bonusColor = '#ffaa00';
                                 }
+                                gameAudio.playNetRustle();
+
+                            } else if (target.id === 'photographer') {
+                                bonusCoins = 75; bonusText = 'ФОТОГРАФ В ШОЦІ! 📸 +75'; bonusColor = '#00ccff';
+                                gameAudio.playKeeperSave();
+
+                            } else if (target.id === 'dartboard') {
+                                const distCenter = Math.hypot(dv.coordinateX, dv.coordinateY);
+                                if (distCenter < 0.12) {
+                                    bonusCoins = 150; bonusText = 'PERFECT BULLSEYE! 🎯 +150'; bonusColor = '#ff0055';
+                                    this.camera.triggerShake(2.5);
+                                } else if (distCenter < 0.25) {
+                                    bonusCoins = 75; bonusText = "БУЛЛС-АЙ! 🎯 +75"; bonusColor = '#ff4400';
+                                } else if (distCenter < 0.45) {
+                                    bonusCoins = 50; bonusText = "ДАРТС: ЦЕНТР! 🎯 +50"; bonusColor = '#ffd700';
+                                } else {
+                                    bonusCoins = 25; bonusText = "ДАРТС! 🎯 +25"; bonusColor = '#ffcc00';
+                                }
+                                gameAudio.playGoalCheer();
+
+                            } else if (target.id === 'bottle1' || target.id === 'bottle2' || target.id === 'bottle3') {
+                                bonusCoins = 30; bonusText = 'ПЛЯШКА! 🍾 +30'; bonusColor = '#00ff99';
+                                this.bottlesHitThisRound = (this.bottlesHitThisRound || 0) + 1;
+                                // Перевіряємо чи збиті всі 3 пляшки
+                                const allBottles = this.customTargets.filter(t => t.id.startsWith('bottle'));
+                                const remaining = allBottles.filter(t => t.active).length - 1;
+                                if (remaining === 0) {
+                                    setTimeout(() => {
+                                        this.coins += 150;
+                                        this.saveStatsToStorage();
+                                        this.updateHUD();
+                                        this.showCustomHitText('ВСІ ПЛЯШКИ! 🍾🍾🍾 +150 БОНУС!', '#00ff99');
+                                    }, 400);
+                                }
+                                gameAudio.playGoalCheer();
+
+                            } else if (target.id === 'electricMine') {
+                                bonusCoins = 200; bonusText = 'ШОК! ⚡ +200 МОНЕТ'; bonusColor = '#ffff00';
+                                this.camera.triggerShake(3.0);
+                                // Додатковий вибух частинок
+                                gameVFX.spawnTargetHitExplosion(target.position);
+                                gameVFX.spawnTargetHitExplosion(new Vector3(target.position.coordinateX + 0.3, target.position.coordinateY, target.position.coordinateZ));
+                                gameAudio.playGoalCheer();
+
+                            } else if (target.id === 'clown') {
+                                bonusCoins = 120; bonusText = 'КЛОУН ЗЛЕТІВ! 🎭 +120'; bonusColor = '#ff66ff';
+                                gameVFX.spawnConfettiRain(target.position);
+                                this.camera.triggerShake(1.8);
+                                gameAudio.playGoalCheer();
+
+                            } else if (target.id === 'goldenTrophy') {
+                                bonusCoins = 300; bonusText = 'КУБОК! 🏆 +300 МОНЕТ'; bonusColor = '#ffd700';
+                                this.camera.triggerShake(3.5);
+                                gameVFX.spawnConfettiRain(target.position);
+                                gameVFX.spawnTargetHitExplosion(target.position);
+                                gameAudio.playGoalCheer();
                             }
+
+                            // Застосовуємо множник комбо
+                            const comboBonus = Math.round(bonusCoins * this.comboMultiplier);
+                            this.coins += comboBonus;
+                            this.saveStatsToStorage();
+                            this.updateHUD();
+
+                            // Збільшуємо комбо
+                            this.comboChain = (this.comboChain || 0) + 1;
+                            this.comboMultiplier = this.comboChain >= 8 ? 5.0 : this.comboChain >= 5 ? 3.0 : this.comboChain >= 3 ? 2.0 : this.comboChain >= 2 ? 1.5 : 1.0;
+
+                            const comboSuffix = this.comboMultiplier > 1.0 ? ` (x${this.comboMultiplier} КОМБО!)` : '';
+                            this.showCustomHitText(bonusText + comboSuffix, bonusColor);
                         }
                     });
                 }
@@ -803,6 +922,32 @@ class PenaltyMasterGame {
                             gameAudio.playNetRustle();
                             gameAudio.playGoalCheer();
                             gameVFX.spawnConfettiRain(this.ball.position);
+
+                            // === TRICK SHOT DETECTION ===
+                            const postCount = this.ball.hitPostCount || 0;
+                            if (postCount >= 2) {
+                                // Пінбол: 2 стовпи і гол
+                                setTimeout(() => {
+                                    this.coins += Math.round(200 * this.comboMultiplier);
+                                    this.saveStatsToStorage();
+                                    this.updateHUD();
+                                    this.showCustomHitText('ПІНБОЛ! 🎰 +200 БОНУС!', '#ff00ff');
+                                    gameVFX.spawnConfettiRain(this.ball.position);
+                                }, 300);
+                            } else if (postCount === 1) {
+                                // Штанга → Гол
+                                setTimeout(() => {
+                                    this.coins += Math.round(75 * this.comboMultiplier);
+                                    this.saveStatsToStorage();
+                                    this.updateHUD();
+                                    this.showCustomHitText('ШТАНГА → ГОЛ! 🔥 +75', '#ff8800');
+                                }, 300);
+                            }
+
+                            // Комбо-серія за гол
+                            this.comboChain = (this.comboChain || 0) + 1;
+                            this.comboMultiplier = this.comboChain >= 8 ? 5.0 : this.comboChain >= 5 ? 3.0 : this.comboChain >= 3 ? 2.0 : this.comboChain >= 2 ? 1.5 : 1.0;
+
                             this.triggerShotResult(true, 'Лозко молодець');
                             break;
                         }
@@ -822,6 +967,9 @@ class PenaltyMasterGame {
                         this.timeScale = 1.0;
                         this._flightTimer = 0;
                         gameAudio.playMissGroan();
+                        // Скидаємо комбо при промаху
+                        this.comboChain = 0;
+                        this.comboMultiplier = 1.0;
                         this.triggerShotResult(false, 'Палажченко гуска');
                     }
                 }
@@ -1135,6 +1283,7 @@ class PenaltyMasterGame {
 
         // Reactivate goal targets
         this.targets.forEach(t => t.active = true);
+        this.bottlesHitThisRound = 0;
         if (this.customTargets) {
             this.customTargets.forEach(t => {
                 t.active = true;
@@ -1145,6 +1294,9 @@ class PenaltyMasterGame {
                 t.position.coordinateZ = t.originPos.coordinateZ;
                 t.hitVelocity.set(0, 0, 0);
                 t.hitAngularVelocity = 0;
+                if (t.id === 'electricMine') { t.mineDir = 1; t.mineTimer = 0; }
+                if (t.id === 'clown') { t.clownDir = -1; t.clownTimer = 0; }
+                if (t.id === 'goldenTrophy') { t.trophyTimer = 0; }
             });
         }
 
@@ -1614,133 +1766,280 @@ class PenaltyMasterGame {
                 if (!target.active) return;
                 const proj = this.camera.project(target.position, width, height);
                 if (!proj) return;
-
                 const radius = target.radius * proj.scale;
+                const sc = proj.scale / 300;
                 this.ctx.save();
 
                 if (target.id === 'dartboard') {
-                    // Малюємо класичну мішень дартсу
-                    this.ctx.shadowBlur = 15;
-                    this.ctx.shadowColor = '#ffd700';
-                    this.ctx.lineWidth = 2 * (proj.scale / 300);
-
-                    // Сектори дартсу
-                    const segments = 20;
-                    const angles = (Math.PI * 2) / segments;
-                    for (let i = 0; i < segments; i++) {
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(proj.x, proj.y);
-                        this.ctx.arc(proj.x, proj.y, radius, i * angles, (i + 1) * angles);
-                        this.ctx.closePath();
-                        this.ctx.fillStyle = i % 2 === 0 ? 'rgba(0, 153, 51, 0.4)' : 'rgba(204, 0, 0, 0.4)';
+                    // 🎯 Обертова мішень дартсу
+                    const rot = this.dartboardRotation || 0;
+                    this.ctx.translate(proj.x, proj.y);
+                    this.ctx.rotate(rot);
+                    this.ctx.shadowBlur = 18; this.ctx.shadowColor = '#ffd700';
+                    const dartNums = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+                    const segA = (Math.PI * 2) / 20;
+                    for (let i = 0; i < 20; i++) {
+                        const sa = -Math.PI/2 + i * segA;
+                        // Outer sectors
+                        this.ctx.beginPath(); this.ctx.moveTo(0,0);
+                        this.ctx.arc(0,0, radius, sa, sa + segA); this.ctx.closePath();
+                        this.ctx.fillStyle = i%2===0 ? 'rgba(0,140,50,0.8)' : 'rgba(180,0,0,0.8)';
                         this.ctx.fill();
-                        this.ctx.strokeStyle = '#ffffff';
-                        this.ctx.stroke();
+                        this.ctx.strokeStyle = '#ddd'; this.ctx.lineWidth = 1*sc; this.ctx.stroke();
+                        // Double ring (outer)
+                        this.ctx.beginPath();
+                        this.ctx.arc(0,0, radius*0.93, sa, sa+segA);
+                        this.ctx.arc(0,0, radius*0.85, sa+segA, sa, true);
+                        this.ctx.closePath();
+                        this.ctx.fillStyle = i%2===0 ? 'rgba(220,0,0,0.95)' : 'rgba(0,180,60,0.95)';
+                        this.ctx.fill();
+                        // Sector numbers
+                        this.ctx.save(); this.ctx.rotate(sa + segA/2);
+                        this.ctx.fillStyle = '#fff';
+                        this.ctx.font = `bold ${Math.max(6,Math.round(7*sc))}px Outfit`;
+                        this.ctx.textAlign='center'; this.ctx.textBaseline='middle';
+                        this.ctx.fillText(dartNums[i], radius*0.97, 0);
+                        this.ctx.restore();
+                        // Triple ring (inner)
+                        this.ctx.beginPath();
+                        this.ctx.arc(0,0, radius*0.55, sa, sa+segA);
+                        this.ctx.arc(0,0, radius*0.47, sa+segA, sa, true);
+                        this.ctx.closePath();
+                        this.ctx.fillStyle = i%2===0 ? 'rgba(220,0,0,0.95)' : 'rgba(0,180,60,0.95)';
+                        this.ctx.fill();
                     }
-
-                    // Внутрішнє кільце
-                    this.ctx.strokeStyle = '#ffd700';
-                    this.ctx.lineWidth = 4 * (proj.scale / 300);
-                    this.ctx.beginPath();
-                    this.ctx.arc(proj.x, proj.y, radius * 0.45, 0, Math.PI * 2);
-                    this.ctx.stroke();
-
-                    // Bullseye (Червоний центр)
-                    this.ctx.fillStyle = '#ff0033';
-                    this.ctx.beginPath();
-                    this.ctx.arc(proj.x, proj.y, radius * 0.18, 0, Math.PI * 2);
-                    this.ctx.fill();
-                    
-                    // Текст над дартсом
-                    this.ctx.fillStyle = '#ffd700';
-                    this.ctx.font = `bold ${Math.round(11 * (proj.scale / 300))}px monospace`;
-                    this.ctx.textAlign = 'center';
-                    this.ctx.fillText("ДАРТС 🎯", proj.x, proj.y - radius - 8);
+                    // Outer bull (green)
+                    this.ctx.fillStyle='#008800'; this.ctx.beginPath();
+                    this.ctx.arc(0,0, radius*0.22, 0, Math.PI*2); this.ctx.fill();
+                    this.ctx.strokeStyle='#ffd700'; this.ctx.lineWidth=2*sc; this.ctx.stroke();
+                    // Bull (red)
+                    this.ctx.fillStyle='#cc0000'; this.ctx.beginPath();
+                    this.ctx.arc(0,0, radius*0.1, 0, Math.PI*2); this.ctx.fill();
+                    // Center white dot
+                    this.ctx.fillStyle='#fff'; this.ctx.beginPath();
+                    this.ctx.arc(0,0, radius*0.035, 0, Math.PI*2); this.ctx.fill();
+                    this.ctx.restore();
+                    // Label (не обертається)
+                    this.ctx.save();
+                    this.ctx.fillStyle='#ffd700'; this.ctx.shadowBlur=12; this.ctx.shadowColor='#ffd700';
+                    this.ctx.font=`bold ${Math.round(10*sc)}px Outfit`; this.ctx.textAlign='center';
+                    this.ctx.fillText('🎯 ДАРТС +25~150', proj.x, proj.y - radius - 10);
                 }
                 else if (target.id === 'dummy') {
-                    // Малюємо манекен (картонний щит)
-                    this.ctx.shadowBlur = 10;
-                    this.ctx.shadowColor = '#ff6600';
-                    
-                    // Ніжка
-                    this.ctx.strokeStyle = '#855e42';
-                    this.ctx.lineWidth = 6 * (proj.scale / 300);
+                    // 🛡️ Манекен з зонами
+                    this.ctx.shadowBlur=12; this.ctx.shadowColor='#ff6600';
+                    // Підставка
+                    this.ctx.strokeStyle='#7a5230'; this.ctx.lineWidth=7*sc;
                     this.ctx.beginPath();
-                    this.ctx.moveTo(proj.x, proj.y + radius);
-                    this.ctx.lineTo(proj.x, proj.y + radius * 2.1);
-                    this.ctx.stroke();
-
-                    // Манекен (тіло)
-                    this.ctx.fillStyle = 'rgba(255, 102, 0, 0.35)';
-                    this.ctx.strokeStyle = '#ff6600';
-                    this.ctx.lineWidth = 3 * (proj.scale / 300);
+                    this.ctx.moveTo(proj.x, proj.y+radius*1.2);
+                    this.ctx.lineTo(proj.x, proj.y+radius*2.4); this.ctx.stroke();
+                    this.ctx.fillStyle='#5a3a18';
+                    this.ctx.fillRect(proj.x-radius*0.5, proj.y+radius*2.28, radius*1.0, radius*0.2);
+                    // Ноги зона +25
+                    this.ctx.fillStyle='rgba(255,170,0,0.5)'; this.ctx.strokeStyle='#ffaa00'; this.ctx.lineWidth=2*sc;
+                    this.ctx.fillRect(proj.x-radius*0.44, proj.y+radius*0.55, radius*0.88, radius*0.65);
+                    this.ctx.strokeRect(proj.x-radius*0.44, proj.y+radius*0.55, radius*0.88, radius*0.65);
+                    this.ctx.fillStyle='#ffaa00'; this.ctx.font=`bold ${Math.round(8*sc)}px Outfit`;
+                    this.ctx.textAlign='center'; this.ctx.fillText('👟+25', proj.x, proj.y+radius*1.08);
+                    // Торс зона +50
+                    this.ctx.fillStyle='rgba(255,102,0,0.55)'; this.ctx.strokeStyle='#ff6600'; this.ctx.lineWidth=2.5*sc;
+                    this.ctx.fillRect(proj.x-radius*0.48, proj.y-radius*0.08, radius*0.96, radius*0.63);
+                    this.ctx.strokeRect(proj.x-radius*0.48, proj.y-radius*0.08, radius*0.96, radius*0.63);
+                    // Хрест на торсі
+                    this.ctx.strokeStyle='rgba(255,255,255,0.55)'; this.ctx.lineWidth=1.5*sc;
                     this.ctx.beginPath();
-                    this.ctx.arc(proj.x, proj.y - radius * 0.5, radius * 0.55, 0, Math.PI * 2); // голова
-                    this.ctx.rect(proj.x - radius * 0.5, proj.y, radius, radius * 1.2); // торс
-                    this.ctx.fill();
+                    this.ctx.moveTo(proj.x-radius*0.32, proj.y+radius*0.23); this.ctx.lineTo(proj.x+radius*0.32, proj.y+radius*0.23);
+                    this.ctx.moveTo(proj.x, proj.y-radius*0.04); this.ctx.lineTo(proj.x, proj.y+radius*0.52);
                     this.ctx.stroke();
-
-                    // Малюємо хрест на тілі
-                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-                    this.ctx.lineWidth = 2 * (proj.scale / 300);
+                    this.ctx.fillStyle='#ff8800'; this.ctx.font=`bold ${Math.round(8*sc)}px Outfit`;
+                    this.ctx.textAlign='center'; this.ctx.fillText('🎯+50', proj.x, proj.y+radius*0.4);
+                    // Голова зона HEADSHOT +100
+                    this.ctx.fillStyle='rgba(255,40,40,0.55)'; this.ctx.strokeStyle='#ff2244'; this.ctx.lineWidth=3*sc;
                     this.ctx.beginPath();
-                    this.ctx.moveTo(proj.x - radius * 0.4, proj.y + radius * 0.6);
-                    this.ctx.lineTo(proj.x + radius * 0.4, proj.y + radius * 0.6);
-                    this.ctx.moveTo(proj.x, proj.y + radius * 0.2);
-                    this.ctx.lineTo(proj.x, proj.y + radius * 1.0);
-                    this.ctx.stroke();
-
-                    this.ctx.fillStyle = '#ff6600';
-                    this.ctx.font = `bold ${Math.round(11 * (proj.scale / 300))}px monospace`;
-                    this.ctx.textAlign = 'center';
-                    this.ctx.fillText("МАНЕКЕН 🛡️", proj.x, proj.y - radius * 1.3);
+                    this.ctx.arc(proj.x, proj.y-radius*0.53, radius*0.48, 0, Math.PI*2);
+                    this.ctx.fill(); this.ctx.stroke();
+                    // Очі
+                    this.ctx.strokeStyle='rgba(255,255,255,0.5)'; this.ctx.lineWidth=1.5*sc;
+                    this.ctx.beginPath();
+                    this.ctx.arc(proj.x-radius*0.15, proj.y-radius*0.6, radius*0.09, 0, Math.PI*2); this.ctx.stroke();
+                    this.ctx.beginPath();
+                    this.ctx.arc(proj.x+radius*0.15, proj.y-radius*0.6, radius*0.09, 0, Math.PI*2); this.ctx.stroke();
+                    this.ctx.fillStyle='#ff2244'; this.ctx.font=`bold ${Math.round(8*sc)}px Outfit`;
+                    this.ctx.textAlign='center'; this.ctx.fillText('💥+100', proj.x, proj.y-radius*0.97);
+                    // Назва
+                    this.ctx.fillStyle='#ff6600'; this.ctx.shadowBlur=10;
+                    this.ctx.font=`bold ${Math.round(11*sc)}px Outfit`;
+                    this.ctx.fillText('МАНЕКЕН 🛡️', proj.x, proj.y-radius*1.35);
                 }
                 else if (target.id === 'photographer') {
-                    // Малюємо фотографа з великою камерою
-                    this.ctx.shadowBlur = 10;
-                    this.ctx.shadowColor = '#00ccff';
-                    this.ctx.strokeStyle = '#00ccff';
-                    this.ctx.lineWidth = 3 * (proj.scale / 300);
-                    
-                    // Голова фотографа
+                    // 📸 Фотограф
+                    this.ctx.shadowBlur=10; this.ctx.shadowColor='#00ccff';
+                    this.ctx.strokeStyle='#00ccff'; this.ctx.lineWidth=3*sc;
                     this.ctx.beginPath();
-                    this.ctx.arc(proj.x, proj.y - radius * 0.6, radius * 0.35, 0, Math.PI * 2);
-                    this.ctx.stroke();
-
-                    // Тіло та ноги (сидяче положення)
+                    this.ctx.arc(proj.x, proj.y-radius*0.6, radius*0.35, 0, Math.PI*2); this.ctx.stroke();
                     this.ctx.beginPath();
-                    this.ctx.moveTo(proj.x, proj.y - radius * 0.25);
-                    this.ctx.lineTo(proj.x - radius * 0.2, proj.y + radius * 0.4); // спина/таз
-                    this.ctx.lineTo(proj.x - radius * 0.5, proj.y + radius * 0.9); // ноги
-                    this.ctx.moveTo(proj.x - radius * 0.2, proj.y + radius * 0.4);
-                    this.ctx.lineTo(proj.x + radius * 0.3, proj.y + radius * 0.9);
-                    this.ctx.stroke();
-
-                    // Великий об'єктив камери
-                    this.ctx.fillStyle = '#333333';
-                    this.ctx.strokeStyle = '#ffffff';
-                    this.ctx.lineWidth = 2 * (proj.scale / 300);
-                    this.ctx.fillRect(proj.x + radius * 0.1, proj.y - radius * 0.7, radius * 0.7, radius * 0.35);
-                    this.ctx.strokeRect(proj.x + radius * 0.1, proj.y - radius * 0.7, radius * 0.7, radius * 0.35);
-
-                    // Фото-штатив (тринога)
-                    this.ctx.strokeStyle = '#888888';
+                    this.ctx.moveTo(proj.x, proj.y-radius*0.25);
+                    this.ctx.lineTo(proj.x-radius*0.2, proj.y+radius*0.4);
+                    this.ctx.lineTo(proj.x-radius*0.5, proj.y+radius*0.9);
+                    this.ctx.moveTo(proj.x-radius*0.2, proj.y+radius*0.4);
+                    this.ctx.lineTo(proj.x+radius*0.3, proj.y+radius*0.9); this.ctx.stroke();
+                    this.ctx.fillStyle='#333'; this.ctx.strokeStyle='#fff'; this.ctx.lineWidth=2*sc;
+                    this.ctx.fillRect(proj.x+radius*0.1, proj.y-radius*0.7, radius*0.7, radius*0.35);
+                    this.ctx.strokeRect(proj.x+radius*0.1, proj.y-radius*0.7, radius*0.7, radius*0.35);
+                    this.ctx.strokeStyle='#888';
                     this.ctx.beginPath();
-                    this.ctx.moveTo(proj.x + radius * 0.4, proj.y - radius * 0.35);
-                    this.ctx.lineTo(proj.x + radius * 0.1, proj.y + radius * 0.9);
-                    this.ctx.moveTo(proj.x + radius * 0.4, proj.y - radius * 0.35);
-                    this.ctx.lineTo(proj.x + radius * 0.7, proj.y + radius * 0.9);
-                    this.ctx.stroke();
-
-                    this.ctx.fillStyle = '#00ccff';
-                    this.ctx.font = `bold ${Math.round(11 * (proj.scale / 300))}px monospace`;
-                    this.ctx.textAlign = 'center';
-                    this.ctx.fillText("ФОТОГРАФ 📸", proj.x, proj.y - radius * 1.2);
+                    this.ctx.moveTo(proj.x+radius*0.4, proj.y-radius*0.35);
+                    this.ctx.lineTo(proj.x+radius*0.1, proj.y+radius*0.9);
+                    this.ctx.moveTo(proj.x+radius*0.4, proj.y-radius*0.35);
+                    this.ctx.lineTo(proj.x+radius*0.7, proj.y+radius*0.9); this.ctx.stroke();
+                    this.ctx.fillStyle='#00ccff'; this.ctx.font=`bold ${Math.round(11*sc)}px Outfit`;
+                    this.ctx.textAlign='center';
+                    this.ctx.fillText('ФОТОГРАФ 📸 +75', proj.x, proj.y-radius*1.2);
+                }
+                else if (target.id === 'bottle1' || target.id === 'bottle2' || target.id === 'bottle3') {
+                    // 🍾 Пляшка
+                    this.ctx.shadowBlur=14; this.ctx.shadowColor='#00ff99';
+                    const bw=radius*1.0, bh=radius*2.8;
+                    // Тіло
+                    const bGrad = this.ctx.createLinearGradient(proj.x-bw/2, 0, proj.x+bw/2, 0);
+                    bGrad.addColorStop(0, 'rgba(0,220,130,0.7)'); bGrad.addColorStop(0.4,'rgba(0,255,170,0.85)'); bGrad.addColorStop(1,'rgba(0,180,100,0.7)');
+                    this.ctx.fillStyle=bGrad; this.ctx.strokeStyle='#00ff99'; this.ctx.lineWidth=2.5*sc;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(proj.x-bw*0.42, proj.y+bh*0.18);
+                    this.ctx.lineTo(proj.x-bw*0.42, proj.y-bh*0.3);
+                    this.ctx.quadraticCurveTo(proj.x-bw*0.42, proj.y-bh*0.42, proj.x-bw*0.28, proj.y-bh*0.42);
+                    this.ctx.lineTo(proj.x-bw*0.22, proj.y-bh*0.58);
+                    this.ctx.lineTo(proj.x+bw*0.22, proj.y-bh*0.58);
+                    this.ctx.lineTo(proj.x+bw*0.28, proj.y-bh*0.42);
+                    this.ctx.quadraticCurveTo(proj.x+bw*0.42, proj.y-bh*0.42, proj.x+bw*0.42, proj.y-bh*0.3);
+                    this.ctx.lineTo(proj.x+bw*0.42, proj.y+bh*0.18);
+                    this.ctx.quadraticCurveTo(proj.x, proj.y+bh*0.28, proj.x-bw*0.42, proj.y+bh*0.18);
+                    this.ctx.fill(); this.ctx.stroke();
+                    // Блиск
+                    this.ctx.strokeStyle='rgba(255,255,255,0.45)'; this.ctx.lineWidth=1.5*sc;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(proj.x-bw*0.2, proj.y-bh*0.3); this.ctx.lineTo(proj.x-bw*0.2, proj.y+bh*0.1); this.ctx.stroke();
+                    // Label
+                    this.ctx.fillStyle='#00ff99'; this.ctx.font=`bold ${Math.round(9*sc)}px Outfit`;
+                    this.ctx.textAlign='center'; this.ctx.fillText('🍾+30', proj.x, proj.y-bh*0.68);
+                }
+                else if (target.id === 'electricMine') {
+                    // ⚡ Електро-Міна (пульсує і блискавить)
+                    const pulse = 0.85 + Math.sin((this.gameTime||0) * 8) * 0.15;
+                    this.ctx.shadowBlur=22*pulse; this.ctx.shadowColor='#ffff00';
+                    const mGrad = this.ctx.createRadialGradient(proj.x,proj.y,0, proj.x,proj.y,radius);
+                    mGrad.addColorStop(0,'rgba(255,255,120,0.95)');
+                    mGrad.addColorStop(0.5,'rgba(255,200,0,0.65)');
+                    mGrad.addColorStop(1,'rgba(255,80,0,0.1)');
+                    this.ctx.fillStyle=mGrad;
+                    this.ctx.beginPath(); this.ctx.arc(proj.x,proj.y, radius*pulse, 0, Math.PI*2); this.ctx.fill();
+                    this.ctx.strokeStyle='#ffff00'; this.ctx.lineWidth=3*sc; this.ctx.stroke();
+                    // Промені-блискавки (6 штук, обертаються)
+                    this.ctx.strokeStyle='rgba(255,255,180,0.8)'; this.ctx.lineWidth=1.8*sc;
+                    for (let li=0; li<6; li++) {
+                        const ang = (li/6)*Math.PI*2 + (this.gameTime||0)*3;
+                        const lx1=proj.x+Math.cos(ang)*radius*0.5, ly1=proj.y+Math.sin(ang)*radius*0.5;
+                        const lx2=proj.x+Math.cos(ang)*radius*1.45, ly2=proj.y+Math.sin(ang)*radius*1.45;
+                        const mx=lx1+(lx2-lx1)*0.45 + Math.sin(li*1.7+this.gameTime||0)*5;
+                        const my=ly1+(ly2-ly1)*0.45 + Math.cos(li*1.7+this.gameTime||0)*5;
+                        this.ctx.beginPath(); this.ctx.moveTo(lx1,ly1); this.ctx.lineTo(mx,my); this.ctx.lineTo(lx2,ly2); this.ctx.stroke();
+                    }
+                    // ⚡ символ
+                    this.ctx.fillStyle='#fff';
+                    this.ctx.font=`bold ${Math.round(radius*0.95)}px Outfit`;
+                    this.ctx.textAlign='center'; this.ctx.textBaseline='middle';
+                    this.ctx.fillText('⚡', proj.x, proj.y);
+                    this.ctx.textBaseline='alphabetic';
+                    this.ctx.fillStyle='#ffff00'; this.ctx.font=`bold ${Math.round(11*sc)}px Outfit`;
+                    this.ctx.fillText('⚡ +200 ШОК!', proj.x, proj.y-radius*1.55);
+                }
+                else if (target.id === 'clown') {
+                    // 🎭 Клоун на велосипеді
+                    this.ctx.shadowBlur=14; this.ctx.shadowColor='#ff66ff';
+                    // Голова клоуна
+                    this.ctx.fillStyle='#ffe4c0'; this.ctx.strokeStyle='#ff66ff'; this.ctx.lineWidth=2.5*sc;
+                    this.ctx.beginPath(); this.ctx.arc(proj.x, proj.y-radius*0.52, radius*0.54, 0, Math.PI*2);
+                    this.ctx.fill(); this.ctx.stroke();
+                    // Ніс
+                    this.ctx.fillStyle='#ff0033'; this.ctx.shadowColor='#ff0033'; this.ctx.shadowBlur=8;
+                    this.ctx.beginPath(); this.ctx.arc(proj.x, proj.y-radius*0.44, radius*0.14, 0, Math.PI*2); this.ctx.fill();
+                    // Очі
+                    this.ctx.fillStyle='#222'; this.ctx.shadowBlur=0;
+                    this.ctx.beginPath();
+                    this.ctx.arc(proj.x-radius*0.2, proj.y-radius*0.6, radius*0.07, 0, Math.PI*2);
+                    this.ctx.arc(proj.x+radius*0.2, proj.y-radius*0.6, radius*0.07, 0, Math.PI*2);
+                    this.ctx.fill();
+                    // Капелюх
+                    this.ctx.fillStyle='#9900cc'; this.ctx.shadowColor='#cc00ff'; this.ctx.shadowBlur=10;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(proj.x-radius*0.52, proj.y-radius*0.9);
+                    this.ctx.lineTo(proj.x+radius*0.52, proj.y-radius*0.9);
+                    this.ctx.lineTo(proj.x+radius*0.24, proj.y-radius*1.55);
+                    this.ctx.lineTo(proj.x-radius*0.24, proj.y-radius*1.55);
+                    this.ctx.closePath(); this.ctx.fill();
+                    this.ctx.fillStyle='#ffcc00'; this.ctx.font=`${Math.round(radius*0.28)}px Outfit`;
+                    this.ctx.textAlign='center'; this.ctx.textBaseline='middle';
+                    this.ctx.fillText('★', proj.x, proj.y-radius*1.22);
+                    this.ctx.textBaseline='alphabetic';
+                    // Тіло (строкате)
+                    this.ctx.shadowBlur=5;
+                    this.ctx.fillStyle='rgba(220,50,220,0.5)'; this.ctx.strokeStyle='#ff66ff'; this.ctx.lineWidth=2*sc;
+                    this.ctx.fillRect(proj.x-radius*0.4, proj.y, radius*0.8, radius*0.9);
+                    this.ctx.strokeRect(proj.x-radius*0.4, proj.y, radius*0.8, radius*0.9);
+                    // Полоски
+                    this.ctx.strokeStyle='rgba(255,200,0,0.5)'; this.ctx.lineWidth=1*sc;
+                    for (let s=0; s<3; s++) {
+                        const sy = proj.y + radius*(0.2+s*0.28);
+                        this.ctx.beginPath(); this.ctx.moveTo(proj.x-radius*0.4, sy); this.ctx.lineTo(proj.x+radius*0.4, sy); this.ctx.stroke();
+                    }
+                    // Велосипед
+                    this.ctx.strokeStyle='#ffcc00'; this.ctx.lineWidth=2.5*sc;
+                    this.ctx.beginPath(); this.ctx.arc(proj.x-radius*0.3, proj.y+radius*1.15, radius*0.28, 0, Math.PI*2); this.ctx.stroke();
+                    this.ctx.beginPath(); this.ctx.arc(proj.x+radius*0.3, proj.y+radius*1.15, radius*0.28, 0, Math.PI*2); this.ctx.stroke();
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(proj.x-radius*0.3, proj.y+radius*1.15);
+                    this.ctx.lineTo(proj.x, proj.y+radius*0.9);
+                    this.ctx.lineTo(proj.x+radius*0.3, proj.y+radius*1.15); this.ctx.stroke();
+                    // Label
+                    this.ctx.fillStyle='#ff66ff'; this.ctx.font=`bold ${Math.round(10*sc)}px Outfit`;
+                    this.ctx.textAlign='center'; this.ctx.fillText('🎭 КЛОУН +120', proj.x, proj.y-radius*1.8);
+                }
+                else if (target.id === 'goldenTrophy') {
+                    // 🏆 Золотий Кубок (пульсуючий)
+                    const glow = 0.65+Math.sin((this.gameTime||0)*4)*0.35;
+                    this.ctx.shadowBlur=30*glow; this.ctx.shadowColor='#ffd700';
+                    const tG = this.ctx.createLinearGradient(proj.x-radius, proj.y-radius, proj.x+radius, proj.y+radius);
+                    tG.addColorStop(0,'#fffaaa'); tG.addColorStop(0.35,'#ffd700'); tG.addColorStop(0.7,'#b8720a'); tG.addColorStop(1,'#ffd700');
+                    this.ctx.fillStyle=tG; this.ctx.strokeStyle='rgba(255,244,160,0.9)'; this.ctx.lineWidth=2.5*sc;
+                    // Чаша кубка
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(proj.x-radius*0.62, proj.y-radius*0.82);
+                    this.ctx.lineTo(proj.x-radius*0.9, proj.y+radius*0.18);
+                    this.ctx.quadraticCurveTo(proj.x, proj.y+radius*0.68, proj.x+radius*0.9, proj.y+radius*0.18);
+                    this.ctx.lineTo(proj.x+radius*0.62, proj.y-radius*0.82);
+                    this.ctx.closePath(); this.ctx.fill(); this.ctx.stroke();
+                    // Ніжка+база
+                    this.ctx.fillStyle=tG;
+                    this.ctx.fillRect(proj.x-radius*0.18, proj.y+radius*0.62, radius*0.36, radius*0.42);
+                    this.ctx.fillRect(proj.x-radius*0.44, proj.y+radius*1.04, radius*0.88, radius*0.2);
+                    // Ручки
+                    this.ctx.strokeStyle='#ffd700'; this.ctx.lineWidth=3.5*sc;
+                    this.ctx.beginPath(); this.ctx.arc(proj.x-radius*0.85, proj.y-radius*0.28, radius*0.3, Math.PI*0.5, Math.PI*1.5); this.ctx.stroke();
+                    this.ctx.beginPath(); this.ctx.arc(proj.x+radius*0.85, proj.y-radius*0.28, radius*0.3, Math.PI*1.5, Math.PI*0.5); this.ctx.stroke();
+                    // Зірка всередині
+                    this.ctx.fillStyle='#fff8b0'; this.ctx.shadowBlur=15*glow;
+                    this.ctx.font=`${Math.round(radius*0.6)}px Outfit`;
+                    this.ctx.textAlign='center'; this.ctx.textBaseline='middle';
+                    this.ctx.fillText('★', proj.x, proj.y-radius*0.1);
+                    this.ctx.textBaseline='alphabetic';
+                    this.ctx.fillStyle='#ffd700'; this.ctx.font=`bold ${Math.round(12*sc)}px Outfit`;
+                    this.ctx.fillText('🏆 +300 МОНЕТ!', proj.x, proj.y-radius*1.65);
                 }
 
                 this.ctx.restore();
             });
         }
+
 
         const postLeftBase = new Vector3(-GOAL_WIDTH / 2, 0, 0);
         const postLeftTop = new Vector3(-GOAL_WIDTH / 2, GOAL_HEIGHT, 0);
@@ -1826,6 +2125,26 @@ class PenaltyMasterGame {
                         traceColorLine = 'rgba(0, 204, 255, 0.7)';
                         crosshairColor = '#00ccff';
                         crosshairColorGlow = 'rgba(0, 204, 255, 0.85)';
+                    } else if (this.aimLockedTarget.id === 'electricMine') {
+                        traceColorGlow = 'rgba(255,255,0,0.2)';
+                        traceColorLine = 'rgba(255,255,0,0.75)';
+                        crosshairColor = '#ffff00';
+                        crosshairColorGlow = 'rgba(255,255,0,0.9)';
+                    } else if (this.aimLockedTarget.id === 'clown') {
+                        traceColorGlow = 'rgba(200,0,255,0.2)';
+                        traceColorLine = 'rgba(200,0,255,0.75)';
+                        crosshairColor = '#cc00ff';
+                        crosshairColorGlow = 'rgba(200,0,255,0.9)';
+                    } else if (this.aimLockedTarget.id && this.aimLockedTarget.id.startsWith('bottle')) {
+                        traceColorGlow = 'rgba(0,255,150,0.2)';
+                        traceColorLine = 'rgba(0,255,150,0.75)';
+                        crosshairColor = '#00ff99';
+                        crosshairColorGlow = 'rgba(0,255,150,0.9)';
+                    } else if (this.aimLockedTarget.id === 'goldenTrophy') {
+                        traceColorGlow = 'rgba(255,215,0,0.3)';
+                        traceColorLine = 'rgba(255,215,0,0.85)';
+                        crosshairColor = '#ffd700';
+                        crosshairColorGlow = 'rgba(255,215,0,1.0)';
                     } else {
                         // Звичайні мішені у кутах
                         traceColorGlow = 'rgba(255, 0, 127, 0.2)';
@@ -1871,21 +2190,71 @@ class PenaltyMasterGame {
                     this.ctx.fill();
                 }
 
-                this.ctx.strokeStyle = crosshairColorGlow;
-                this.ctx.lineWidth = 3;
-                this.ctx.beginPath();
-                
+                // === Динамічний 4-сегментний приціл ===
                 const aimRadius = 15 * (aimProj.scale / 300) + (gameControls.power * 0.2);
+                const gap = 5;   // відстань від центру до початку сегменту
+                const segLen = 12 + (gameControls.power * 0.1);
+                const lineW = 2.5;
+
+                // Outer glow ring (пульсує)
+                const ringPulse = 0.7 + Math.sin((this.gameTime || 0) * 6) * 0.3;
+                this.ctx.shadowBlur = 12 * ringPulse;
+                this.ctx.shadowColor = crosshairColorGlow;
+                this.ctx.strokeStyle = crosshairColorGlow;
+                this.ctx.lineWidth = 2.5;
+                this.ctx.beginPath();
                 this.ctx.arc(aimProj.x, aimProj.y, aimRadius, 0, Math.PI * 2);
                 this.ctx.stroke();
+                this.ctx.shadowBlur = 0;
 
-                this.ctx.beginPath();
-                this.ctx.moveTo(aimProj.x - 8, aimProj.y);
-                this.ctx.lineTo(aimProj.x + 8, aimProj.y);
-                this.ctx.moveTo(aimProj.x, aimProj.y - 8);
-                this.ctx.lineTo(aimProj.x, aimProj.y + 8);
+                // 4 сегменти хрестика (з проміжком у центрі)
                 this.ctx.strokeStyle = crosshairColor;
+                this.ctx.lineWidth = lineW;
+                this.ctx.lineCap = 'round';
+                this.ctx.beginPath();
+                // Ліво
+                this.ctx.moveTo(aimProj.x - gap - segLen, aimProj.y);
+                this.ctx.lineTo(aimProj.x - gap, aimProj.y);
+                // Право
+                this.ctx.moveTo(aimProj.x + gap, aimProj.y);
+                this.ctx.lineTo(aimProj.x + gap + segLen, aimProj.y);
+                // Верх
+                this.ctx.moveTo(aimProj.x, aimProj.y - gap - segLen);
+                this.ctx.lineTo(aimProj.x, aimProj.y - gap);
+                // Низ
+                this.ctx.moveTo(aimProj.x, aimProj.y + gap);
+                this.ctx.lineTo(aimProj.x, aimProj.y + gap + segLen);
                 this.ctx.stroke();
+
+                // Центральна точка
+                this.ctx.fillStyle = crosshairColor;
+                this.ctx.beginPath();
+                this.ctx.arc(aimProj.x, aimProj.y, 2.5, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // === Комбо-лічильник над прицілом ===
+                if (this.comboChain > 0) {
+                    const comboY = aimProj.y - aimRadius - 18;
+                    let comboText = `x${this.comboMultiplier} КОМБО!`;
+                    let comboCol = '#ffd700';
+                    if (this.comboMultiplier >= 5.0) { comboText = '★ GOD MODE x5 ★'; comboCol = '#ff00ff'; }
+                    else if (this.comboMultiplier >= 3.0) { comboText = '🔥 x3 СЕРІЯ!'; comboCol = '#ff4400'; }
+                    else if (this.comboMultiplier >= 2.0) { comboText = '⚡ x2 КОМБО!'; comboCol = '#ffcc00'; }
+                    else { comboText = `🎯 x${this.comboMultiplier}`; comboCol = '#00ffcc'; }
+
+                    this.ctx.save();
+                    this.ctx.shadowBlur = 14;
+                    this.ctx.shadowColor = comboCol;
+                    this.ctx.fillStyle = comboCol;
+                    this.ctx.font = `bold ${Math.round(13 * (aimProj.scale / 300))}px Outfit`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(comboText, aimProj.x, comboY);
+                    // Лічильник ланцюга
+                    this.ctx.font = `${Math.round(9 * (aimProj.scale / 300))}px Outfit`;
+                    this.ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                    this.ctx.fillText(`${this.comboChain} влучань поспіль`, aimProj.x, comboY + 14);
+                    this.ctx.restore();
+                }
             }
         }
 
