@@ -416,55 +416,59 @@ html {
         }
         .dpad-container {
             display: grid;
-            grid-template-columns: repeat(3, 34px);
-            grid-template-rows: repeat(3, 34px);
+            grid-template-columns: repeat(3, 46px);
+            grid-template-rows: repeat(3, 46px);
             gap: 0px
         }
         .dpad-container .m-btn {
             border-radius: 0px;
             box-shadow: none;
-            border: 1.5px solid rgba(255, 255, 255, 0.25)
+            border: 1.5px solid rgba(0, 255, 204, 0.3)
         }
         #m-up {
             grid-column: 2;
             grid-row: 1;
-            border-radius: 10px 10px 0 0;
-            border-bottom: none
+            border-radius: 12px 12px 0 0;
+            border-bottom: none;
+            box-shadow: inset 0 2px 5px rgba(0, 255, 204, 0.2)
         }
         #m-left {
             grid-column: 1;
             grid-row: 2;
-            border-radius: 10px 0 0 10px;
-            border-right: none
+            border-radius: 12px 0 0 12px;
+            border-right: none;
+            box-shadow: inset 2px 0 5px rgba(0, 255, 204, 0.2)
         }
         .dpad-center {
             grid-column: 2;
             grid-row: 2;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            background: rgba(0, 255, 204, 0.08);
+            border: 1.5px solid rgba(0, 255, 204, 0.3);
             pointer-events: none;
             box-sizing: border-box
         }
         #m-right {
             grid-column: 3;
             grid-row: 2;
-            border-radius: 0 10px 10px 0;
-            border-left: none
+            border-radius: 0 12px 12px 0;
+            border-left: none;
+            box-shadow: inset -2px 0 5px rgba(0, 255, 204, 0.2)
         }
         #m-down {
             grid-column: 2;
             grid-row: 3;
-            border-radius: 0 0 10px 10px;
-            border-top: none
+            border-radius: 0 0 12px 12px;
+            border-top: none;
+            box-shadow: inset 0 -2px 5px rgba(0, 255, 204, 0.2)
         }
         .m-btn {
-            width: 34px;
-            height: 34px;
+            width: 46px;
+            height: 46px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: rgba(10, 5, 20, 0.6);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
             color: #fff;
-            font-size: 12px;
+            font-size: 16px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -472,29 +476,30 @@ html {
             user-select: none;
             -webkit-user-select: none;
             touch-action: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
-            transition: transform 0.1s, background 0.1s, opacity 0.15s
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.6);
+            transition: transform 0.1s, background 0.1s, border-color 0.1s;
         }
         .m-btn:active {
-            background: var(--primary);
-            border-color: #fff;
-            transform: scale(0.88)
+            background: rgba(0, 255, 204, 0.3);
+            border-color: #00ffcc;
+            box-shadow: 0 0 15px #00ffcc;
+            transform: scale(0.92)
         }
         .m-btn-action-container {
             display: grid;
-            grid-template-columns: repeat(3, 42px);
-            grid-template-rows: repeat(2, 34px);
-            gap: 4px
+            grid-template-columns: repeat(3, 46px);
+            grid-template-rows: repeat(2, 46px);
+            gap: 6px
         }
         .m-btn-action {
-            width: 42px;
-            height: 34px;
-            border-radius: 8px;
-            background: rgba(0, 255, 204, 0.08);
-            border: 1px solid var(--secondary);
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: rgba(10, 5, 20, 0.6);
+            border: 2px solid #fff;
             color: #fff;
-            font-size: 8px;
-            font-weight: bold;
+            font-size: 9px;
+            font-weight: 800;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -502,16 +507,25 @@ html {
             user-select: none;
             -webkit-user-select: none;
             touch-action: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
-            transition: transform 0.1s, background 0.1s, opacity 0.15s;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.6);
+            transition: transform 0.1s, background 0.1s, border-color 0.1s;
             letter-spacing: 0.5px;
             line-height: 1
         }
+        #m-punch { border-color: #00ffcc; background: rgba(0, 255, 204, 0.05); color: #00ffcc; }
+        #m-kick { border-color: #ff3366; background: rgba(255, 51, 102, 0.05); color: #ff3366; }
+        #m-special { border-color: #ffcc00; background: rgba(255, 204, 0, 0.05); color: #ffcc00; }
+        #m-throw { border-color: #0099ff; background: rgba(0, 153, 255, 0.05); color: #0099ff; }
+        #m-weapon { border-color: #cc00ff; background: rgba(204, 0, 255, 0.05); color: #cc00ff; }
+        
         .m-btn-action:active {
-            background: var(--primary);
-            border-color: #fff;
-            transform: scale(0.88)
+            transform: scale(0.92);
         }
+        #m-punch:active { background: rgba(0, 255, 204, 0.35); box-shadow: 0 0 15px #00ffcc; }
+        #m-kick:active { background: rgba(255, 51, 102, 0.35); box-shadow: 0 0 15px #ff3366; }
+        #m-special:active { background: rgba(255, 204, 0, 0.35); box-shadow: 0 0 15px #ffcc00; }
+        #m-throw:active { background: rgba(0, 153, 255, 0.35); box-shadow: 0 0 15px #0099ff; }
+        #m-weapon:active { background: rgba(204, 0, 255, 0.35); box-shadow: 0 0 15px #cc00ff; }
         .m-title {
             font-size: 7px;
             font-weight: 900
