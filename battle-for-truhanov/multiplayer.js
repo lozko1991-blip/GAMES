@@ -32,9 +32,18 @@
             document.getElementById('host-info').classList.add('hidden');
             document.getElementById('room-id-display').innerText = "Завантаження...";
             document.getElementById('join-room-id').value = "";
+            const sb = document.getElementById('btn-start-online-game');
+            if (sb) sb.classList.add('hidden');
+        }
+
+        function openOnlineLobby() {
+            showScreen('screen-online-lobby');
+            resetOnlineState();
+            updateOnlineStatus("Обидва натисніть ЛОБІ 1 (або ЛОБІ 2). Перший стане ХОСТОМ і натисне «ПОЧАТИ ОНЛАЙН БІЙ».");
         }
 
         function joinLobby(num) {
+            if (typeof Peer === 'undefined') { updateOnlineStatus("Помилка: PeerJS не завантажився. Перевірте інтернет і перезавантажте сторінку."); return; }
             resetOnlineState();
             state.isOnline = true;
             const lobbyId = 'truhanov-lobby-' + num;
@@ -85,6 +94,7 @@
         }
 
         function hostRoom() {
+            if (typeof Peer === 'undefined') { updateOnlineStatus("Помилка: PeerJS не завантажився. Перевірте інтернет і перезавантажте сторінку."); return; }
             resetOnlineState();
             state.isOnline = true;
             state.isHost = true;
@@ -113,6 +123,7 @@
         }
 
         function joinRoom() {
+            if (typeof Peer === 'undefined') { updateOnlineStatus("Помилка: PeerJS не завантажився. Перевірте інтернет і перезавантажте сторінку."); return; }
             resetOnlineState();
             const code = document.getElementById('join-room-id').value.trim();
             if (!code) {
@@ -142,7 +153,7 @@
         function setupConnection() {
             state.netConn.on('open', () => {
                 updateOnlineStatus("Підключено! Обмін персонажами...");
-                const localChar = document.getElementById('char-select').value;
+                const localChar = document.getElementById('char-select-online').value;
                 sendNetData({
                     type: 'handshake',
                     charId: localChar
@@ -178,13 +189,22 @@
                 case 'handshake':
                     state.opponentCharId = packet.charId;
                     state.netReady = true;
-                    updateOnlineStatus("Готово! Супротивник обрав: " + CHARACTERS[packet.charId].name);
+                    const oppName = (CHARACTERS[packet.charId] && CHARACTERS[packet.charId].name) ? CHARACTERS[packet.charId].name : packet.charId;
+                    if (state.isHost) {
+                        updateOnlineStatus("Друг зайшов! Супротивник обрав: " + oppName + ". Натисніть «ПОЧАТИ ОНЛАЙН БІЙ»");
+                        const sb = document.getElementById('btn-start-online-game');
+                        if (sb) sb.classList.remove('hidden');
+                    } else {
+                        updateOnlineStatus("З'єднано! Хост обрав: " + oppName + ". Очікування старту від хоста...");
+                    }
                     break;
                     
                 case 'start_game':
                     state.opponentCharId = packet.hostCharId;
                     state.currentLevelIndex = packet.levelIndex;
                     state.difficulty = packet.difficulty;
+                    document.getElementById('char-select').value = document.getElementById('char-select-online').value;
+                    document.getElementById('level-select').value = state.currentLevelIndex.toString();
                     startGame();
                     break;
                     
@@ -384,6 +404,17 @@
 
         // Add copy-on-click to room display
         document.addEventListener('DOMContentLoaded', () => {
+            const cs = document.getElementById('char-select-online');
+            if (cs) {
+                cs.addEventListener('change', () => {
+                    if (state.isOnline && state.netConn && state.netConn.open) {
+                        sendNetData({ type: 'handshake', charId: cs.value });
+                        if (state.isHost) {
+                            updateOnlineStatus("Ви обрали: " + CHARACTERS[cs.value].name + ". Очікування старту...");
+                        }
+                    }
+                });
+            }
             const display = document.getElementById('room-id-display');
             if (display) {
                 display.addEventListener('click', () => {
@@ -421,6 +452,7 @@
         function startOnlineGame() {
             // Sync value from selector before starting game
             document.getElementById('char-select').value = document.getElementById('char-select-online').value;
+            document.getElementById('level-select').value = document.getElementById('level-select-online').value;
             state.difficulty = 'online';
             startGame();
         }

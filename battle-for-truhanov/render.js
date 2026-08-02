@@ -1,6 +1,45 @@
+        const WEAPON_ICONS = { none: '✖', pipe: '🔧', rifle: '🔫', bazooka: '🚀', sausage: '🥖', bow: '🏹', nunchucks: '⛓️', spear: '🔱', greatsword: '⚔️' };
+        function getWeaponListFor(player) {
+            if (player.id === 'p1' && state.difficulty !== 'pvp' && !state.isOnline) {
+                const owned = (state.ownedWeapons && state.ownedWeapons.length) ? state.ownedWeapons : ['none'];
+                return ['none'].concat(owned.filter(w => w !== 'none'));
+            }
+            return ['none', 'pipe', 'rifle', 'bazooka', 'sausage', 'bow', 'nunchucks', 'spear', 'greatsword'];
+        }
+        function renderWeaponPanel() {
+            [['p1', 'weapon-panel-p1'], ['p2', 'weapon-panel-p2']].forEach(pair => {
+                const el = document.getElementById(pair[1]);
+                if (!el) return;
+                const pl = pair[0] === 'p1' ? state.player : state.bot;
+                if (!pl || !state.isRunning || (pair[0] === 'p2' && state.difficulty !== 'pvp')) { el.style.display = 'none'; return }
+                const list = getWeaponListFor(pl);
+                const reloadSec = Math.ceil(pl.weaponCooldownTimer / 60);
+                const key = list.join(',') + '|' + pl.weaponSelected + '|' + (pl.weaponCharge >= 100 ? 'R' : 'C') + '|' + reloadSec;
+                if (el._key === key) { if (el.style.display !== 'flex') el.style.display = 'flex'; return }
+                el._key = key;
+                el.style.display = 'flex';
+                el.innerHTML = '';
+                if (pl.weaponCooldownTimer > 0) {
+                    const banner = document.createElement('div');
+                    banner.className = 'wslot reload-banner';
+                    banner.innerHTML = `<span class="wicon">⏳</span><span class="wname">RELOAD ${reloadSec}s</span>`;
+                    el.appendChild(banner);
+                }
+                list.forEach(w => {
+                    const btn = document.createElement('button');
+                    btn.className = 'wslot' + (pl.weaponSelected === w ? ' active' : '') + (pl.weaponCharge >= 100 && pl.weaponSelected === 'none' && w !== 'none' ? ' ready' : '');
+                    btn.dataset.player = pair[0];
+                    btn.dataset.weapon = w;
+                    if (w !== 'none' && pl.weaponCooldownTimer > 0) { btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed'; }
+                    btn.innerHTML = `<span class="wicon">${WEAPON_ICONS[w] || '⚔️'}</span><span class="wname">${w.toUpperCase()}</span>`;
+                    el.appendChild(btn);
+                });
+            });
+        }
         function updateWeaponHUD() {
             const fill = document.getElementById('weapon-fill');
             const label = document.getElementById('weapon-label');
+            renderWeaponPanel();
             if (!fill || !label) return;
             const player = state.player;
             if (!player) {
@@ -9,6 +48,11 @@
                 return;
             }
             fill.style.width = player.weaponSelected === 'none' ? '0%' : '100%';
+            if (player.weaponCooldownTimer > 0) {
+                label.innerText = `RELOAD ${Math.ceil(player.weaponCooldownTimer / 60)}s`;
+                label.style.color = '#00ffcc';
+                return;
+            }
             const activeText = player.weaponTimer > 0 ? `${player.weaponActiveType || player.weaponSelected}` : player.weaponSelected;
             label.innerText = player.weaponTimer > 0 ? `WPN: ${activeText.toUpperCase()}` : `WPN: ${activeText.toUpperCase()}`;
             label.style.color = player.weaponTimer > 0 ? '#ffcc00' : '#fff';

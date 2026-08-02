@@ -414,6 +414,86 @@ html {
             background: linear-gradient(90deg, #ffcc00, #ff0055);
             box-shadow: 0 0 10px rgba(255, 0, 85, 0.45)
         }
+        .weapon-panel {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 15;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 6px;
+            background: rgba(10, 10, 24, 0.62);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            border-radius: 10px;
+            backdrop-filter: blur(3px);
+            max-height: 88%;
+            overflow-y: auto;
+            scrollbar-width: none
+        }
+        .weapon-panel.right {
+            left: auto;
+            right: 8px
+        }
+        .weapon-panel::-webkit-scrollbar {
+            display: none
+        }
+        .weapon-panel .wslot {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            width: 118px;
+            padding: 5px 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 7px;
+            color: #fff;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background 0.12s, border-color 0.12s, transform 0.08s;
+            text-align: left;
+            font-family: inherit
+        }
+        .weapon-panel .wslot:hover {
+            background: rgba(0, 240, 255, 0.18);
+            border-color: rgba(0, 240, 255, 0.6)
+        }
+        .weapon-panel .wslot:active {
+            transform: scale(0.96)
+        }
+        .weapon-panel .wslot.active {
+            background: rgba(0, 255, 170, 0.22);
+            border-color: #00ffaa;
+            box-shadow: 0 0 10px rgba(0, 255, 170, 0.35)
+        }
+        .weapon-panel .wslot.ready {
+            border-color: rgba(255, 204, 0, 0.55);
+            box-shadow: 0 0 8px rgba(255, 204, 0, 0.2)
+        }
+        .weapon-panel .wslot.reload-banner {
+            border-color: #00ffcc;
+            color: #00ffcc;
+            cursor: default;
+            background: rgba(0, 255, 204, 0.1);
+            animation: reloadPulse 0.9s ease-in-out infinite alternate
+        }
+        @keyframes reloadPulse {
+            from { box-shadow: 0 0 4px rgba(0, 255, 204, 0.2) }
+            to { box-shadow: 0 0 12px rgba(0, 255, 204, 0.5) }
+        }
+        .weapon-panel .wicon {
+            font-size: 14px;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))
+        }
+        .weapon-panel .wname {
+            text-shadow: 1px 1px 2px #000;
+            white-space: nowrap
+        }
+
         .dpad-container {
             display: grid;
             grid-template-columns: repeat(3, 46px);

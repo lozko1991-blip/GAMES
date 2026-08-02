@@ -32,7 +32,7 @@
                 </p>
                 <button class="menu-button" id="btn-mode-sp" onclick="showScreen('screen-select-sp')">Одиночна гра (VS Бот)</button>
                 <button class="menu-button" id="btn-mode-local" onclick="showScreen('screen-select-local')">Бій на одному ПК (PvP)</button>
-                <button class="menu-button" id="btn-mode-online" onclick="showScreen('screen-online-lobby')">Грати Онлайн (PvP)</button>
+                <button class="menu-button" id="btn-mode-online" onclick="openOnlineLobby()">Грати Онлайн (PvP)</button>
                 <button class="menu-button" id="btn-mode-shop" onclick="openShop()" style="border-color: #ff0055; color: #ff0055;">🏪 Магазин спорядження</button>
                 <button class="menu-button" id="btn-mode-instruct" onclick="showScreen('screen-instructions')" style="border-color: #00ffcc; color: #00ffcc;">Як грати / Прийоми</button>
                 <button class="menu-button" id="btn-mode-fullscreen" onclick="toggleFullscreen()">Повний екран</button>
@@ -205,6 +205,27 @@
                     </select>
                 </div>
 
+                <div class="select-group" style="margin-bottom: 10px;">
+                    <label>ОБЕРІТЬ АРЕНУ (обере хост):</label>
+                    <select id="level-select-online">
+                        <option value="random">Випадкова арена</option>
+                        <option value="0">Труханів Острів (Пляж)</option>
+                        <option value="1">Хрещатик (Захід сонця)</option>
+                        <option value="2">Гідропарк (Качалка)</option>
+                        <option value="3">Шулявський шляхопровід</option>
+                        <option value="4">Головний Корпус КНЕУ</option>
+                        <option value="5">Борщагівка (Панельки)</option>
+                        <option value="6">Київстар (Офіс)</option>
+                        <option value="7">Магазин BRAIN / ITbox</option>
+                        <option value="8">Бортницька станція аерації</option>
+                        <option value="9">Село Дубище</option>
+                        <option value="10">Пристроми (Укрпромпостач)</option>
+                        <option value="11">Переяслав (Дзвіниця)</option>
+                        <option value="12">Березань (Вітальна арка)</option>
+                        <option value="13">Кремль (Москва)</option>
+                    </select>
+                </div>
+
                 <div class="lobby-section" style="border: 1px dashed rgba(255,0,85,0.4); padding: 10px; border-radius: 8px; background: rgba(255,0,85,0.03); margin-bottom: 10px;">
                     <span style="font-size: 11px; font-weight: bold; color: #ff0055; display: block; margin-bottom: 6px;">ШВИДКІ ЛОБІ (PeerJS):</span>
                     <div style="display: flex; gap: 8px;">
@@ -296,15 +317,15 @@
         <div id="controls-hint" style="display: none;">
             <button onclick="document.getElementById('controls-hint').style.display='none'" class="controls-hint-close">X</button>
             <b style="color:#ffcc00;font-size:11px;">⌨️ КЕРУВАННЯ НА ПК (Гр1 / Гр2):</b><br>
-            <span style="color:#00ffcc">A/D / Стрілки</span> — рух | <span style="color:#00ffcc">Space / ▲</span> — стрибок (з A/D — Сальто)<br>
+            <span style="color:#00ffcc">A/D / Стрілки</span> — рух (S+напрям — краул) | <span style="color:#00ffcc">Space / ▲</span> — стрибок (з A/D — Сальто) | <span style="color:#00ffcc">R/спец, відходячи</span> — сальто назад<br>
             <span style="color:#00ffcc">W</span> — аперкот | <span style="color:#00ffcc">S+D / S+A</span> — підсічка<br>
             <span style="color:#ffcc00">E / Num 4 / ЛКМ</span> — кулак (4x: Ласо притягнути)<br>
             <span style="color:#ffcc00">F / Num 5 / ПКМ</span> — нога (4x: Ласо збити)<br>
-            <span style="color:#55ff55">Shift</span> — предмети (затиснути: Блискавка) | <span style="color:#55ff55">C/I / Num 0</span> — зброя
+            <span style="color:#55ff55">Shift</span> — предмети (затиснути: Блискавка) | <span style="color:#55ff55">C/I / Num 0 / клік по панелі збоку</span> — зброя
         </div>
         <div id="weapon-controls-hint" style="display: none;">
             <b style="color:#ffcc00; font-size:11px;">⚔️ КЕРУВАННЯ ЗБРОЄЮ:</b><br>
-            <span style="color:#00ffcc">Коліщатко / Shift / Num 0</span> — Зміна<br>
+            <span style="color:#00ffcc">Коліщатко / Shift / Num 0 / Клік по зброї збоку екрана</span> — Зміна<br>
             <span style="color:#ffcc00">ЛКМ / E</span> — Атака 1 (Постріл з лука)<br>
             <span style="color:#ffcc00">ПКМ / F</span> — Швидкий удар зблизька
         </div>
@@ -377,6 +398,9 @@
         </div>
 
         <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+        <div id="weapon-panel-p1" class="weapon-panel" style="display:none;"></div>
+        <div id="weapon-panel-p2" class="weapon-panel right" style="display:none;"></div>
     </div>
 
     <script src="./assets.js"></script>

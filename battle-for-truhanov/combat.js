@@ -69,16 +69,29 @@
             let finalDmg = dmg; let blocked = false;
             if (defender.state === 'launched' && !defender.isBlocking) {
                 // JUGGLE!
-                defender.vy = -7.5; defender.vx = pushDir * 3.5; 
+                const jScale = Math.max(0.4, 1 - defender.juggleCount * 0.15);
+                defender.juggleCount++;
+                defender.vy = -7.5 * jScale; defender.vx = pushDir * 3.5 * (0.6 + jScale * 0.5); 
+                defender.flashTimer = 3; defender.squashTimer = 5; defender.squashAmount = 0.08;
+                defender.knockHatOff(pushDir);
+                state.hitZoom = { timer: 7, power: 0.03, x: defender.x + defender.width / 2, y: defender.y + 40 };
                 showFloatingText("JUGGLE!", defender.x + 30, defender.y - 20, '#ff00ff');
                 createImpactBurst(defender.x + defender.width / 2, defender.y + 40, '#ffffff', attacker.isLeft ? 1 : -1); AudioSys.punch();
                 state.screenShake = Math.max(state.screenShake, 6); state.hitstopFrames = Math.max(state.hitstopFrames, 4);
             } else if (defender.isBlocking && type !== 'projectile' && type !== 'throw') {
                 finalDmg = Math.max(1, Math.floor(dmg * 0.2)); blocked = true; AudioSys.block(); createBlockSparks(defender.x + defender.width / 2, defender.y + 55);
                 state.hitstopFrames = Math.max(state.hitstopFrames, 4); state.screenShake = Math.max(state.screenShake, 4);
-                defender.vx = pushDir * 3.2; // Push opponent back slightly on block
+                const wBonus = (type === 'greatsword' ? 4 : type === 'sword' || type === 'spear' ? 3 : type === 'super' || type === 'heavy_kick' ? 2 : 0);
+                defender.vx = pushDir * (3.2 + wBonus); // Push opponent back on block, heavier weapons push further
                 createImpactBurst(defender.x + defender.width / 2, defender.y + 50, '#00ffcc', attacker.isLeft ? 1 : -1);
             } else {
+                const heavyHit = type === 'greatsword' || type === 'sword' || type === 'spear' || type === 'super' || type === 'uppercut';
+                defender.flashTimer = heavyHit ? 4 : 3;
+                defender.squashTimer = 5; defender.squashAmount = heavyHit ? 0.15 : 0.10;
+                state.hitZoom = { timer: 7, power: heavyHit ? 0.05 : 0.03, x: defender.x + defender.width / 2, y: defender.y + 40 };
+                if (type === 'uppercut' || type === 'super' || type === 'greatsword' || type === 'sword' || type === 'spear' || type === 'hook' || type === 'heavy_kick') defender.knockHatOff(pushDir);
+                if (type !== 'lasso_pull' && type !== 'lasso_strike') attacker.vx *= heavyHit ? 0.25 : 0.45;
+                if (heavyHit) createImpactRing(defender.x + defender.width / 2, defender.y + 40, '#ffffff');
                 if (attacker.id === 'p1' && typeof state !== 'undefined' && state.upgrades) {
                     finalDmg = Math.round(finalDmg * (1 + state.upgrades.dmg * 0.08));
                 }
@@ -120,38 +133,47 @@
                     const isKick = type === 'kick';
                     if (type === 'hook') {
                         AudioSys.superHit(); defender.state = 'knockdown'; defender.knockdownTimer = 55; defender.vy = -3.0; defender.vx = pushDir * 6.5; state.screenShake = 12; state.hitstopFrames = 10; defender.lastHitType = 'hook';
+                        defender.hitstunHead = -4; defender.hitstunTilt = -pushDir * 0.32;
                         showFloatingText("HOOK!", defender.x + 30, defender.y + 6, '#ffcc00');
                         createImpactBurst(defender.x + defender.width / 2, defender.y + 40, '#ffcc00', attacker.isLeft ? 1 : -1);
                     } else if (type === 'heavy_kick') {
                         AudioSys.superHit(); defender.state = 'knockdown'; defender.knockdownTimer = 60; defender.vy = -3.2; defender.vx = pushDir * 7.5; state.screenShake = 14; state.hitstopFrames = 12; defender.lastHitType = 'heavy_kick';
+                        defender.hitstunHead = -4; defender.hitstunTilt = -pushDir * 0.26;
                         showFloatingText("HEAVY KICK!", defender.x + 30, defender.y + 6, '#ff9900');
                         createImpactBurst(defender.x + defender.width / 2, defender.y + 48, '#ff9900', attacker.isLeft ? 1 : -1);
                     } else if (type === 'greatsword') {
                         AudioSys.superHit(); defender.state = 'knockdown'; defender.knockdownTimer = 65; defender.vy = -6.0; defender.vx = pushDir * 18.0; state.screenShake = 22; state.hitstopFrames = 25; defender.lastHitType = 'greatsword';
+                        defender.hitstunHead = -8; defender.hitstunTilt = -pushDir * 0.3;
                         showFloatingText("HEAVY SLASH!", defender.x + 24, defender.y + 4, '#ff1100');
                         createImpactBurst(defender.x + defender.width / 2, defender.y + 42, '#ff1100', attacker.isLeft ? 1 : -1);
                     } else if (type === 'spear') {
                         AudioSys.superHit(); defender.state = 'hitstun'; defender.hitstunTimer = 26; defender.vx = pushDir * 10.0; state.screenShake = 12; state.hitstopFrames = 12; defender.lastHitType = 'spear';
+                        defender.hitstunHead = -7; defender.hitstunTilt = -pushDir * 0.25;
                         showFloatingText("THRUST!", defender.x + 24, defender.y + 4, '#00ffff');
                         createImpactBurst(defender.x + defender.width / 2, defender.y + 42, '#00ffff', attacker.isLeft ? 1 : -1);
                     } else if (type === 'nunchucks') {
                         AudioSys.punch(); defender.state = 'hitstun'; defender.hitstunTimer = 16; defender.vx = pushDir * 6.0; state.screenShake = 8; state.hitstopFrames = 7; defender.lastHitType = 'nunchucks';
+                        defender.hitstunHead = -5; defender.hitstunTilt = -pushDir * 0.18;
                         showFloatingText("RAT-A-TAT!", defender.x + 24, defender.y + 4, '#ffdd00');
                         createImpactBurst(defender.x + defender.width / 2, defender.y + 42, '#ffdd00', attacker.isLeft ? 1 : -1);
                     } else if (type === 'sausage') {
                         AudioSys.punch(); defender.state = 'hitstun'; defender.hitstunTimer = 18; defender.vx = pushDir * 8.5; state.screenShake = 10; state.hitstopFrames = 9; defender.lastHitType = 'sausage';
+                        defender.hitstunHead = -6; defender.hitstunTilt = -pushDir * 0.2;
                         showFloatingText("BOING!", defender.x + 24, defender.y + 4, '#ff7777');
                         createImpactBurst(defender.x + defender.width / 2, defender.y + 42, '#ff9999', attacker.isLeft ? 1 : -1);
                     } else if (type === 'sword') {
                         AudioSys.superHit(); defender.state = 'hitstun'; defender.hitstunTimer = 22; defender.vx = pushDir * 14.0; state.screenShake = 18; state.hitstopFrames = 15; defender.lastHitType = 'sword';
+                        defender.hitstunHead = -7; defender.hitstunTilt = -pushDir * 0.28;
                         showFloatingText("SLASH!", defender.x + 24, defender.y + 4, '#ffcc00');
                         createImpactBurst(defender.x + defender.width / 2, defender.y + 42, '#ffcc00', attacker.isLeft ? 1 : -1);
                     } else {
                         AudioSys.punch(); defender.state = 'hitstun'; defender.hitstunTimer = isKick ? 14 : 11;
                         if (isKick) {
-                            defender.vy = -3.8; defender.vx = pushDir * 8.2; // Hop back on kick
+                            defender.vy = -3.8; defender.vx = pushDir * 8.2 + attacker.vx * 0.22; // Hop back on kick
+                            defender.hitstunHead = -2; defender.hitstunTilt = -pushDir * 0.28;
                         } else {
-                            defender.vx = pushDir * 6.4; // Regular slide on punch
+                            defender.vx = pushDir * 6.4 + attacker.vx * 0.22; // Slide on punch, momentum adds knockback
+                            defender.hitstunHead = -9; defender.hitstunTilt = -pushDir * 0.2;
                         }
                         state.screenShake = isKick ? 7 : 5; state.hitstopFrames = isKick ? 6 : 4; defender.lastHitType = type;
                         createImpactBurst(defender.x + defender.width / 2, defender.y + 48, isKick ? '#ffcc00' : '#ffffff', attacker.isLeft ? 1 : -1);

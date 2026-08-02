@@ -11,11 +11,13 @@
                 this.hairColor = config.hairColor || this.clothColor;
                 this.isJumping = false; this.isVerticalJump = false; this.isBlocking = false; this.attackState = 0;
                 this.attackTimer = 0; this.hitstunTimer = 0; this.knockdownTimer = 0; this.rotation = 0; this.squashY = 0;
-                this.skeleton = { headY: 0, lArmAngle: 0, rArmAngle: 0, lLegAngle: 0, rLegAngle: 0 };
+                this.skeleton = { headY: 0, lArmAngle: 0, rArmAngle: 0, lLegAngle: 0, rLegAngle: 0, lFArmAngle: 0.35, rFArmAngle: 0.35, lShinAngle: 0.25, rShinAngle: 0.25 };
                 this.hitBox = { x: 0, y: 0, w: 0, h: 0, active: false, dmg: 0, type: 'punch' };
                 this.comboCounter = 0; this.comboResetTimer = 0;
                 this.hitRegistered = false;
                 this.weaponCharge = 0; this.weaponTimer = 0; this.weaponSelected = 'none'; this.weaponActiveType = null;
+                this.weaponAmmoTimer = 0; this.weaponCooldownTimer = 0; this.weaponState = 'ready';
+                this.hat = { on: true, x: 0, y: 0, vx: 0, vy: 0, rot: 0, spin: 0 };
                 this.lastActionType = null; this.lastActionFrame = -1;
                 this.shadows = [];
                 this.dashTimer = 0; this.juggleCount = 0; this.lastHitType = '';
@@ -25,6 +27,9 @@
                 this.lassoActive = false; this.lassoTimer = 0;
                 this.lassoTargetX = 0; this.lassoTargetY = 0;
                 this.lassoType = null;
+                this.flashTimer = 0; this.recoveryTimer = 0; this.attackRecovery = 0;
+                this.squashTimer = 0; this.squashAmount = 0;
+                this.bounceCount = 0; this.hitstunTilt = 0; this.hitstunHead = -6;
             }
             isBot() {
                 return this.id === 'p2' && state.difficulty !== 'pvp' && !state.isOnline;
@@ -45,9 +50,24 @@
                     if (this.weaponSelected && this.weaponSelected !== 'none') {
                         this.weaponTimer = 420;
                         this.weaponActiveType = this.weaponSelected;
+                        if (this.weaponAmmoTimer > 0) {
+                            this.weaponAmmoTimer--;
+                            if (this.weaponAmmoTimer <= 0) {
+                                this.weaponSelected = 'none'; this.weaponActiveType = null; this.weaponTimer = 0;
+                                this.weaponCooldownTimer = 900; this.weaponState = 'cooldown';
+                                if (typeof showFloatingText === 'function') { showFloatingText('RELOADING...', this.x + 15, this.y - 38, '#00ffcc'); AudioSys.block(); }
+                            }
+                        }
                     } else {
                         this.weaponTimer = 0;
                         this.weaponActiveType = null;
+                        if (this.weaponCooldownTimer > 0) {
+                            this.weaponCooldownTimer--;
+                            if (this.weaponCooldownTimer <= 0) {
+                                this.weaponState = 'ready';
+                                if (typeof showFloatingText === 'function') { showFloatingText('WEAPON READY', this.x + 15, this.y - 38, '#ffcc00'); AudioSys.whoosh(); }
+                            }
+                        }
                     }
                 }
                 const nowTime = Date.now();
@@ -104,16 +124,29 @@
                     if (this.dashTimer <= 0) { this.state = 'idle'; }
                 } else if (this.state === 'hitstun' || this.state === 'dazed') {
                     this.hitstunTimer--;
-                    if (this.hitstunTimer <= 0) this.state = 'idle';
+                    if (this.hitstunTimer <= 0) { this.state = 'idle'; this.hat.on = true; }
                     this.vx *= 0.82;
                 } else if (this.state === 'launched') {
                     if (this.y + this.height >= GROUND_Y) {
-                        this.state = 'knockdown'; this.knockdownTimer = 60; this.vy = 0; this.y = GROUND_Y - this.height;
-                        AudioSys.playTone(85, 'triangle', 0.25, 0.35); state.screenShake = 12;
+                        if (this.vy > 6.5 && this.bounceCount < 2) {
+                            this.bounceCount++;
+                            this.vy = -this.vy * 0.38; this.y = GROUND_Y - this.height;
+                            for (let i = 0; i < 6; i++) { addParticle(new Particle(this.x + this.width / 2 + (Math.random() - 0.5) * 34, GROUND_Y, (Math.random() - 0.5) * 3, -1 - Math.random() * 2, 2.5 + Math.random() * 2.5, 'rgba(160,140,110,0.7)', 20 + Math.random() * 10, 'spark')) }
+                            AudioSys.playTone(70, 'triangle', 0.18, 0.3, 35); state.screenShake = 10;
+                        } else {
+                            this.state = 'knockdown'; this.knockdownTimer = 60; this.vy = 0; this.y = GROUND_Y - this.height;
+                            this.juggleCount = 0; this.bounceCount = 0;
+                            AudioSys.playTone(85, 'triangle', 0.25, 0.35); state.screenShake = 12;
+                        }
                     }
                 } else if (this.state === 'knockdown') {
                     this.knockdownTimer--; this.vx *= 0.8;
-                    if (this.knockdownTimer <= 0) { this.state = 'idle' }
+                    if (this.knockdownTimer <= 0) { this.state = 'idle'; this.hat.on = true; }
+                }
+
+                if (!this.hat.on) {
+                    this.hat.x += this.hat.vx; this.hat.y += this.hat.vy; this.hat.vy += 0.35; this.hat.rot += this.hat.spin;
+                    if (this.hat.y >= GROUND_Y) { this.hat.y = GROUND_Y; this.hat.vy = 0; this.hat.vx *= 0.8; this.hat.spin *= 0.7; }
                 }
 
                 if (this.state === 'crouch' || this.attackState === 4) { this.height = 80; if (!this.isJumping && this.state !== 'launched') this.y = GROUND_Y - 80; }
@@ -136,11 +169,17 @@
                     if (this.squashY > 0) this.squashY *= 0.7;
                 }
                 if (this.state !== 'hitstun' && this.state !== 'launched' && this.state !== 'knockdown') {
-                    if (this.isBlocking || this.attackState > 0 || this.state === 'crouch') { this.vx *= 0.5 }
+                    if (this.isBlocking || this.attackState > 0 || this.recoveryTimer > 0 || this.state === 'crouch') { this.vx *= 0.5 }
                 }
                 this.x += this.vx;
-                if (this.x < 0) this.x = 0;
-                if (this.x + this.width > CANVAS.width) this.x = CANVAS.width - this.width;
+                if (this.x < 0) {
+                    if ((this.state === 'launched' || this.state === 'knockdown' || this.state === 'hitstun') && Math.abs(this.vx) > 4) { this.vx = Math.abs(this.vx) * 0.45; this.x = 2; AudioSys.playTone(60, 'triangle', 0.12, 0.22, 30); }
+                    else { this.x = 0; }
+                }
+                if (this.x + this.width > CANVAS.width) {
+                    if ((this.state === 'launched' || this.state === 'knockdown' || this.state === 'hitstun') && Math.abs(this.vx) > 4) { this.vx = -Math.abs(this.vx) * 0.45; this.x = CANVAS.width - this.width - 2; AudioSys.playTone(60, 'triangle', 0.12, 0.22, 30); }
+                    else { this.x = CANVAS.width - this.width; }
+                }
                 this.hitBox.active = false;
                 if (this.attackState > 0) {
                     this.attackTimer--;
@@ -188,9 +227,10 @@
                     if (this.attackTimer <= 0) {
                         this.attackState = 0;
                         this.hitRegistered = false;
+                        if (this.attackRecovery > 0) { this.recoveryTimer = this.attackRecovery; this.attackRecovery = 0; }
                     }
                 }
-                if (this.attackState === 7 || this.attackState === 4 || this.attackState === 5 || this.state === 'launched' || this.state === 'dash' || (this.weaponTimer > 0 && this.vx !== 0)) {
+                if (this.attackState === 7 || this.attackState === 16 || this.attackState === 4 || this.attackState === 5 || this.state === 'launched' || this.state === 'dash' || (this.weaponTimer > 0 && this.vx !== 0)) {
                     if (state.frameCount % 2 === 0) {
                         this.shadows.push({
                             x: this.x,
@@ -202,7 +242,11 @@
                                 lArmAngle: this.skeleton.lArmAngle,
                                 rArmAngle: this.skeleton.rArmAngle,
                                 lLegAngle: this.skeleton.lLegAngle,
-                                rLegAngle: this.skeleton.rLegAngle
+                                rLegAngle: this.skeleton.rLegAngle,
+                                lFArmAngle: this.skeleton.lFArmAngle,
+                                rFArmAngle: this.skeleton.rFArmAngle,
+                                lShinAngle: this.skeleton.lShinAngle,
+                                rShinAngle: this.skeleton.rShinAngle
                             },
                             isLeft: this.isLeft
                         });
@@ -215,98 +259,131 @@
                         this.shadows.shift();
                     }
                 }
+                if (this.flashTimer > 0) this.flashTimer--;
+                if (this.recoveryTimer > 0) this.recoveryTimer--;
+                if (this.squashTimer > 0) this.squashTimer--;
                 this.animateSkeleton();
             }
             animateSkeleton() {
                 const time = Date.now() * 0.007;
                 let targetHeadY = 0; let targetLArm = 0.3; let targetRArm = -0.3; let targetLLeg = 0.1; let targetRLeg = -0.1; let targetRot = 0;
+                let targetLFArm = 0.35; let targetRFArm = 0.35; let targetLShin = 0.25; let targetRShin = 0.25;
                 const dir = this.isLeft ? 1 : -1;
                 if (this.isBlocking && this.state !== 'hitstun' && this.state !== 'launched' && this.state !== 'knockdown' && this.state !== 'dead' && this.attackState === 0) {
                     targetHeadY = this.state === 'crouch' ? 18 : 3;
                     targetLArm = -1.35 * dir;
                     targetRArm = 1.35 * dir;
+                    targetLFArm = 0.55; targetRFArm = 0.55;
                     if (this.state === 'crouch') {
                         targetLLeg = 0.6; targetRLeg = -0.6;
+                        targetLShin = 0.85; targetRShin = 0.85;
                     } else {
                         targetLLeg = 0.05; targetRLeg = -0.05;
+                        targetLShin = 0.2; targetRShin = 0.2;
                     }
                 } else if (this.state === 'idle') {
                     targetHeadY = Math.sin(time) * 2.5; targetLArm = 0.4 + Math.sin(time) * 0.1; targetRArm = -0.4 - Math.sin(time) * 0.1; targetLLeg = 0.1; targetRLeg = -0.1;
+                    targetLFArm = 0.4 + Math.sin(time) * 0.05; targetRFArm = 0.4 - Math.sin(time) * 0.05; targetLShin = 0.28; targetRShin = 0.28;
                 } else if (this.state === 'move') {
                     targetHeadY = Math.sin(time * 1.8) * 2; targetLArm = Math.sin(time * 1.5) * 0.9; targetRArm = -Math.sin(time * 1.5) * 0.9; targetLLeg = Math.sin(time * 1.5) * 0.8; targetRLeg = -Math.sin(time * 1.5) * 0.8;
+                    targetLFArm = 0.55; targetRFArm = 0.55;
+                    targetLShin = 0.3 + Math.abs(Math.sin(time * 1.5)) * 0.55; targetRShin = 0.3 + Math.abs(-Math.sin(time * 1.5)) * 0.55;
                 } else if (this.state === 'crouch') {
                     targetHeadY = 18; targetLArm = 0.8; targetRArm = -0.8; targetLLeg = 0.6; targetRLeg = -0.6;
+                    targetLFArm = 0.75; targetRFArm = 0.75; targetLShin = 0.9; targetRShin = 0.9;
                 } else if (this.state === 'hitstun') {
-                    targetHeadY = -6; targetLArm = -0.8 * dir; targetRArm = 0.8 * dir; targetLLeg = -0.2; targetRLeg = 0.2;
+                    targetHeadY = this.hitstunHead; targetLArm = -0.8 * dir; targetRArm = 0.8 * dir; targetLLeg = -0.2; targetRLeg = 0.2;
+                    targetRot = this.hitstunTilt;
+                    targetLFArm = 0.85; targetRFArm = 0.85; targetLShin = 0.5; targetRShin = 0.5;
+                    this.hitstunTilt *= 0.9;
                 } else if (this.state === 'launched') {
                     targetHeadY = -10; targetLArm = Math.sin(time * 3.5) * 1.5; targetRArm = Math.cos(time * 3.5) * 1.5; targetLLeg = Math.sin(time * 3.5) * 1.2; targetRLeg = -Math.cos(time * 3.5) * 1.2; targetRot = time * 0.8 * dir;
+                    targetLFArm = 0.9 + Math.sin(time * 4) * 0.3; targetRFArm = 0.9 + Math.cos(time * 4) * 0.3; targetLShin = 0.85 + Math.sin(time * 4) * 0.25; targetRShin = 0.85 + Math.cos(time * 4) * 0.25;
                 } else if (this.state === 'knockdown') {
                     targetHeadY = 12; targetLArm = 1.2; targetRArm = -1.2; targetLLeg = 0.8; targetRLeg = 0.8; targetRot = (Math.PI / 2) * dir;
+                    targetLFArm = 0.95; targetRFArm = 0.95; targetLShin = 0.8; targetRShin = 0.8;
                 } else if (this.state === 'dazed') {
                     targetHeadY = Math.sin(time * 2.5) * 3; targetLArm = 1.0 + Math.sin(time * 1.2) * 0.3; targetRArm = -1.0 - Math.sin(time * 1.2) * 0.3; targetLLeg = 0.15; targetRLeg = -0.15;
+                    targetLFArm = 0.8 + Math.sin(time * 1.2) * 0.15; targetRFArm = 0.8 - Math.sin(time * 1.2) * 0.15; targetLShin = 0.4; targetRShin = 0.4;
                 } else if (this.state === 'dead') {
                     targetHeadY = 15; targetLArm = 1.5; targetRArm = -1.5; targetLLeg = 0.2; targetRLeg = -0.2; targetRot = (Math.PI / 2) * dir;
+                    targetLFArm = 0.95; targetRFArm = 0.95; targetLShin = 0.7; targetRShin = 0.7;
                 }
                 if (this.attackState === 1) {
                     const t = this.attackTimer;
                     if (t >= 14) {
                         targetLArm = (Math.PI / 6) * dir; targetRArm = -0.4 * dir; targetRot = -0.08 * dir; targetHeadY = 2;
+                        targetLFArm = 0.85;
                     } else if (t >= 7) {
                         targetLArm = (-Math.PI / 1.1) * dir; targetRArm = -0.1 * dir; targetRot = 0.15 * dir; targetHeadY = 4;
+                        targetLFArm = 0.12;
                     } else {
                         targetLArm = (-Math.PI / 2.2) * dir; targetRArm = -0.3 * dir; targetRot = 0.05 * dir;
+                        targetLFArm = 0.5;
                     }
                 } else if (this.attackState === 2) {
                     const t = this.attackTimer;
                     if (t >= 18) {
                         targetLLeg = (Math.PI / 4) * dir; targetRLeg = -0.2 * dir; targetHeadY = -4; targetLArm = 0.5 * dir; targetRArm = -0.5 * dir;
+                        targetLShin = 0.95; targetRShin = 0.25; targetLFArm = 0.5; targetRFArm = 0.4;
                     } else if (t >= 8) {
                         targetLLeg = (-Math.PI / 1.1) * dir; targetRLeg = 0.25 * dir; targetHeadY = 4; targetLArm = 0.3 * dir; targetRArm = -0.7 * dir;
+                        targetLShin = 0.12; targetRShin = 0.3; targetLFArm = 0.6; targetRFArm = 0.5;
                     } else {
                         targetLLeg = (-Math.PI / 3) * dir; targetRLeg = 0.1 * dir;
+                        targetLShin = 0.55; targetRShin = 0.2;
                     }
                 } else if (this.attackState === 3) {
                     const t = this.attackTimer;
-                    if (t >= 22) { targetLArm = 1.2 * dir; targetRArm = -0.8 * dir; targetHeadY = 16; } 
-                    else if (t >= 10) { targetLArm = (-Math.PI * 1.15) * dir; targetRArm = 0.4 * dir; targetHeadY = -12; }
-                    else { targetLArm = 0.3 * dir; targetRArm = -0.3 * dir; targetHeadY = 0; }
+                    if (t >= 22) { targetLArm = 1.2 * dir; targetRArm = -0.8 * dir; targetHeadY = 16; targetLFArm = 0.7; targetRFArm = 0.5; } 
+                    else if (t >= 10) { targetLArm = (-Math.PI * 1.15) * dir; targetRArm = 0.4 * dir; targetHeadY = -12; targetLFArm = 0.15; }
+                    else { targetLArm = 0.3 * dir; targetRArm = -0.3 * dir; targetHeadY = 0; targetLFArm = 0.35; }
                 } else if (this.attackState === 4) {
                     const t = this.attackTimer;
-                    if (t >= 12) { targetLLeg = (-Math.PI / 1.1) * dir; targetRLeg = 0.8 * dir; targetHeadY = 24; }
-                    else { targetLLeg = 0.2 * dir; targetRLeg = -0.2 * dir; targetHeadY = 10; }
+                    if (t >= 12) { targetLLeg = (-Math.PI / 1.1) * dir; targetRLeg = 0.8 * dir; targetHeadY = 24; targetLShin = 0.1; targetRShin = 0.9; }
+                    else { targetLLeg = 0.2 * dir; targetRLeg = -0.2 * dir; targetHeadY = 10; targetLShin = 0.4; targetRShin = 0.5; }
                 } else if (this.attackState === 6) {
                     targetLArm = -0.8 * dir; targetRArm = 1.2 * dir; targetHeadY = 2;
+                    targetLFArm = 0.6; targetRFArm = 0.55; targetLShin = 0.35; targetRShin = 0.35;
                 } else if (this.attackState === 7) {
                     const t = this.attackTimer;
                     const spinAngle = ((32 - t) / 32) * Math.PI * 2 * dir;
                     targetRot = spinAngle;
+                    targetLShin = 0.85; targetRShin = 0.85; targetLFArm = 0.55; targetRFArm = 0.55;
                     if (t >= 24) { targetLArm = -0.4 * dir; targetRArm = -0.4 * dir; targetLLeg = 1.2 * dir; targetRLeg = 1.2 * dir; targetHeadY = -8; }
                     else if (t >= 12) { targetLArm = 1.2 * dir; targetRArm = -1.2 * dir; targetRLeg = (-Math.PI / 1.0) * dir; targetLLeg = 0.2 * dir; targetHeadY = -20; }
                     else { targetLArm = 0.8 * dir; targetRArm = -0.8 * dir; targetLLeg = 0.4 * dir; targetRLeg = -0.4 * dir; targetHeadY = 10; }
                 } else if (this.attackState === 8) {
                     const t = this.attackTimer;
-                    if (t >= 16) { targetLArm = 1.5 * dir; targetRArm = -0.8 * dir; targetRot = -0.4 * dir; targetHeadY = -6; targetLLeg = -0.4 * dir; targetRLeg = 0.4 * dir; }
-                    else if (t >= 6) { targetLArm = (-Math.PI / 1.05) * dir; targetRArm = 0.6 * dir; targetRot = 0.55 * dir; targetHeadY = 8; targetLLeg = 0.8 * dir; targetRLeg = -0.2 * dir; }
-                    else { targetLArm = 0.2 * dir; targetRArm = -0.2 * dir; targetRot = 0; targetHeadY = 2; }
+                    if (t >= 16) { targetLArm = 1.5 * dir; targetRArm = -0.8 * dir; targetRot = -0.4 * dir; targetHeadY = -6; targetLLeg = -0.4 * dir; targetRLeg = 0.4 * dir; targetRFArm = 0.75; }
+                    else if (t >= 6) { targetLArm = (-Math.PI / 1.05) * dir; targetRArm = 0.6 * dir; targetRot = 0.55 * dir; targetHeadY = 8; targetLLeg = 0.8 * dir; targetRLeg = -0.2 * dir; targetRFArm = 0.1; }
+                    else { targetLArm = 0.2 * dir; targetRArm = -0.2 * dir; targetRot = 0; targetHeadY = 2; targetRFArm = 0.4; }
                 } else if (this.attackState === 9) {
                     targetLLeg = (-Math.PI / 1.3) * dir; targetRLeg = 0.15 * dir; targetHeadY = 8;
+                    targetLShin = 0.9; targetRShin = 0.2; targetLFArm = 0.6; targetRFArm = 0.6;
                 } else if (this.attackState === 12) {
                     const t = this.attackTimer;
                     if (t >= 12) {
                         targetLArm = (Math.PI / 4) * dir; targetRArm = -0.2 * dir; targetHeadY = -6;
+                        targetLFArm = 0.8; targetLShin = 0.7; targetRShin = 0.7;
                     } else if (t >= 6) {
                         targetLArm = (-Math.PI / 1.0) * dir; targetRArm = -0.1 * dir; targetHeadY = 6;
+                        targetLFArm = 0.1; targetLShin = 0.9; targetRShin = 0.9;
                     } else {
                         targetLArm = (-Math.PI / 1.8) * dir; targetRArm = -0.2 * dir;
+                        targetLFArm = 0.4; targetLShin = 0.6; targetRShin = 0.6;
                     }
                 } else if (this.attackState === 13) {
                     const t = this.attackTimer;
                     if (t >= 14) {
                         targetLLeg = (Math.PI / 3) * dir; targetRLeg = -0.1 * dir;
+                        targetLShin = 0.9; targetRShin = 0.3;
                     } else if (t >= 6) {
                         targetLLeg = (-Math.PI / 1.0) * dir; targetRLeg = 0.4 * dir; targetHeadY = 8;
+                        targetLShin = 0.1; targetRShin = 0.35;
                     } else {
                         targetLLeg = (-Math.PI / 2.2) * dir; targetRLeg = 0.2 * dir;
+                        targetLShin = 0.5; targetRShin = 0.3;
                     }
                 } else if (this.attackState === 10) {
                     const t = this.attackTimer;
@@ -340,6 +417,14 @@
                     targetLArm = (-Math.PI / 1.2) * dir; targetRArm = (Math.PI / 1.2) * dir; targetHeadY = 6;
                 } else if (this.attackState === 14 || this.attackState === 15) {
                     targetLArm = (-Math.PI / 1.85) * dir; targetRArm = (Math.PI / 1.85) * dir; targetHeadY = 4;
+                } else if (this.attackState === 16) {
+                    const t = this.attackTimer;
+                    const spinAngle = -((30 - t) / 30) * Math.PI * 2 * dir;
+                    targetRot = spinAngle;
+                    targetLShin = 0.85; targetRShin = 0.85; targetLFArm = 0.55; targetRFArm = 0.55;
+                    if (t >= 22) { targetLArm = -0.4 * dir; targetRArm = -0.4 * dir; targetLLeg = 1.2 * dir; targetRLeg = 1.2 * dir; targetHeadY = -8; }
+                    else if (t >= 11) { targetLArm = 1.2 * dir; targetRArm = -1.2 * dir; targetRLeg = (-Math.PI / 1.0) * dir; targetLLeg = 0.2 * dir; targetHeadY = -20; }
+                    else { targetLArm = 0.8 * dir; targetRArm = -0.8 * dir; targetLLeg = 0.4 * dir; targetRLeg = -0.4 * dir; targetHeadY = 10; }
                 }
                 const lerp = (a, b, speed) => a + (b - a) * speed;
                 this.skeleton.headY = lerp(this.skeleton.headY, targetHeadY, 0.25);
@@ -347,6 +432,10 @@
                 this.skeleton.rArmAngle = lerp(this.skeleton.rArmAngle, targetRArm, 0.25);
                 this.skeleton.lLegAngle = lerp(this.skeleton.lLegAngle, targetLLeg, 0.25);
                 this.skeleton.rLegAngle = lerp(this.skeleton.rLegAngle, targetRLeg, 0.25);
+                this.skeleton.lFArmAngle = lerp(this.skeleton.lFArmAngle, targetLFArm, 0.25);
+                this.skeleton.rFArmAngle = lerp(this.skeleton.rFArmAngle, targetRFArm, 0.25);
+                this.skeleton.lShinAngle = lerp(this.skeleton.lShinAngle, targetLShin, 0.25);
+                this.skeleton.rShinAngle = lerp(this.skeleton.rShinAngle, targetRShin, 0.25);
                 this.rotation = lerp(this.rotation, targetRot, 0.25);
             }
             draw() {
@@ -375,12 +464,12 @@
                         const snapLHandY = Math.cos(snap.skeleton.lArmAngle) * 15;
                         const snapRHandX = 48 * sDir - Math.sin(snap.skeleton.rArmAngle) * 38;
                         const snapRHandY = Math.cos(snap.skeleton.rArmAngle) * 15;
-                        this.drawMuscleLimb(-13 * sDir, 22, -22 * sDir + Math.sin(snap.skeleton.lLegAngle) * 38, 78, 16, shadowColor, shadowColor);
-                        this.drawMuscleLimb(13 * sDir, 22, 18 * sDir - Math.sin(snap.skeleton.rLegAngle) * 38, 78, 16, shadowColor, shadowColor);
+                        this.drawLimb2(-13 * sDir, 22, -22 * sDir + Math.sin(snap.skeleton.lLegAngle) * 38, 78, 16, shadowColor, shadowColor, snap.skeleton.lShinAngle, sDir, -0.55);
+                        this.drawLimb2(13 * sDir, 22, 18 * sDir - Math.sin(snap.skeleton.rLegAngle) * 38, 78, 16, shadowColor, shadowColor, snap.skeleton.rShinAngle, sDir, -0.55);
                         CTX.fillStyle = shadowColor;
                         CTX.beginPath(); CTX.moveTo(-23, -30); CTX.bezierCurveTo(-26, -5, -19, 20, -15, 30); CTX.lineTo(15, 30); CTX.bezierCurveTo(19, 20, 26, -5, 23, -30); CTX.closePath(); CTX.fill();
-                        this.drawMuscleLimb(-22 * sDir, -22, snapLHandX, snapLHandY, 13, shadowColor, shadowColor);
-                        this.drawMuscleLimb(22 * sDir, -22, snapRHandX, snapRHandY, 13, shadowColor, shadowColor);
+                        this.drawLimb2(-22 * sDir, -22, snapLHandX, snapLHandY, 13, shadowColor, shadowColor, snap.skeleton.lFArmAngle, 0, 1);
+                        this.drawLimb2(22 * sDir, -22, snapRHandX, snapRHandY, 13, shadowColor, shadowColor, snap.skeleton.rFArmAngle, 0, 1);
                         CTX.beginPath(); CTX.arc(headX, headY, 19, 0, Math.PI * 2); CTX.fill();
                         CTX.restore();
                     });
@@ -390,10 +479,12 @@
                 const shadowScale = Math.max(0.1, 1 - heightDiff / 280);
                 CTX.ellipse(this.x + this.width / 2, GROUND_Y, 38 * shadowScale, 6 * shadowScale, 0, 0, Math.PI * 2); CTX.fill(); CTX.restore();
                 CTX.save(); CTX.translate(this.x + this.width / 2, this.y + this.height / 2);
+                if (this.flashTimer > 0) { CTX.translate((Math.random() - 0.5) * 3.4, (Math.random() - 0.5) * 3.4); }
                 if (this.rotation !== 0) { CTX.rotate(this.rotation) }
+                if (this.squashTimer > 0) { const sq = this.squashAmount * (this.squashTimer / 5); CTX.scale(1 + sq, 1 - sq * 0.7); }
                 const headX = 0; const headY = -48 + this.skeleton.headY + this.squashY * 0.5;
-                this.drawMuscleLimb(-13 * dir, 22, -22 * dir + Math.sin(this.skeleton.lLegAngle) * 38, 78, 16, this.clothColor, this.skinColor);
-                this.drawMuscleLimb(13 * dir, 22, 18 * dir - Math.sin(this.skeleton.rLegAngle) * 38, 78, 16, this.clothColor, this.skinColor);
+                this.drawLimb2(-13 * dir, 22, -22 * dir + Math.sin(this.skeleton.lLegAngle) * 38, 78, 16, this.clothColor, this.skinColor, this.skeleton.lShinAngle, dir, -0.55);
+                this.drawLimb2(13 * dir, 22, 18 * dir - Math.sin(this.skeleton.rLegAngle) * 38, 78, 16, this.clothColor, this.skinColor, this.skeleton.rShinAngle, dir, -0.55);
                 // Draw Animal Tail
                 if (this.charId === 'jonik') {
                     CTX.save();
@@ -592,8 +683,8 @@
                 const lHandY = Math.cos(this.skeleton.lArmAngle) * 15;
                 const rHandX = 48 * dir - Math.sin(this.skeleton.rArmAngle) * 38;
                 const rHandY = Math.cos(this.skeleton.rArmAngle) * 15;
-                this.drawMuscleLimb(-22 * dir, -22, lHandX, lHandY, 13, this.skinColor, this.skinColor);
-                this.drawMuscleLimb(22 * dir, -22, rHandX, rHandY, 13, this.skinColor, this.skinColor);
+                this.drawLimb2(-22 * dir, -22, lHandX, lHandY, 13, this.skinColor, this.skinColor, this.skeleton.lFArmAngle, 0, 1);
+                this.drawLimb2(22 * dir, -22, rHandX, rHandY, 13, this.skinColor, this.skinColor, this.skeleton.rFArmAngle, 0, 1);
                 
                 // Animal Ears
                 if (this.charId === 'jonik' || this.charId === 'isnusha') {
@@ -712,6 +803,7 @@
                     if (this.isLeft) { CTX.moveTo(headX + 2, headY - 2); CTX.lineTo(headX + 11, headY) } else { CTX.moveTo(headX - 2, headY - 2); CTX.lineTo(headX - 11, headY) }
                     CTX.stroke();
                 }
+                if (this.hat.on) { this.drawHatAt(headX, headY - 6, dir); }
                 if (this.isBlocking) { CTX.strokeStyle = '#00ffcc'; CTX.lineWidth = 3; CTX.beginPath(); CTX.arc(22 * dir, -10, 28, -Math.PI / 2, Math.PI / 2); CTX.stroke() }
                 if (this.state === 'dazed') {
                     CTX.fillStyle = '#ffcc00'; const starTime = Date.now() * 0.015;
@@ -891,7 +983,16 @@
                         CTX.restore();
                     }
                 }
+                if (this.flashTimer > 0) { this.drawFlashOverlay(); }
                 CTX.restore();
+
+                if (!this.hat.on) {
+                    CTX.save();
+                    CTX.translate(this.hat.x, this.hat.y);
+                    CTX.rotate(this.hat.rot);
+                    this.drawHatAt(0, 0, this.hat.spin >= 0 ? 1 : -1);
+                    CTX.restore();
+                }
 
                 if (this.lassoActive) {
                     const dir = this.isLeft ? 1 : -1;
@@ -935,8 +1036,56 @@
                     CTX.restore();
                 }
             }
-            drawMuscleLimb(startX, startY, endX, endY, maxThickness, color1, color2) {
-                if (startX === endX && startY === endY) { endX += 0.1 }
+            knockHatOff(pushDir) {
+                if (!this.hat.on) return;
+                this.hat.on = false;
+                this.hat.x = this.x + this.width / 2;
+                this.hat.y = this.y + 16;
+                this.hat.vx = pushDir * (3 + Math.random() * 2);
+                this.hat.vy = -6 - Math.random() * 3;
+                this.hat.spin = (Math.random() < 0.5 ? 1 : -1) * (0.12 + Math.random() * 0.2);
+                this.hat.rot = 0;
+            }
+            drawHatAt(hx, hy, d) {
+                CTX.fillStyle = this.clothColor;
+                CTX.beginPath(); CTX.arc(hx, hy + 2, 19, Math.PI, 0); CTX.closePath(); CTX.fill();
+                CTX.fillStyle = '#191919';
+                CTX.beginPath(); CTX.moveTo(hx + 13 * d, hy + 1); CTX.lineTo(hx + 26 * d, hy + 4 * d); CTX.lineTo(hx + 23 * d, hy - 3); CTX.closePath(); CTX.fill();
+            }
+            drawFlashOverlay() {
+                const dir = this.isLeft ? 1 : -1;
+                const headX = 0; const headY = -48 + this.skeleton.headY + this.squashY * 0.5;
+                const lHandX = -48 * dir + Math.sin(this.skeleton.lArmAngle) * 38;
+                const lHandY = Math.cos(this.skeleton.lArmAngle) * 15;
+                const rHandX = 48 * dir - Math.sin(this.skeleton.rArmAngle) * 38;
+                const rHandY = Math.cos(this.skeleton.rArmAngle) * 15;
+                const lFootX = -22 * dir + Math.sin(this.skeleton.lLegAngle) * 38;
+                const lFootY = 78;
+                const rFootX = 18 * dir - Math.sin(this.skeleton.rLegAngle) * 38;
+                const rFootY = 78;
+                CTX.save();
+                CTX.globalCompositeOperation = 'lighter';
+                CTX.globalAlpha = Math.min(1, this.flashTimer / 3.5);
+                CTX.strokeStyle = '#ffffff'; CTX.fillStyle = '#ffffff';
+                CTX.lineWidth = 17; CTX.lineCap = 'round'; CTX.lineJoin = 'round';
+                CTX.beginPath();
+                CTX.moveTo(-13 * dir, 22); CTX.lineTo(-22 * dir, -22);
+                CTX.moveTo(-22 * dir, -22); CTX.lineTo(lHandX, lHandY);
+                CTX.moveTo(13 * dir, 22); CTX.lineTo(22 * dir, -22);
+                CTX.moveTo(22 * dir, -22); CTX.lineTo(rHandX, rHandY);
+                CTX.moveTo(-13 * dir, 22); CTX.lineTo(lFootX, lFootY);
+                CTX.moveTo(13 * dir, 22); CTX.lineTo(rFootX, rFootY);
+                CTX.stroke();
+                CTX.beginPath(); CTX.arc(headX, headY, 19, 0, Math.PI * 2); CTX.fill();
+                CTX.restore();
+            }
+            drawLimb2(startX, startY, endX, endY, maxThickness, color1, color2, bend, bendDX, bendDY) {
+                const midX = (startX + endX) / 2; const midY = (startY + endY) / 2;
+                const jointX = midX + bendDX * bend * 15; const jointY = midY + bendDY * bend * 15;
+                this.drawMuscleLimb(startX, startY, jointX, jointY, maxThickness, color1, color2);
+                this.drawMuscleLimb(jointX, jointY, endX, endY, maxThickness * 0.82, color1, color2);
+            }
+            drawMuscleLimb(startX, startY, endX, endY, maxThickness, color1, color2) {                if (startX === endX && startY === endY) { endX += 0.1 }
                 if (color1 === color2) {
                     CTX.fillStyle = color1;
                 } else {
@@ -977,7 +1126,8 @@
                 }
             }
             action(type) {
-                if (this.attackState > 0 || this.state === 'hitstun' || this.state === 'dead' || this.state === 'dazed') return;
+                const canCancel = this.attackState === 1 && this.hitRegistered && ['special_slide', 'special_rise', 'projectile', 'super', 'uppercut', 'sweep'].indexOf(type) >= 0;
+                if ((this.attackState > 0 && !canCancel) || this.recoveryTimer > 0 || this.state === 'hitstun' || this.state === 'dead' || this.state === 'dazed') return;
                 this.hitRegistered = false;
                 
                 const isUnarmed = this.weaponTimer <= 0 || !this.weaponActiveType;
@@ -1022,6 +1172,7 @@
                     }
                 }
                 this.lastActionType = type; this.lastActionFrame = state.frameCount;
+                this.attackRecovery = (type === 'heavy_kick' ? 4 : type === 'special_rise' || type === 'uppercut' ? 5 : type === 'sweep' ? 4 : type === 'flip' ? 6 : type === 'throw' ? 4 : type === 'super' ? 10 : (type === 'weapon_pipe_spin' ? 10 : type === 'weapon_pipe_heavy' ? 8 : type === 'weapon_bazooka_shoot' || type === 'weapon_bazooka_charged' ? 14 : type === 'weapon_bazooka_melee' ? 10 : type === 'weapon_rifle_shoot' ? 6 : type === 'weapon_rifle_burst' ? 9 : type === 'weapon_rifle_melee' ? 5 : type === 'weapon_pipe_light' ? 3 : type === 'weapon' ? 4 : 0));
                 if (type === 'punch') { this.attackState = 1; this.attackTimer = 21; AudioSys.whoosh() }
                 else if (type === 'hook') { this.attackState = 8; this.attackTimer = 25; AudioSys.whoosh(); this.vx = this.isLeft ? 2.3 : -2.3 }
                 else if (type === 'kick') { this.attackState = 2; this.attackTimer = 25; AudioSys.whoosh() }
@@ -1030,6 +1181,7 @@
                 else if (type === 'jump_kick') { this.attackState = 13; this.attackTimer = 22; AudioSys.whoosh() }
                 else if (type === 'special_rise' || type === 'uppercut') { this.attackState = 3; this.attackTimer = 30; this.vy = -8.6; AudioSys.whoosh() }
                 else if (type === 'flip') { this.attackState = 7; this.attackTimer = 32; this.vy = -11.0; this.vx = this.isLeft ? 4.6 : -4.6; this.isJumping = true; AudioSys.whoosh() }
+                else if (type === 'backflip') { this.attackState = 16; this.attackTimer = 30; this.vy = -9.5; this.vx = this.isLeft ? -5.2 : 5.2; this.isJumping = true; AudioSys.whoosh() }
                 else if (type === 'special_slide' || type === 'sweep') { this.attackState = 4; this.attackTimer = 28; this.vx = this.isLeft ? 13 : -13; AudioSys.whoosh() }
                 else if (type === 'throw') { this.attackState = 6; this.attackTimer = 26; AudioSys.whoosh(); this.vx = this.isLeft ? 4.2 : -4.2 }
                 else if (type === 'super' && this.sp >= 100) { this.attackState = 5; this.attackTimer = 38; this.sp = 0; AudioSys.superHit() }

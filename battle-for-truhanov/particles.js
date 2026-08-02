@@ -22,6 +22,10 @@
                     CTX.beginPath(); 
                     CTX.ellipse(this.x, this.y, this.size * 2.5, this.size * 0.4, 0, 0, Math.PI * 2); 
                     CTX.fill();
+                } else if (this.type === 'ring') {
+                    CTX.globalAlpha = Math.max(0, this.life / this.maxLife) * 0.9;
+                    CTX.strokeStyle = this.color; CTX.lineWidth = 2.5;
+                    CTX.beginPath(); CTX.arc(this.x, this.y, this.size + (1 - this.life / this.maxLife) * 34, 0, Math.PI * 2); CTX.stroke();
                 } else {
                     CTX.globalAlpha = Math.max(0, this.life / this.maxLife); CTX.beginPath(); CTX.arc(this.x, this.y, this.size, 0, Math.PI * 2); CTX.fill();
                 }
@@ -57,8 +61,10 @@
                 addParticle(new Particle(x, y, vx, vy, size, '#00ffcc', 15 + Math.random() * 10, 'spark'));
             }
         }
-        function createElementalBurst(x, y, type) {
-            const colors = { water: '#00ccff', energy: '#ff00ff', lightning: '#ffee00', fire: '#ff5500' }; const col = colors[type] || '#fff';
+        function createImpactRing(x, y, color) {
+            addParticle(new Particle(x, y, 0, 0, 8, color, 14, 'ring'));
+        }
+        function createElementalBurst(x, y, type) {            const colors = { water: '#00ccff', energy: '#ff00ff', lightning: '#ffee00', fire: '#ff5500' }; const col = colors[type] || '#fff';
             for (let i = 0; i < 18; i++) {
                 const vx = (Math.random() - 0.5) * 9; const vy = (Math.random() - 0.5) * 9;
                 addParticle(new Particle(x, y, vx, vy, 2.2 + Math.random() * 3, col, 20 + Math.random() * 15, 'spark'));

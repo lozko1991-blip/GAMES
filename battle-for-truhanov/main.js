@@ -36,6 +36,13 @@ window.showScreen = showScreen;
             CTX.clearRect(0, 0, CANVAS.width, CANVAS.height); processInput(); if (state.difficulty !== 'pvp' && !state.isOnline) { AI_ENGINE.update(state.bot, state.player); }
             state.player.update(); state.bot.update(); checkCollisions(); spawnWeather(LEVELS[state.currentLevelIndex]);
             CTX.save();
+            if (state.hitZoom && state.hitZoom.timer > 0) {
+                const z = state.hitZoom;
+                const zoomScale = 1 + z.power * (z.timer / 7);
+                CTX.translate(z.x, z.y); CTX.scale(zoomScale, zoomScale); CTX.translate(-z.x, -z.y);
+                z.timer--;
+                if (z.timer <= 0) state.hitZoom = null;
+            }
             if (state.screenShake > 0) {
                 const dx = (Math.random() - 0.5) * state.screenShake; const dy = (Math.random() - 0.5) * state.screenShake;
                 CTX.translate(dx, dy); state.screenShake *= 0.84; if (state.screenShake < 0.4) state.screenShake = 0;
@@ -90,7 +97,7 @@ window.showScreen = showScreen;
             }
             
             state.p1Wins = 0; state.p2Wins = 0; state.roundNum = 1; state.finishHimStage = false; state.fatalityAnimation = null;
-            state.isMatchEnding = false; state.screenShake = 0; state.hitstopFrames = 0; state.toastyTimer = 0; state.controlGestures = {}; state.frameCount = 0;
+            state.isMatchEnding = false; state.screenShake = 0; state.hitstopFrames = 0; state.toastyTimer = 0; state.controlGestures = {}; state.frameCount = 0; state.hitZoom = null;
             state.particles = []; state.projectiles = []; state.floatingTexts = [];
             clearTimeout(state.finishHimTimeout); clearInterval(state.timerInterval);
             showScreen('none'); document.getElementById('fs-toggle-btn').classList.add('hidden'); startNewRoundSequence();
@@ -98,7 +105,7 @@ window.showScreen = showScreen;
         function startNewRoundSequence() {
             clearTimeout(state.finishHimTimeout); clearInterval(state.timerInterval);
             state.isMatchEnding = false; state.finishHimStage = false; state.fatalityAnimation = null; state.timer = 180; state.keys = {};
-            state.screenShake = 0; state.hitstopFrames = 0; state.toastyTimer = 0; state.particles = []; state.projectiles = []; state.floatingTexts = [];
+            state.screenShake = 0; state.hitstopFrames = 0; state.toastyTimer = 0; state.particles = []; state.projectiles = []; state.floatingTexts = []; state.hitZoom = null;
             state.controlGestures = {};
             document.getElementById('timer').innerText = state.timer;
             
@@ -510,6 +517,25 @@ window.showScreen = showScreen;
             }
         }
         
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest ? e.target.closest('.wslot') : null;
+            if (!btn || !state.isRunning) return;
+            const pl = btn.dataset.player === 'p2' ? state.bot : state.player;
+            if (!pl) return;
+            const w = btn.dataset.weapon;
+            if (w !== 'none' && pl.weaponCooldownTimer > 0) {
+                showFloatingText('RELOADING...', pl.x + 15, pl.y - 30, '#00ffcc');
+                AudioSys.block();
+                return;
+            }
+            pl.weaponSelected = w;
+            if (w === 'none') { pl.weaponTimer = 0; pl.weaponActiveType = null; pl.weaponAmmoTimer = 0; }
+            else { pl.weaponTimer = 420; pl.weaponActiveType = w; pl.weaponAmmoTimer = 300; pl.weaponState = 'active'; }
+            updateWeaponHUD();
+            showFloatingText(w === 'none' ? 'UNARMED' : w.toUpperCase(), pl.x + 15, pl.y - 25, '#ffcc00');
+            AudioSys.whoosh();
+        });
+
         // Setup initial coin displays and option locks
         updateHUDStreakDisplay();
         setTimeout(() => {

@@ -40,8 +40,8 @@
                 gain.connect(this.ctx.destination);
                 noise.start();
             },
-            punch() { this.playTone(180, 'sine', 0.12, 0.22, 45); this.playNoise(0.08, 0.12, true) },
-            kick() { this.playTone(120, 'triangle', 0.18, 0.28, 30); this.playNoise(0.12, 0.18, true) },
+            punch() { const p = 165 + Math.random() * 35; this.playTone(p, 'sine', 0.12, 0.22, p * 0.25); this.playNoise(0.08, 0.12, true) },
+            kick() { const p = 110 + Math.random() * 25; this.playTone(p, 'triangle', 0.18, 0.28, p * 0.25); this.playNoise(0.12, 0.18, true) },
             block() { this.playTone(450, 'sawtooth', 0.08, 0.08, 600) },
             whoosh() { this.playTone(320, 'sine', 0.1, 0.08, 120) },
             projectileLaunch() { this.playTone(200, 'sine', 0.25, 0.15, 480) },

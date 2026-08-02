@@ -7,6 +7,7 @@
                 this.shouldPunish = false;
                 this.footsiesTimer = 0;
                 this.footsiesDir = 1;
+                this.holdBlockTimer = 0;
             }
             update(bot, player) {
                 if (!bot || !player) return;
@@ -29,6 +30,7 @@
                 const absDist = Math.abs(dist);
                 bot.isLeft = dist > 0;
                 bot.isBlocking = false;
+                if (this.holdBlockTimer > 0) { this.holdBlockTimer--; if (!pressure) bot.isBlocking = true; }
                 
                 const diff = parseInt(state.difficulty);
                 const reactionDelay = diff === 0 ? 8 : 3;
@@ -76,15 +78,35 @@
                         this.queueAction(() => {
                             bot.state = 'crouch';
                             bot.isBlocking = true;
+                            this.holdBlockTimer = 14;
                         }, reactionDelay);
                         return;
                     }
                     
                     // General blocking logic for all close-range attacks under pressure
                     if (absDist < 125 && Math.random() < (diff === 0 ? 0.65 : 0.92)) {
-                        this.queueAction(() => { bot.isBlocking = true }, reactionDelay);
+                        this.queueAction(() => { bot.isBlocking = true; this.holdBlockTimer = 14 }, reactionDelay);
                         return;
                     }
+
+                    // Backflip retreat if player swings a weapon or super close
+                    if ((lastMove === 'weapon' || lastMove === 'super') && absDist < 150 && Math.random() < (diff === 0 ? 0.18 : 0.30)) {
+                        bot.action('backflip');
+                        return;
+                    }
+                }
+
+                // Sweep punishing a crouching player
+                if (player.state === 'crouch' && !pressure && absDist < 110 && Math.random() < (diff === 0 ? 0.40 : 0.65)) {
+                    this.queueAction(() => { bot.action('sweep') }, reactionDelay);
+                    return;
+                }
+
+                // Jump-in attack on a helpless opponent (hitstun/launched/knockdown)
+                if ((player.state === 'hitstun' || player.state === 'launched' || player.state === 'knockdown') && absDist < 210 && !bot.isJumping && Math.random() < (diff === 0 ? 0.30 : 0.50)) {
+                    bot.vy = -12; bot.isJumping = true; bot.vx = dist > 0 ? 3.0 : -3.0;
+                    this.queueAction(() => { if (bot.isJumping && bot.state !== 'hitstun' && bot.state !== 'dead') bot.action(Math.random() < 0.5 ? 'jump_punch' : 'jump_kick'); }, 9);
+                    return;
                 }
 
                 // Defensive reaction to projectiles (crouch, jump, or block)

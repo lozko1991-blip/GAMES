@@ -24,6 +24,11 @@
         }
         function cycleWeapon(player) {
             if (!player) return;
+            if (player.weaponCooldownTimer > 0) {
+                showFloatingText('RELOADING...', player.x + 15, player.y - 30, '#00ffcc');
+                AudioSys.block();
+                return;
+            }
             const weapons = (player.id === 'p1') ? state.ownedWeapons : ['none', 'pipe', 'rifle', 'bazooka', 'sausage', 'bow', 'nunchucks', 'spear', 'greatsword'];
             let idx = weapons.indexOf(player.weaponSelected || 'none');
             idx = (idx + 1) % weapons.length;
@@ -31,9 +36,12 @@
             if (player.weaponSelected === 'none') {
                 player.weaponTimer = 0;
                 player.weaponActiveType = null;
+                player.weaponAmmoTimer = 0;
             } else {
                 player.weaponTimer = 420;
                 player.weaponActiveType = player.weaponSelected;
+                player.weaponAmmoTimer = 300;
+                player.weaponState = 'active';
             }
             updateWeaponHUD();
             showFloatingText(player.weaponSelected.toUpperCase(), player.x + 15, player.y - 25, '#ffcc00');
@@ -95,7 +103,12 @@
             else if (actionName === 'special') {
                 if (player.sp >= 100) player.action('super');
                 else if (state.keys['ArrowDown'] || state.keys['s'] || state.keys['S']) player.action('special_rise');
-                else player.action('projectile');
+                else {
+                    const opp = state.bot;
+                    const movingBack = opp && ((opp.x > player.x && (state.keys['a'] || state.keys['A'] || state.keys['ArrowLeft'])) || (opp.x < player.x && (state.keys['d'] || state.keys['D'] || state.keys['ArrowRight'])));
+                    if (movingBack) player.action('backflip');
+                    else player.action('projectile');
+                }
             }
             else if (actionName === 'throw') { player.action('throw') }
             else if (actionName === 'weapon') { triggerWeapon(player) }
@@ -192,10 +205,10 @@
                         const uppercutKey = state.keys['w'] || state.keys['W'] || state.keys['KeyW'];
                         const oldJumpKey = state.keys['ArrowUp'];
 
-                        if (crouchKey && (leftKey || rightKey)) {
-                            p.action('sweep');
-                        } else if (crouchKey) {
-                            p.state = 'crouch'; p.vx = 0;
+                        if (crouchKey) {
+                            if (leftKey) { p.vx = -2.2; p.isLeft = false; p.state = 'crouch'; }
+                            else if (rightKey) { p.vx = 2.2; p.isLeft = true; p.state = 'crouch'; }
+                            else { p.state = 'crouch'; p.vx = 0; }
                         } else {
                             if (leftKey) { p.vx = -4.2; p.isLeft = false; p.state = 'move' }
                             if (rightKey) { p.vx = 4.2; p.isLeft = true; p.state = 'move' }
@@ -236,10 +249,10 @@
                     const uppercutKey = state.keys['w'] || state.keys['W'] || state.keys['KeyW'];
                     const oldJumpKey = (state.difficulty !== 'pvp' && state.keys['ArrowUp']);
 
-                    if (crouchKey && (leftKey || rightKey)) {
-                        p.action('sweep');
-                    } else if (crouchKey) {
-                        p.state = 'crouch'; p.vx = 0;
+                    if (crouchKey) {
+                        if (leftKey) { p.vx = -2.2; p.isLeft = false; p.state = 'crouch'; }
+                        else if (rightKey) { p.vx = 2.2; p.isLeft = true; p.state = 'crouch'; }
+                        else { p.state = 'crouch'; p.vx = 0; }
                     } else {
                         if (leftKey) { p.vx = -4.2; p.isLeft = false; p.state = 'move' }
                         if (rightKey) { p.vx = 4.2; p.isLeft = true; p.state = 'move' }
@@ -277,10 +290,10 @@
                         const rightKey2 = state.keys['ArrowRight'];
                         const jumpKey2 = state.keys['ArrowUp'];
 
-                        if (crouchKey2 && (leftKey2 || rightKey2)) {
-                            p2.action('sweep');
-                        } else if (crouchKey2) {
-                            p2.state = 'crouch'; p2.vx = 0;
+                        if (crouchKey2) {
+                            if (leftKey2) { p2.vx = -2.2; p2.isLeft = false; p2.state = 'crouch'; }
+                            else if (rightKey2) { p2.vx = 2.2; p2.isLeft = true; p2.state = 'crouch'; }
+                            else { p2.state = 'crouch'; p2.vx = 0; }
                         } else {
                             if (leftKey2) { p2.vx = -4.2; p2.isLeft = false; p2.state = 'move' }
                             if (rightKey2) { p2.vx = 4.2; p2.isLeft = true; p2.state = 'move' }
