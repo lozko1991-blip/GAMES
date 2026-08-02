@@ -221,6 +221,7 @@ class PenaltyMasterGame {
         this.player = new SkeletalCharacter(false);
         this.goalkeeper = new SkeletalCharacter(true);
         this.goalkeeperAI = new GoalkeeperAI(this.goalkeeper);
+        this.goalkeeperAI.game = this;
         this.ball = new Ball3D();
 
         this.lastTime = 0;
@@ -2559,6 +2560,36 @@ class PenaltyMasterGame {
         bgame.start();
     }
 
+    triggerShootMode() {
+        const screen = document.getElementById('screen-shoot-mode');
+        const resultScreen = document.getElementById('screen-shoot-result');
+        if (!screen) return;
+        if (this.activeShootInstance && this.activeShootInstance._running) return;
+
+        // Зупиняємо фонову пенальті‑гру, бо gameControls має власну keydown/keyup‑лічілку
+        // і Space під час «aiming» випускав би пенальті‑вистріл у тлі.
+        this._prevShootGameState = this.gameState;
+        this.gameState = 'menu';
+        gameControls.reset();
+
+        if (resultScreen) resultScreen.classList.remove('active');
+        document.getElementById('hud-container').classList.remove('active');
+        showScreen('screen-shoot-mode');
+
+        const canvas = document.getElementById('shoot-canvas');
+        const sgame = new PlayerShootGame(
+            canvas,
+            () => {
+                screen.classList.remove('active');
+                gameControls.reset();
+                if (this._prevShootGameState) this.gameState = this._prevShootGameState;
+                showScreen('screen-main-menu');
+            }
+        );
+        this.activeShootInstance = sgame;
+        sgame.start();
+    }
+
     showBasketballRewardOverlay(coinsReward) {
         this.coins += coinsReward;
         this.saveStatsToStorage();
@@ -3323,6 +3354,43 @@ document.getElementById('btn-basketball-back').addEventListener('click', () => {
     } else {
         showScreen('screen-main-menu');
     }
+});
+
+// === SHOOT MODE (режим «Стрілець») ===
+document.getElementById('btn-shoot-menu').addEventListener('click', () => {
+    gameAudio.init();
+    if (!activeGameInstance) {
+        activeGameInstance = new PenaltyMasterGame();
+        activeGameInstance.start();
+    }
+    if (document.getElementById('screen-pause').classList.contains('active')) {
+        document.getElementById('screen-pause').classList.remove('active');
+    }
+    activeGameInstance.triggerShootMode();
+});
+
+document.getElementById('btn-shoot-back').addEventListener('click', () => {
+    if (activeGameInstance && activeGameInstance.activeShootInstance) {
+        activeGameInstance.activeShootInstance.closeMode();
+    } else {
+        showScreen('screen-main-menu');
+    }
+});
+
+document.getElementById('btn-shoot-replay').addEventListener('click', () => {
+    const res = document.getElementById('screen-shoot-result');
+    if (res) res.classList.remove('active');
+    if (activeGameInstance) activeGameInstance.triggerShootMode();
+});
+
+document.getElementById('btn-shoot-menu-back').addEventListener('click', () => {
+    const res = document.getElementById('screen-shoot-result');
+    if (res) res.classList.remove('active');
+    if (activeGameInstance) {
+        gameControls.reset();
+        if (activeGameInstance._prevShootGameState) activeGameInstance.gameState = activeGameInstance._prevShootGameState;
+    }
+    showScreen('screen-main-menu');
 });
 
 // FULLSCREEN & MOBILE GAMEPAD CONTROLS BINDINGS

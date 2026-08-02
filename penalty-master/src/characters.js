@@ -128,6 +128,50 @@ class SkeletalCharacter {
                 j.footR.set(0.16, 0.02, 0);
             }
         }
+        else if (this.pose === 'fall') {
+            // Падіння після влучання (урацьовується зовнішньою грою «Стрілець»)
+            const progress = Math.min(1.0, this.animationTimer * 4.0); // ~0.25с
+            const lean = Math.sin(progress * Math.PI) * 0.7;
+            const dropY = (1 - Math.cos(progress * Math.PI)) * 0.45;
+
+            j.pelvis.set(lean * 0.6, 0.9 - dropY, 0);
+            j.spine.set(lean, 1.25 - dropY, -0.05);
+            j.head.set(lean * 0.8, 1.55 - dropY, -0.05);
+
+            j.shoulderL.set(-0.25 + lean * 0.4, 1.3 - dropY * 0.6, 0);
+            j.shoulderR.set(0.25 + lean * 0.4, 1.3 - dropY * 0.6, 0);
+            j.elbowL.set(-0.4 - lean * 0.3, 1.05 - dropY * 0.5, 0.1);
+            j.elbowR.set(0.4 + lean * 0.3, 1.05 - dropY * 0.5, 0.1);
+            j.handL.set(-0.5 - lean * 0.3, 0.82 - dropY * 0.5, 0.2);
+            j.handR.set(0.5 + lean * 0.3, 0.82 - dropY * 0.5, 0.2);
+
+            j.hipL.set(-0.16 + lean * 0.2, 0.82 - dropY * 0.4, 0);
+            j.hipR.set(0.16 + lean * 0.2, 0.82 - dropY * 0.4, 0);
+            j.kneeL.set(-0.2, 0.5 - dropY, lean * 0.15);
+            j.kneeR.set(0.2, 0.5 - dropY, lean * 0.15);
+            j.footL.set(-0.22, 0.05 - dropY * 0.6, 0.12);
+            j.footR.set(0.22, 0.05 - dropY * 0.6, 0.12);
+
+            if (progress >= 1.0) this.pose = 'fallen';
+        }
+        else if (this.pose === 'fallen') {
+            // Стійка приземленого — ноги розведені, тулуб лежить
+            j.pelvis.set(0, 0.38, 0);
+            j.spine.set(0, 0.7, -0.05);
+            j.head.set(0, 1.0, -0.05);
+            j.shoulderL.set(-0.25, 0.78, 0);
+            j.shoulderR.set(0.25, 0.78, 0);
+            j.elbowL.set(-0.45, 0.72, 0.1);
+            j.elbowR.set(0.45, 0.72, 0.1);
+            j.handL.set(-0.55, 0.7, 0.2);
+            j.handR.set(0.55, 0.7, 0.2);
+            j.hipL.set(-0.16, 0.34, 0);
+            j.hipR.set(0.16, 0.34, 0);
+            j.kneeL.set(-0.16, 0.15, 0.08);
+            j.kneeR.set(0.16, 0.15, -0.08);
+            j.footL.set(-0.16, 0.05, 0.12);
+            j.footR.set(0.16, 0.05, -0.12);
+        }
         else if (this.pose === 'goalkeeper_bounce') {
             const bouncePhase = Math.sin(this.animationTimer * 14.0);
             const crouch = Math.max(0, -bouncePhase) * 0.08;
@@ -562,6 +606,45 @@ class SkeletalCharacter {
             j.footL.set(-0.16, jumpBounce > 0.05 ? 0.28 : 0.02, jumpBounce > 0.05 ? 0.18 : 0);
             j.footR.set(0.16, jumpBounce > 0.05 ? 0.28 : 0.02, jumpBounce > 0.05 ? 0.18 : 0);
         }
+        // === Пози для режиму «Стрілець»: падіння після влучання ===
+        else if (this.pose === 'fall') {
+            const t = Math.min(1.0, this.animationTimer * 2.5);
+            const pelvisH = 0.9 - t * 0.6;
+            const spineLean = -t * 0.9;
+            j.pelvis.set(0, pelvisH, 0);
+            j.spine.set(0, pelvisH + 0.35, spineLean);
+            j.head.set(0, pelvisH + 0.7, spineLean * 1.1);
+            j.shoulderL.set(-0.26, pelvisH + 0.42, spineLean * 0.8);
+            j.shoulderR.set(0.26, pelvisH + 0.42, spineLean * 0.8);
+            j.elbowL.set(-0.42, pelvisH + 0.25, spineLean * 0.7);
+            j.elbowR.set(0.42, pelvisH + 0.25, spineLean * 0.7);
+            j.handL.set(-0.5, pelvisH + 0.1, spineLean * 0.6);
+            j.handR.set(0.5, pelvisH + 0.1, spineLean * 0.6);
+            j.hipL.set(-0.14, pelvisH * 0.5, 0.1);
+            j.hipR.set(0.14, pelvisH * 0.5, 0.1);
+            j.kneeL.set(-0.18, pelvisH * 0.3, 0.2);
+            j.kneeR.set(0.18, pelvisH * 0.3, 0.2);
+            j.footL.set(-0.18, 0.02, 0.1);
+            j.footR.set(0.18, 0.02, 0.1);
+            if (t >= 1.0) this.pose = 'fallen';
+        }
+        else if (this.pose === 'fallen') {
+            j.pelvis.set(0, 0.08, 0);
+            j.spine.set(0, 0.4, 0);
+            j.head.set(0, 0.78, 0);
+            j.shoulderL.set(-0.26, 0.55, 0);
+            j.shoulderR.set(0.26, 0.55, 0);
+            j.elbowL.set(-0.45, 0.45, 0);
+            j.elbowR.set(0.45, 0.45, 0);
+            j.handL.set(-0.55, 0.3, 0.05);
+            j.handR.set(0.55, 0.3, 0.05);
+            j.hipL.set(-0.14, 0.2, 0);
+            j.hipR.set(0.14, 0.2, 0);
+            j.kneeL.set(-0.2, 0.12, 0);
+            j.kneeR.set(0.2, 0.12, 0);
+            j.footL.set(-0.2, 0.04, 0);
+            j.footR.set(0.2, 0.04, 0);
+        }
     }
 
     render(ctx, camera, canvasWidth, canvasHeight) {
@@ -826,6 +909,14 @@ class GoalkeeperAI {
             simBallVel.coordinateZ += magnus.coordinateZ * timeStep;
 
             simBallVel.coordinateY -= PHYSICS_GRAVITY * timeStep;
+
+            // Врахування вітру — збігається з рухом реального м'яча (main.js: wind*0.05*dt).
+            // Другий шлях вітру (window.gameApp у physics.js) залишений мертвим навмисно,
+            // бо активація його подвоїв би вітер і зламав би налаштовану балістику.
+            const windX = (this.game && this.game.windX) || 0;
+            const windZ = (this.game && this.game.windZ) || 0;
+            simBallVel.coordinateX += windX * 0.05 * timeStep;
+            simBallVel.coordinateZ += windZ * 0.05 * timeStep;
 
             simBallPos.coordinateX += simBallVel.coordinateX * timeStep;
             simBallPos.coordinateY += simBallVel.coordinateY * timeStep;

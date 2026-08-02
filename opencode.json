@@ -1,0 +1,30 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "watcher": {
+    "ignore": [
+      "battle-for-truhanov/assets.js",
+      "battle-for-truhanov/assets/**"
+    ]
+  },
+  "permission": {
+    "read": {
+      "battle-for-truhanov/assets.js": "deny",
+      "battle-for-truhanov/assets/**": "deny"
+    },
+    "grep": {
+      "battle-for-truhanov/assets.js": "deny",
+      "battle-for-truhanov/assets/**": "deny"
+    },
+    "glob": {
+      "battle-for-truhanov/assets.js": "deny",
+      "battle-for-truhanov/assets/**": "deny"
+    },
+    "edit": {
+      "battle-for-truhanov/assets.js": "deny",
+      "battle-for-truhanov/assets/**": "deny"
+    }
+  },
+  "instructions": [
+    "AGENTS.md"
+  ]
+}

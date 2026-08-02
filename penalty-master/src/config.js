@@ -291,3 +291,16 @@ const CARD_DATABASE = [
     { id: 'c_ronaldo', name: 'Роналду', rating: 96, rarity: 'legendary', pos: 'ST', logo: '🇵🇹', pac: 94, sho: 98, pas: 84, dri: 92, def: 35, phy: 84, price: 1300 },
     { id: 'c_lozko', name: 'Лозко', rating: 99, rarity: 'legendary', pos: 'ST', logo: '🏆', pac: 99, sho: 99, pas: 99, dri: 99, def: 88, phy: 95, price: 1500 }
 ];
+
+/*
+====================================================
+SHOOT MODE (режим «Стрілець») — стрілялка по гравцям
+====================================================
+*/
+const SHOOT_MODE_TARGET_COUNT = 9;           // кількість цілей‑гравців
+const SHOOT_MODE_HIT_RADIUS = 0.45;          // BALL_RADIUS(0.11) + радіус до центра туловища
+const SHOOT_MODE_BASE_POINTS = 100;          // базовий рахунок за влучання
+const SHOOT_MODE_TIME_LIMIT = 60;            // секунд на раунд
+const SHOOT_MODE_TARGET_Z_MIN = 5.0;         // дальність цілей від воріт (м)
+const SHOOT_MODE_TARGET_Z_SPAN = 5.0;        // діапазон розкидування цілей по осі Z
+const SHOOT_MODE_AIM_X_MAX = GOAL_WIDTH / 2 + 2.8;  // = межа aimX (безпосередньо з PlayerControls)

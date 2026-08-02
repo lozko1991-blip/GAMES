@@ -1,5 +1,8 @@
 # Battle for Truhanov - AI Developer Guidelines
 
+> Глобальні правила спільно для обох проєктів: `AGENTS.md` у корені репозиторію (короткий план перед роботою, перевірка замість здогадок, мінімальні зміни).
+> Технічний опис проєкту (модулі, функції, стани, економіка): `docs/BATTLE_FOR_TRUHANOV.md`. Користувач пише українською — відповідай стисло українською.
+
 ## 1. Workspace Context
 This project is a modular vanilla HTML5 Canvas fighting game, "Battle for Truhanov" (Труханів Острів: Шлях Бійця). It runs purely on client-side vanilla JavaScript without build systems (like Vite or Webpack), relying on global scope bindings via sequential `<script>` inclusion in `index.html`.
 
@@ -14,7 +17,7 @@ To ensure SaaS-grade reliability and zero-downtime client deployments, you **MUS
    ```
 3. **Verify Output**: Confirm that the validator outputs `SUCCESS: All scripts loaded in the correct order!` and exits with code `0`.
 4. **Zero-Error Tolerance**: Never end your turn or commit changes if the validator fails or if there are console errors. Fix the ReferenceErrors or SyntaxErrors immediately.
-5. **Log Modifications**: Document every structural or logical change in [AI_CHANGELOG.md](file:///g:/ANTIGRAVITY/ГРА ТРУХАНОВ/Battle_for_TRUHANOV/AI_CHANGELOG.md) under the appropriate date.
+5. **Log Modifications**: Document every structural or logical change in [AI_CHANGELOG.md](../AI_CHANGELOG.md) under the appropriate date.
 
 ---
 
