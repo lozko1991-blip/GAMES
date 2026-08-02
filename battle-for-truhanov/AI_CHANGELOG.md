@@ -60,6 +60,11 @@ This log is strictly maintained by AI assistants. It serves as a reliable projec
 - **PeerJS missing guard**: `joinLobby`/`hostRoom`/`joinRoom` now check `typeof Peer === 'undefined'` and show a clear message if the PeerJS CDN failed to load.
 - **Verified with emulated PeerJS test** (`smoke_mp.js`): host join → guest connects → host sees "Друг зайшов! Супротивник обрав: X" + start button → host start syncs character+arena → guest `start_game` syncs selectors and starts → guest handshake sets netReady.
 
+## [2026-08-03] QA Testing & Critical AI Bugfix
+- **Critical AI Bugfix (ReferenceError)**: `AIController.update()` in `ai.js` referenced `pressure` before its `const` declaration (line order: `if (this.holdBlockTimer > 0) { ... if (!pressure) ... }` came before `const pressure = player.attackState > 0`). This is a Temporal Dead Zone crash: the game threw `ReferenceError: Cannot access 'pressure' before initialization` whenever the bot had an active `holdBlockTimer` (hold-block behavior), killing the whole match. Moved `const pressure` above the hold-block branch.
+- **Verified with full headless game-loop simulation** (`smoke_full.js`, 2000 frames of live combat with AI + random player actions + weapons + weather + rendering): no NaN/Infinity, no out-of-bounds fighters, no exceptions, hits/projectiles/particles/weapons all exercised, hp stays in bounds, FINISH HIM win detection works. Frame cost ~0.15 ms/frame (far below the 16.6 ms 60fps budget).
+- **Hat physics verified**: hat knocked off a grounded fighter lands exactly at `GROUND_Y` (450) and stays there (51 frames; earlier "hat falls" failure was a test artifact — it started too high and had too few frames).
+
 
 
 

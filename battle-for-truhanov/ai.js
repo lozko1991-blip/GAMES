@@ -30,12 +30,12 @@
                 const absDist = Math.abs(dist);
                 bot.isLeft = dist > 0;
                 bot.isBlocking = false;
+                const pressure = player.attackState > 0;
                 if (this.holdBlockTimer > 0) { this.holdBlockTimer--; if (!pressure) bot.isBlocking = true; }
                 
                 const diff = parseInt(state.difficulty);
                 const reactionDelay = diff === 0 ? 8 : 3;
                 
-                const pressure = player.attackState > 0;
                 const lastMove = player.lastActionType;
 
                 if (player.lastActionFrame > this.lastSeenPlayerActionFrame) {
