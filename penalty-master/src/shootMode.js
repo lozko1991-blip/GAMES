@@ -293,8 +293,7 @@ class PlayerShootGame {
 
     resetShot() {
         this.ball.reset();
-        this.aimX = 0.8;
-        this.aimY = 2.4;
+        // приціл зберігається між пострілами (не скидаємо на дефолт)
         this.power = 0;
         this.isChargingPower = false;
         this.sideSpin = 0;
