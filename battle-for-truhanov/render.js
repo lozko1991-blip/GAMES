@@ -107,6 +107,8 @@
                 addParticle(new Particle(Math.random() * CANVAS.width, 0, -1 - Math.random(), 1 + Math.random() * 2, 3.5, '#ffffff', 150, 'diplomas'));
             } else if (lvl.weather === 'wind' && Math.random() < 0.14) {
                 addParticle(new Particle(CANVAS.width, Math.random() * GROUND_Y, -5.5 - Math.random() * 3, 0, 1.5 + Math.random() * 1.5, 'rgba(255,255,255,0.09)', 120, 'wind'));
+            } else if (lvl.weather === 'snow' && Math.random() < 0.12) {
+                addParticle(new Particle(Math.random() * CANVAS.width, 0, -0.5 - Math.random() * 0.8, 0.6 + Math.random() * 1.2, 1.5 + Math.random() * 1.5, 'rgba(255,255,255,0.85)', 240, 'snow'));
             }
         }
         function drawScene(lvlIndex) {

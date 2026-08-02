@@ -541,6 +541,49 @@
                         CTX.beginPath();
                         CTX.arc(0, -4, 1, 0, Math.PI * 2);
                         CTX.fill();
+                    } else if (this.logo === 'star') {
+                        // Red Soviet star
+                        CTX.fillStyle = '#ff0000';
+                        CTX.strokeStyle = '#990000';
+                        CTX.lineWidth = 1.5;
+                        CTX.beginPath();
+                        CTX.moveTo(0, -11);
+                        CTX.lineTo(3, -3);
+                        CTX.lineTo(11, -2);
+                        CTX.lineTo(5, 3);
+                        CTX.lineTo(7, 11);
+                        CTX.lineTo(0, 6);
+                        CTX.lineTo(-7, 11);
+                        CTX.lineTo(-5, 3);
+                        CTX.lineTo(-11, -2);
+                        CTX.lineTo(-3, -3);
+                        CTX.closePath();
+                        CTX.fill();
+                        CTX.stroke();
+                    } else if (this.logo === 'trident') {
+                        // Ukrainian trident
+                        CTX.strokeStyle = '#ffdd00';
+                        CTX.fillStyle = '#ffdd00';
+                        CTX.lineWidth = 2;
+                        CTX.lineCap = 'round';
+                        CTX.beginPath();
+                        CTX.moveTo(0, -11);
+                        CTX.lineTo(0, -4);
+                        CTX.moveTo(-6, -6);
+                        CTX.lineTo(-3, 4);
+                        CTX.lineTo(-8, 4);
+                        CTX.lineTo(-4, 9);
+                        CTX.moveTo(6, -6);
+                        CTX.lineTo(3, 4);
+                        CTX.lineTo(8, 4);
+                        CTX.lineTo(4, 9);
+                        CTX.stroke();
+                    } else if (this.logo === 'bandera') {
+                        // Red & black flag
+                        CTX.fillStyle = '#000000';
+                        CTX.fillRect(-6, -10, 12, 3);
+                        CTX.fillStyle = '#cc0000';
+                        CTX.fillRect(-6, -7, 12, 3);
                     }
                     CTX.restore();
                 }
@@ -633,6 +676,33 @@
                     CTX.arc(headX + 11 * dir, headY + 2, 4, 0, Math.PI * 2);
                     CTX.fill();
                     CTX.restore();
+                } else if (this.charId === 'putin') {
+                    // Putin: bald head with stubble beard shadow
+                    CTX.strokeStyle = 'rgba(100,80,60,0.55)'; CTX.lineWidth = 2.5; CTX.beginPath();
+                    CTX.moveTo(headX - 12, headY + 4); CTX.quadraticCurveTo(headX - 14, headY + 13, headX - 6, headY + 14);
+                    CTX.quadraticCurveTo(headX, headY + 15, headX + 6, headY + 14); CTX.quadraticCurveTo(headX + 14, headY + 13, headX + 12, headY + 4); CTX.stroke();
+                    CTX.strokeStyle = '#000'; CTX.lineWidth = 2; CTX.beginPath();
+                    if (this.isLeft) { CTX.moveTo(headX + 2, headY - 2); CTX.lineTo(headX + 11, headY) } else { CTX.moveTo(headX - 2, headY - 2); CTX.lineTo(headX - 11, headY) }
+                    CTX.stroke();
+                } else if (this.charId === 'bandera') {
+                    // Bandera: full dark hair + distinctive mustache
+                    CTX.fillStyle = this.hairColor; CTX.beginPath(); CTX.arc(headX, headY - 8, 20, Math.PI, 0); CTX.fill();
+                    CTX.strokeStyle = this.clothColor; CTX.lineWidth = 3.5; CTX.beginPath(); CTX.moveTo(-16 * dir, headY - 4);
+                    CTX.quadraticCurveTo(-26 * dir, headY + 6 + Math.sin(Date.now() * 0.01) * 2, -32 * dir, headY + 1); CTX.stroke();
+                    CTX.fillStyle = '#3a2a1a'; CTX.fillRect(headX - 8, headY + 1, 16, 3);
+                    CTX.fillRect(headX - 10, headY + 3, 6, 2); CTX.fillRect(headX + 4, headY + 3, 6, 2);
+                    CTX.strokeStyle = '#000'; CTX.lineWidth = 2; CTX.beginPath();
+                    if (this.isLeft) { CTX.moveTo(headX + 2, headY - 2); CTX.lineTo(headX + 11, headY) } else { CTX.moveTo(headX - 2, headY - 2); CTX.lineTo(headX - 11, headY) }
+                    CTX.stroke();
+                } else if (this.charId === 'zelensky') {
+                    // Zelensky: short neat dark hair + slight smile
+                    CTX.fillStyle = this.hairColor; CTX.beginPath(); CTX.arc(headX, headY - 10, 19, Math.PI, 0); CTX.fill();
+                    CTX.fillRect(headX - 19, headY - 10, 38, 3);
+                    CTX.strokeStyle = this.clothColor; CTX.lineWidth = 3.5; CTX.beginPath(); CTX.moveTo(-16 * dir, headY - 4);
+                    CTX.quadraticCurveTo(-26 * dir, headY + 6 + Math.sin(Date.now() * 0.01) * 2, -32 * dir, headY + 1); CTX.stroke();
+                    CTX.strokeStyle = '#000'; CTX.lineWidth = 2; CTX.beginPath();
+                    if (this.isLeft) { CTX.moveTo(headX + 2, headY - 2); CTX.lineTo(headX + 11, headY) } else { CTX.moveTo(headX - 2, headY - 2); CTX.lineTo(headX - 11, headY) }
+                    CTX.stroke();
                 } else {
                     // Draw default human hair, scarf bandana, and face details
                     CTX.fillStyle = this.hairColor; CTX.beginPath(); CTX.arc(headX, headY - 8, 20, Math.PI, 0); CTX.fill();

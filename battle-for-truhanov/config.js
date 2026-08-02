@@ -8,7 +8,7 @@
         const getEquippedWeapon = () => localStorage.getItem('truhanov_equipped_weapon') || 'none';
         const getOwnedSkins = () => JSON.parse(localStorage.getItem('truhanov_owned_skins') || '["default"]');
         const getEquippedSkin = () => localStorage.getItem('truhanov_equipped_skin') || 'default';
-        const getOwnedLevels = () => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // All levels unlocked by default!
+        const getOwnedLevels = () => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]; // All levels unlocked by default!
         const getUpgrades = () => JSON.parse(localStorage.getItem('truhanov_upgrades') || '{"hp":0,"dmg":0,"charge":0}');
         const getWinStreak = () => parseInt(localStorage.getItem('truhanov_win_streak') || '0');
 

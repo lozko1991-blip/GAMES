@@ -77,6 +77,12 @@ global.AudioContext = class {
 };
 global.webkitAudioContext = global.AudioContext;
 global.navigator = { vibrate: () => {} };
+const storage = {};
+global.localStorage = {
+    getItem: (key) => (key in storage ? storage[key] : null),
+    setItem: (key, value) => { storage[key] = String(value); },
+    removeItem: (key) => { delete storage[key]; }
+};
 global.Peer = class {
     constructor() {
         this.on = () => {};
