@@ -8,7 +8,7 @@
 
 ## Порядок завантаження (index.html) — КРИТИЧНИЙ
 
-`peerjs@1.5.4 (CDN unpkg) → src/config.js → src/audio.js → src/physics.js → src/characters.js → src/multiplayer.js → src/matrixRun.js → src/basketball.js → src/main.js`
+`peerjs@1.5.4 (CDN unpkg) → src/config.js → src/audio.js → src/physics.js → src/characters.js → src/multiplayer.js → src/matrixRun.js → src/basketball.js → src/shootMode.js → src/penaltyChallenge.js → src/main.js`
 
 `main.js` — останній: він залежить від усіх попередніх (класи Ball, SkeletalCharacter, GoalkeeperAI, BasketballGame, MatrixRunGame, multiplayerState, gameAudio, safeStorage). Нові скрипти додавай ТІЛЬКИ в кінець списку.
 
@@ -25,7 +25,9 @@
 | `src/multiplayer.js` | ~240 | PeerJS: хост/гість, ролі striker/keeper, кімнати за PIN |
 | `src/matrixRun.js` | 802 | Міні-гра `MatrixRunGame` (викликається з кар'єри клубу) |
 | `src/basketball.js` | 852 | Міні-гра `BasketballGame` (нагорода після результативного матчу) |
-| `src/main.js` | ~3600 | Головний клас `PenaltyMasterGame`, UI, екрани, магазин, кар'єра, колекція |
+| `src/shootMode.js` | ~450 | Режим «Стрілець» — `PlayerShootGame` (стрілялка по статуєтках) |
+| `src/penaltyChallenge.js` | ~660 | Режим «Пенальті-виклик» — `PenaltyChallengeGame` |
+| `src/main.js` | ~3750 | Головний клас `PenaltyMasterGame`, UI, екрани, магазин, кар'єра, колекція |
 
 ## config.js — константи та дані
 
@@ -76,6 +78,20 @@
 - Інше: `resetWind()` (вітер), `spawnTrailParticle(x, y, color)`, `checkCollisions()`, `handleScore()` / `handleMiss()` (із `setTimeout`), `spawnConfetti(color, count)`.
 - Активний м'яч із магазину: `pm_equipped_ball` (за замовчуванням `'classic'`).
 
+## penaltyChallenge.js — `PenaltyChallengeGame` (режим «Пенальті-виклик»)
+
+Додатковий режим на базі основної гри: гравець б'є 5 пенальті зі споту (`PENALTY_SPOT_Z`) по стіні суперників перед воротами. Не змінює `PenaltyMasterGame`; використовує ту саму фізику (`Ball3D`), камеру (`Camera3D`), ворота (`GoalNet`) та воротаря (`GoalkeeperAI` з HARD).
+
+- Вхід: головне меню → «Одиночна гра» → екран вибору режиму (`screen-mode-select`) → «Пенальті-виклик» → `PenaltyMasterGame.triggerPenaltyChallenge()` (main.js).
+- Клас: `new PenaltyChallengeGame(canvas, onClose)`; власні keydown/keyup + мобільні кнопки (`pc-btn-*`), HUD (`pc-hud-*`).
+- Машина станів: `'aiming'` → `'flight'` → `'cooldown'` → `'aiming'`; після 5-го удару `endRound()` → `screen-penalty-challenge-result`.
+- Цілі: `spawnTargets()` — 2 ряди (z = `PENALTY_CHALLENGE_WALL_Z`), кожен рухається по синусоїді (амплітуда/швидкість/фаза випадкові); 1 золотий «капітан» (+500 очок); з плином часу цілі прискорюються (`PENALTY_CHALLENGE_HARD_LIVE_BOOST`).
+- Влучання (`checkHits`): радіус `PENALTY_CHALLENGE_HIT_RADIUS` біля спайна; м'яч відбивається (рикошет ×0.42 + відскок по Y) і може збити ще гравця за один удар.
+- Очки: суперник `SHOOT_MODE_BASE_POINTS × комбо`, гол `150 × max(1, комбо)`, капітан +500, пауер-удар (power ≥ 95%) ×1.5.
+- Промах → воротар смішно віджимається (pose `push_ups`, characters.js), комбо і серія чистих ударів скидаються.
+- Бонуси: 3 чистих удари поспіль → вогняний слід м'яча на наступний удар (`_fireTrail`); таймаут польоту 4 с — промах повз усе не «зависає».
+- Рекорд зберігається у `pm_challenge_best_score` (safeStorage).
+
 ## main.js — ядро гри
 
 ### Класи
@@ -108,7 +124,7 @@
 
 ## LocalStorage: повний список ключів `pm_*`
 
-`pm_coins`, `pm_prestige`, `pm_selected_club`, `pm_owned_balls`, `pm_equipped_ball`, `pm_equipped_boot`, `pm_equipped_cap`, `pm_equipped_kit`, `pm_owned_cards`, `pm_equipped_card`, `pm_equipped_goal`, `pm_equipped_stadium`, `pm_total_shots`, `pm_total_goals`, `pm_goalkeeper_saves`, `pm_max_streak`, `pm_post_hits`, `pm_sound_effects`, `pm_ambient`, `pm_slowmo`, `pm_difficulty`.
+`pm_coins`, `pm_prestige`, `pm_selected_club`, `pm_owned_balls`, `pm_equipped_ball`, `pm_equipped_boot`, `pm_equipped_cap`, `pm_equipped_kit`, `pm_owned_cards`, `pm_equipped_card`, `pm_equipped_goal`, `pm_equipped_stadium`, `pm_total_shots`, `pm_total_goals`, `pm_goalkeeper_saves`, `pm_max_streak`, `pm_post_hits`, `pm_sound_effects`, `pm_ambient`, `pm_slowmo`, `pm_difficulty`, `pm_challenge_best_score`.
 
 ## Шпаргалка «де що змінити»
 

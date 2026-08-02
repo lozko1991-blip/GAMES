@@ -504,6 +504,64 @@
             </div>
         </div>
 
+        <!-- MODE SELECT (вибір перед одиночною грою) -->
+        <div id="screen-mode-select" class="overlay-screen" style="z-index: 100;">
+            <div class="menu-card" style="max-width: 460px; padding: 22px;">
+                <h2 style="color: var(--primary-glow); text-shadow: 0 0 10px var(--primary-glow); font-family: 'Outfit'; font-weight: 800; margin-bottom: 6px;">ВИБІР РЕЖИМУ</h2>
+                <p style="color: rgba(255,255,255,0.65); font-size: 0.9rem; margin-bottom: 18px; text-align: center;">Грати в звичайну одиночну гру чи випробати себя у Пенальті?</p>
+                <button class="menu-button" id="btn-mode-normal" style="margin: 0; padding: 12px 20px; font-weight: bold;">⚽ Звичайна гра</button>
+                <button class="menu-button" id="btn-mode-penalty-challenge" style="margin-top: 10px; border-color: #ff6600; color: #ff6600; font-weight: bold;">🎯 Пенальті-виклик (Стрілець 2.0)</button>
+                <button class="menu-button" id="btn-mode-cancel" style="margin-top: 18px; border-color: rgba(255,255,255,0.25); padding: 10px 16px;">← Назад</button>
+            </div>
+        </div>
+
+        <!-- PENALTY CHALLENGE SCREEN -->
+        <div id="screen-penalty-challenge" class="overlay-screen" style="background: #020208; z-index: 12;">
+            <div class="menu-card" style="max-width: 860px; padding: 20px; border-color: #ff6600; background: rgba(11, 4, 0, 0.93);">
+                <h2 style="color: #ff6600; text-shadow: 0 0 10px #ff6600; font-family: 'Outfit'; font-weight: 800; margin-bottom: 5px;">ПЕНАЛЬТІ-ВИКЛИК <span style="font-size: 0.5em; color: rgba(255,102,0,0.5);">v4</span></h2>
+                <p style="font-size: 0.8rem; color: rgba(255,102,0,0.7); margin-bottom: 12px; text-transform: uppercase; font-family: monospace;">Пробиви стіну суперників біля воріт! SPACE — заряд+удар | ←/→ A/D — куди | ↑/↓ W/S — висота | Shift — сила | Ctrl — driven. Спробуй пробити вгорі чи в кут — воротар (HARD) не дасть з легкістю.</p>
+
+                <div style="position: relative; border: 2px solid #ff6600; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 0 20px rgba(255,102,0,0.25);">
+                    <div style="position: absolute; top: 12px; left: 16px; right: 16px; display: flex; justify-content: space-between; color: #ff6600; font-family: monospace; font-size: 1.05rem; font-weight: bold; pointer-events: none; z-index: 2; text-shadow: 0 0 5px #ff6600;">
+                        <div id="pc-hud-score">Очки: 0</div>
+                        <div id="pc-hud-hits">Влучання: 0</div>
+                        <div id="pc-hud-combo" style="color: #ffd700; text-shadow: 0 0 5px #ffd700;">Комбо: ×1</div>
+                    </div>
+                    <div style="position: absolute; top: 12px; right: 16px; left: auto; display: flex; gap: 12px; color: #ff6600; font-family: monospace; font-size: 1.05rem; font-weight: bold; pointer-events: none; z-index: 2;">
+                        <div id="pc-hud-round" style="color: #ffcc00;">Удар: 1/5</div>
+                        <div id="pc-hud-time" style="color: #ffcc00;">Час: 8</div>
+                    </div>
+                    <div style="position: absolute; bottom: 10px; left: 16px; right: 16px; height: 14px; border: 1px solid #444; border-radius: 7px; background: #111; overflow: hidden; pointer-events: none;">
+                        <div id="pc-hud-power" style="width:0%; height:100%; background: #ff6600;"></div>
+                    </div>
+                    <canvas id="pc-canvas" width="800" height="450" style="display: block; width: 100%; height: auto;"></canvas>
+                </div>
+
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px; flex-wrap: wrap;">
+                    <button class="menu-button" id="pc-btn-aim-left" style="border-color: #ff6600; color: #ff6600; margin: 0; padding: 12px 16px;">← Вліво (A)</button>
+                    <button class="menu-button" id="pc-btn-aim-right" style="border-color: #ff6600; color: #ff6600; margin: 0; padding: 12px 16px;">Вправо (D) →</button>
+                    <button class="menu-button" id="pc-btn-up" style="border-color: #ff6600; color: #ff6600; margin: 0; padding: 12px 16px;">↑ Вгору (W)</button>
+                    <button class="menu-button" id="pc-btn-down" style="border-color: #ff6600; color: #ff6600; margin: 0; padding: 12px 16px;">↓ Вниз (S)</button>
+                    <button class="menu-button" id="pc-btn-kick" style="border-color: #ff6600; color: #ff6600; margin: 0; padding: 12px 20px; font-weight: bold;">Удар (SPACE)</button>
+                </div>
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
+                    <button class="menu-button" id="btn-pc-back" style="border-color: rgba(255,255,255,0.3); margin: 0; padding: 10px 20px;">← У меню</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PENALTY CHALLENGE RESULT -->
+        <div id="screen-penalty-challenge-result" class="overlay-screen" style="z-index: 13;">
+            <div class="menu-card" style="max-width: 540px; padding: 30px; border-color: #ff6600; background: rgba(11, 4, 0, 0.96);">
+                <h2 style="color: #ff6600; text-shadow: 0 0 10px #ff6600; margin-bottom: 15px; font-family: 'Outfit'; font-weight: 800;">РЕЗУЛЬТАТ ПЕНАЛЬТІ</h2>
+                <div id="pc-result-text" style="font-family: monospace; font-size: 1.1rem; color: #fff; line-height: 1.6;"></div>
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+                    <button class="menu-button" id="btn-pc-replay" style="border-color: #ff6600; color: #ff6600; padding: 10px 20px;">Зіграти знову</button>
+                    <button class="menu-button" id="btn-pc-menu-back" style="border-color: rgba(255,255,255,0.3); padding: 10px 20px;">У меню</button>
+                </div>
+            </div>
+        </div>
+
         <!-- PAUSE SCREEN -->
         <div id="screen-pause" class="overlay-screen">
             <div class="menu-card">
@@ -515,15 +573,16 @@
         </div>
     </div>
 
-    <!-- JavaScript code split files (v=3 — версійний кеш-бастер, щоб браузер не брав старі файли) -->
-    <script src="./src/config.js?v=3"></script>
-    <script src="./src/audio.js?v=3"></script>
-    <script src="./src/physics.js?v=3"></script>
-    <script src="./src/characters.js?v=3"></script>
-    <script src="./src/multiplayer.js?v=3"></script>
-    <script src="./src/matrixRun.js?v=3"></script>
-    <script src="./src/basketball.js?v=3"></script>
-    <script src="./src/shootMode.js?v=3"></script>
-    <script src="./src/main.js?v=3"></script>
+    <!-- JavaScript code split files (v=4 — версійний кеш-бастер) -->
+    <script src="./src/config.js?v=4"></script>
+    <script src="./src/audio.js?v=4"></script>
+    <script src="./src/physics.js?v=4"></script>
+    <script src="./src/characters.js?v=4"></script>
+    <script src="./src/multiplayer.js?v=4"></script>
+    <script src="./src/matrixRun.js?v=4"></script>
+    <script src="./src/basketball.js?v=4"></script>
+    <script src="./src/shootMode.js?v=4"></script>
+    <script src="./src/penaltyChallenge.js?v=4"></script>
+    <script src="./src/main.js?v=4"></script>
 </body>
 </html>

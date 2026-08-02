@@ -194,6 +194,26 @@ class SkeletalCharacter {
             j.footL.set(-0.22, 0.02 + Math.max(0, bouncePhase) * 0.06, 0.1);
             j.footR.set(0.22, 0.02 + Math.max(0, bouncePhase) * 0.06, 0.1);
         }
+        else if (this.pose === 'push_ups') {
+            // Віджимання на лінії воріт (воротар, коли суперник зміг пробити/промахнутися)
+            const p = Math.sin(this.animationTimer * 3.2);
+            const dip = (p > 0) ? p * 0.08 : 0; // опускається тільки вниз
+            j.pelvis.set(0, 0.8 - dip, 0);
+            j.spine.set(0, 1.22 - dip, 0);
+            j.head.set(0, 1.55 - dip, 0);
+            j.shoulderL.set(-0.35, 1.12 - dip, 0);
+            j.shoulderR.set(0.35, 1.12 - dip, 0);
+            j.elbowL.set(-0.55, 0.9  - dip, 0.1);
+            j.elbowR.set(0.55, 0.9  - dip, 0.1);
+            j.handL.set(-0.75, 0.72 - dip, 0.15);
+            j.handR.set(0.75, 0.72 - dip, 0.15);
+            j.hipL.set(-0.16, 0.78 - dip, 0);
+            j.hipR.set(0.16, 0.78 - dip, 0);
+            j.kneeL.set(-0.16, 0.45 - dip * 0.5, 0);
+            j.kneeR.set(0.16, 0.45 - dip * 0.5, 0);
+            j.footL.set(-0.16, 0.05, 0);
+            j.footR.set(0.16, 0.05, 0);
+        }
         else if (this.pose === 'fake_kick') {
             const fakeTime = Math.min(1.0, this.animationTimer * 4.0);
             const fakeInv = 1.0 - fakeTime;

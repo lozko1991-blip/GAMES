@@ -2590,6 +2590,36 @@ class PenaltyMasterGame {
         sgame.start();
     }
 
+    triggerPenaltyChallenge() {
+        const screen = document.getElementById('screen-penalty-challenge');
+        const resultScreen = document.getElementById('screen-penalty-challenge-result');
+        if (!screen) return;
+        if (this.activePenaltyChallengeInstance && this.activePenaltyChallengeInstance._running) return;
+
+        // Зупиняємо фонову пенальті‑гру — gameControls має власні keydown/keyup‑лічілки.
+        this._prevPenaltyGameState = this.gameState;
+        this.gameState = 'menu';
+        gameControls.reset();
+
+        if (resultScreen) resultScreen.classList.remove('active');
+        if (this.activePenaltyChallengeInstance) this.activePenaltyChallengeInstance.stop();
+
+        showScreen('screen-penalty-challenge');
+
+        const canvas = document.getElementById('pc-canvas');
+        const cgi = new PenaltyChallengeGame(
+            canvas,
+            () => {
+                screen.classList.remove('active');
+                gameControls.reset();
+                if (this._prevPenaltyGameState) this.gameState = this._prevPenaltyGameState;
+                showScreen('screen-main-menu');
+            }
+        );
+        this.activePenaltyChallengeInstance = cgi;
+        cgi.start();
+    }
+
     showBasketballRewardOverlay(coinsReward) {
         this.coins += coinsReward;
         this.saveStatsToStorage();
@@ -2770,8 +2800,13 @@ function showScreen(screenId) {
 }
 
 document.getElementById('btn-start-game').addEventListener('click', () => {
+    showScreen('screen-mode-select');
+});
+
+// --- Вибір режиму перед одиночною грою ---
+document.getElementById('btn-mode-normal').addEventListener('click', () => {
     gameAudio.init();
-    
+
     showScreen('screen-main-menu');
     document.getElementById('screen-main-menu').classList.remove('active');
     document.getElementById('hud-container').classList.add('active');
@@ -2782,6 +2817,19 @@ document.getElementById('btn-start-game').addEventListener('click', () => {
     } else {
         activeGameInstance.resetShot();
     }
+});
+
+document.getElementById('btn-mode-penalty-challenge').addEventListener('click', () => {
+    gameAudio.init();
+    if (!activeGameInstance) {
+        activeGameInstance = new PenaltyMasterGame();
+        activeGameInstance.start();
+    }
+    activeGameInstance.triggerPenaltyChallenge();
+});
+
+document.getElementById('btn-mode-cancel').addEventListener('click', () => {
+    showScreen('screen-main-menu');
 });
 
 function togglePauseMenu() {
@@ -3389,6 +3437,31 @@ document.getElementById('btn-shoot-menu-back').addEventListener('click', () => {
     if (activeGameInstance) {
         gameControls.reset();
         if (activeGameInstance._prevShootGameState) activeGameInstance.gameState = activeGameInstance._prevShootGameState;
+    }
+    showScreen('screen-main-menu');
+});
+
+// --- Penalty Challenge controls ---
+document.getElementById('btn-pc-back').addEventListener('click', () => {
+    if (activeGameInstance && activeGameInstance.activePenaltyChallengeInstance) {
+        activeGameInstance.activePenaltyChallengeInstance.closeMode();
+    } else {
+        showScreen('screen-main-menu');
+    }
+});
+
+document.getElementById('btn-pc-replay').addEventListener('click', () => {
+    const res = document.getElementById('screen-penalty-challenge-result');
+    if (res) res.classList.remove('active');
+    if (activeGameInstance) activeGameInstance.triggerPenaltyChallenge();
+});
+
+document.getElementById('btn-pc-menu-back').addEventListener('click', () => {
+    const res = document.getElementById('screen-penalty-challenge-result');
+    if (res) res.classList.remove('active');
+    if (activeGameInstance) {
+        gameControls.reset();
+        if (activeGameInstance._prevPenaltyGameState) activeGameInstance.gameState = activeGameInstance._prevPenaltyGameState;
     }
     showScreen('screen-main-menu');
 });

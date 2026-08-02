@@ -304,3 +304,22 @@ const SHOOT_MODE_TIME_LIMIT = 60;            // секунд на раунд
 const SHOOT_MODE_TARGET_Z_MIN = 5.0;         // дальність цілей від воріт (м)
 const SHOOT_MODE_TARGET_Z_SPAN = 5.0;        // діапазон розкидування цілей по осі Z
 const SHOOT_MODE_AIM_X_MAX = GOAL_WIDTH / 2 + 2.8;  // = межа aimX (безпосередньо з PlayerControls)
+
+/* ====================================================
+   PENALTY CHALLENGE (додатковий режим)
+   Гравець б'є пенальті зі споту (PENALTY_SPOT_Z) по стіні
+   суперників перед воротами. Воротар — HARD.
+   ==================================================== */
+const PENALTY_CHALLENGE_TOTAL_SHOTS   = 5;   // ударів у серії
+const PENALTY_CHALLENGE_SHOT_CLOCK    = 8.0;  // секунд на підготовку одного удару
+const PENALTY_CHALLENGE_WALL_ROWS     = 2;   // кількість рядів стіни
+const PENALTY_CHALLENGE_WALL_PER_ROW  = [3, 3];          // 6 гравців усього
+const PENALTY_CHALLENGE_WALL_Z        = [2.6, 3.8];       // близько воріт (м)
+const PENALTY_CHALLENGE_WALL_X_SPREAD = 3.0;              // розкид по X (м)
+const PENALTY_CHALLENGE_MOVE_AMP_MIN  = 0.6;
+const PENALTY_CHALLENGE_MOVE_AMP_MAX  = 1.0;
+const PENALTY_CHALLENGE_MOVE_SPEED_MIN= 1.6;              // рад/с
+const PENALTY_CHALLENGE_MOVE_SPEED_MAX= 2.8;
+const PENALTY_CHALLENGE_HARD_LIVE_BOOST= 0.6;  // прискорення руху цілей з часенням (× за 60с)
+const PENALTY_CHALLENGE_HIT_RADIUS    = 0.65; // вузький радіус — важко влучити
+const PENALTY_CHALLENGE_KICKER_Z        = 9.85;  // де стоїть стрілячий (перед спотом)
