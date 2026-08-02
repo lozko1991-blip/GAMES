@@ -298,7 +298,7 @@ SHOOT MODE (режим «Стрілець») — стрілялка по гра�
 ====================================================
 */
 const SHOOT_MODE_TARGET_COUNT = 9;           // кількість цілей‑гравців
-const SHOOT_MODE_HIT_RADIUS = 0.45;          // BALL_RADIUS(0.11) + радіус до центра туловища
+const SHOOT_MODE_HIT_RADIUS = 1.0;           // радіус до центра туловища (0.45 було замало — м'яч пролітав під цілями)
 const SHOOT_MODE_BASE_POINTS = 100;          // базовий рахунок за влучання
 const SHOOT_MODE_TIME_LIMIT = 60;            // секунд на раунд
 const SHOOT_MODE_TARGET_Z_MIN = 5.0;         // дальність цілей від воріт (м)

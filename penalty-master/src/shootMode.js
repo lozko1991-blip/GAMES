@@ -40,8 +40,8 @@ class PlayerShootGame {
 
         // --- вхід ---
         this.keys = {};
-        this.aimX = 0;
-        this.aimY = 1.2;
+        this.aimX = 0.8;   // дефолт на найближчу колонку цілей
+        this.aimY = 2.4;   // дефолтна дуга через висоту тулуба (~1.45 м) при повній силі
         this.power = 0;
         this.isChargingPower = false;
         this.sideSpin = 0;
@@ -293,8 +293,8 @@ class PlayerShootGame {
 
     resetShot() {
         this.ball.reset();
-        this.aimX = 0;
-        this.aimY = 1.2;
+        this.aimX = 0.8;
+        this.aimY = 2.4;
         this.power = 0;
         this.isChargingPower = false;
         this.sideSpin = 0;
