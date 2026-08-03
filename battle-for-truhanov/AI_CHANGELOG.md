@@ -65,6 +65,19 @@ This log is strictly maintained by AI assistants. It serves as a reliable projec
 - **Verified with full headless game-loop simulation** (`smoke_full.js`, 2000 frames of live combat with AI + random player actions + weapons + weather + rendering): no NaN/Infinity, no out-of-bounds fighters, no exceptions, hits/projectiles/particles/weapons all exercised, hp stays in bounds, FINISH HIM win detection works. Frame cost ~0.15 ms/frame (far below the 16.6 ms 60fps budget).
 - **Hat physics verified**: hat knocked off a grounded fighter lands exactly at `GROUND_Y` (450) and stays there (51 frames; earlier "hat falls" failure was a test artifact — it started too high and had too few frames).
 
+## [2026-08-03] MK-Style Combat Juice (Phases 1-4)
+- **Canvas Combo Popup**: `showCombo(attacker)` in `render.js` now sets `state.comboPopup` instead of the old DOM `#combo-display`. `main.js gameLoop` draws a big italic "N HIT COMBO!" in canvas (30px monospace, pop-scale 1.35→1 over 55 frames, fade-out) above the attacker; color shifts yellow → orange → red at 5/8 hits. Reset on game/round start.
+- **KO Announcer + Sound**: round end (both normal KO and post-FINISH-HIM timeout) now shows a big yellow "KO!" via `#fight-announcer` with a new `AudioSys.announce("KO")` case (deep saw + square hit).
+- **KO Slow-Motion**: `state.slowMoTimer` (70 frames) set on KO; while active the simulation (input, AI, fighters, collisions, particles) advances only every 3rd frame (`skipSim` in `main.js gameLoop`), with a dark edge vignette overlay — MK-style death freeze. Reset on game/round start.
+- **FINISH HIM Red Vignette**: while `finishHimStage`, a pulsing red radial vignette overlays the arena (in `gameLoop`), plus a permanent red tint layer in `drawScene` (both image and fallback branches).
+- **Victory Pose**: on match point the round winner gets a new `state === 'victory'` pose (arms up in V, chest out) in `animateSkeleton` before the results screen.
+- **Input Buffer (MK buffering)**: `Fighter.action()` now queues blocked attack inputs (punch/kick/hook/heavy_kick/sweep/uppercut/throw/super/flip/projectile/jump attacks/backflip) into `inputBuffer` (9 frames) when the fighter is mid-attack/in recovery (not in hitstun/launched/knockdown); `Fighter.update()` executes the buffered move as soon as the fighter is free. Works for player and local PvP both fighters.
+- **AI Whiff Punish**: bot now counter-attacks (combo queue) when the player's attack ends without connecting (`attackTimer <= 6 && !hitBox.active`, range 100-210), chance 0.15 easy / 0.35 normal / 0.55 hard.
+- **AI Aggressiveness by Difficulty**: hard difficulties (2+) use faster decision timers (3+rand*4 vs 4+rand*6) and a higher jump-in punish chance (0.65 vs 0.50).
+- **Low-HP Danger Flash**: `updateHUD()` toggles a `hpDangerFlash` CSS keyframe (red glow pulse) on each health bar below 25% HP.
+- **Announcer Pop Animation**: `#fight-announcer` plays a `announcerPop` keyframe (scale 2.3→1.4, fade-in) every time it's shown.
+- All changes verified with `node validate.js` → `SUCCESS: All scripts loaded in the correct order!`
+
 
 
 

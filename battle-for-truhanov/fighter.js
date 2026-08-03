@@ -14,6 +14,7 @@
                 this.skeleton = { headY: 0, lArmAngle: 0, rArmAngle: 0, lLegAngle: 0, rLegAngle: 0, lFArmAngle: 0.35, rFArmAngle: 0.35, lShinAngle: 0.25, rShinAngle: 0.25 };
                 this.hitBox = { x: 0, y: 0, w: 0, h: 0, active: false, dmg: 0, type: 'punch' };
                 this.comboCounter = 0; this.comboResetTimer = 0;
+                this.inputBuffer = null;
                 this.hitRegistered = false;
                 this.weaponCharge = 0; this.weaponTimer = 0; this.weaponSelected = 'none'; this.weaponActiveType = null;
                 this.weaponAmmoTimer = 0; this.weaponCooldownTimer = 0; this.weaponState = 'ready';
@@ -262,6 +263,14 @@
                 if (this.flashTimer > 0) this.flashTimer--;
                 if (this.recoveryTimer > 0) this.recoveryTimer--;
                 if (this.squashTimer > 0) this.squashTimer--;
+                if (this.inputBuffer) {
+                    if (this.attackState === 0 && this.recoveryTimer <= 0 && this.state !== 'hitstun' && this.state !== 'launched' && this.state !== 'knockdown' && this.state !== 'dead' && this.state !== 'dazed') {
+                        const buf = this.inputBuffer; this.inputBuffer = null; this.action(buf.type);
+                    } else {
+                        this.inputBuffer.frames--;
+                        if (this.inputBuffer.frames <= 0) this.inputBuffer = null;
+                    }
+                }
                 this.animateSkeleton();
             }
             animateSkeleton() {
@@ -305,6 +314,9 @@
                 } else if (this.state === 'dazed') {
                     targetHeadY = Math.sin(time * 2.5) * 3; targetLArm = 1.0 + Math.sin(time * 1.2) * 0.3; targetRArm = -1.0 - Math.sin(time * 1.2) * 0.3; targetLLeg = 0.15; targetRLeg = -0.15;
                     targetLFArm = 0.8 + Math.sin(time * 1.2) * 0.15; targetRFArm = 0.8 - Math.sin(time * 1.2) * 0.15; targetLShin = 0.4; targetRShin = 0.4;
+                } else if (this.state === 'victory') {
+                    targetHeadY = -4; targetLArm = -1.9 * dir; targetRArm = 1.9 * dir; targetLLeg = 0.05; targetRLeg = -0.05;
+                    targetLFArm = 0.5; targetRFArm = 0.5; targetLShin = 0.25; targetRShin = 0.25;
                 } else if (this.state === 'dead') {
                     targetHeadY = 15; targetLArm = 1.5; targetRArm = -1.5; targetLLeg = 0.2; targetRLeg = -0.2; targetRot = (Math.PI / 2) * dir;
                     targetLFArm = 0.95; targetRFArm = 0.95; targetLShin = 0.7; targetRShin = 0.7;
@@ -1127,7 +1139,12 @@
             }
             action(type) {
                 const canCancel = this.attackState === 1 && this.hitRegistered && ['special_slide', 'special_rise', 'projectile', 'super', 'uppercut', 'sweep'].indexOf(type) >= 0;
-                if ((this.attackState > 0 && !canCancel) || this.recoveryTimer > 0 || this.state === 'hitstun' || this.state === 'dead' || this.state === 'dazed') return;
+                if ((this.attackState > 0 && !canCancel) || this.recoveryTimer > 0 || this.state === 'hitstun' || this.state === 'dead' || this.state === 'dazed') {
+                    if (this.state !== 'hitstun' && this.state !== 'launched' && this.state !== 'knockdown' && this.state !== 'dead' && this.state !== 'dazed' && ['punch', 'kick', 'hook', 'heavy_kick', 'sweep', 'uppercut', 'throw', 'super', 'flip', 'projectile', 'jump_punch', 'jump_kick', 'backflip'].indexOf(type) >= 0) {
+                        this.inputBuffer = { type: type, frames: 9 };
+                    }
+                    return;
+                }
                 this.hitRegistered = false;
                 
                 const isUnarmed = this.weaponTimer <= 0 || !this.weaponActiveType;

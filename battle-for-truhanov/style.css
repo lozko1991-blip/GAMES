@@ -295,6 +295,14 @@ html {
             right: 0;
             left: auto
         }
+        @keyframes hpDangerFlash {
+            0%, 100% { box-shadow: 0 0 0 rgba(255, 0, 0, 0) }
+            50% { box-shadow: 0 0 12px rgba(255, 0, 0, 0.9), inset 0 0 8px rgba(255, 0, 0, 0.6) }
+        }
+        @keyframes announcerPop {
+            from { transform: translate(-50%, -50%) scale(2.3); opacity: 0 }
+            to { transform: translate(-50%, -50%) scale(1.4); opacity: 1 }
+        }
         .sp-container {
             width: 65%;
             height: 6px;
@@ -334,6 +342,7 @@ html {
             top: 32%;
             left: 50%;
             transform: translate(-50%, -50%) scale(1.4);
+            animation: announcerPop 0.35s ease-out;
             font-size: 40px;
             font-weight: 900;
             color: #fff;

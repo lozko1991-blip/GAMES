@@ -62,6 +62,10 @@
                     this.playTone(58, 'sawtooth', 0.8, 0.38, 35);
                     this.playTone(76, 'square', 0.7, 0.18, 45);
                     this.playNoise(0.55, 0.12, true);
+                } else if (text.includes("KO")) {
+                    this.playTone(52, 'sawtooth', 0.9, 0.5, 20);
+                    this.playTone(78, 'square', 0.5, 0.25, 40);
+                    this.playNoise(0.5, 0.25, false);
                 } else if (text.includes("FATALITY")) {
                     this.playTone(40, 'sawtooth', 1.4, 0.6, 15);
                     this.playTone(60, 'square', 1.2, 0.3, 25);

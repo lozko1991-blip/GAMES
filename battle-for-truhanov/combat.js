@@ -183,7 +183,7 @@
             }
             defender.hp -= finalDmg; if (defender.hp < 0) defender.hp = 0;
             if (!blocked) {
-                attacker.comboCounter++; attacker.comboResetTimer = 85; showCombo(attacker.comboCounter);
+                attacker.comboCounter++; attacker.comboResetTimer = 85; showCombo(attacker);
                 if (attacker.comboCounter === 4 && state.toastyTimer <= 0) { state.toastyTimer = 80 }
                 if (attacker.id === 'p1') {
                     state.coins += 1; // Basic hit reward

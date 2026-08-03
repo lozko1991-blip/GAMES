@@ -56,6 +56,16 @@
                     return;
                 }
 
+                // Whiff punish: player attack ended without connecting, bot strikes back at mid range
+                if (player.attackState > 0 && player.attackTimer <= 6 && !player.hitBox.active && absDist > 100 && absDist < 210) {
+                    const whiffChance = diff === 0 ? 0.15 : (diff >= 2 ? 0.55 : 0.35);
+                    if (Math.random() < whiffChance) {
+                        this.botComboQueue = Math.random() < 0.5 ? ['punch', 'punch', 'kick'] : ['hook', 'sweep'];
+                        this.decisionTimer = 1;
+                        return;
+                    }
+                }
+
                 // Mortal Kombat logic: Low-profile anti-air uppercut reaction!
                 if (player.isJumping && absDist < 120 && !bot.isJumping) {
                     if (Math.random() < (diff === 0 ? 0.60 : 0.90)) {
@@ -103,7 +113,7 @@
                 }
 
                 // Jump-in attack on a helpless opponent (hitstun/launched/knockdown)
-                if ((player.state === 'hitstun' || player.state === 'launched' || player.state === 'knockdown') && absDist < 210 && !bot.isJumping && Math.random() < (diff === 0 ? 0.30 : 0.50)) {
+                if ((player.state === 'hitstun' || player.state === 'launched' || player.state === 'knockdown') && absDist < 210 && !bot.isJumping && Math.random() < (diff === 0 ? 0.30 : (diff >= 2 ? 0.65 : 0.50))) {
                     bot.vy = -12; bot.isJumping = true; bot.vx = dist > 0 ? 3.0 : -3.0;
                     this.queueAction(() => { if (bot.isJumping && bot.state !== 'hitstun' && bot.state !== 'dead') bot.action(Math.random() < 0.5 ? 'jump_punch' : 'jump_kick'); }, 9);
                     return;
@@ -163,7 +173,7 @@
                 if (this.botComboQueue && this.botComboQueue.length > 0) {
                     this.decisionTimer--;
                     if (this.decisionTimer <= 0) {
-                        this.decisionTimer = diff === 0 ? (10 + Math.random() * 8) : (4 + Math.random() * 6);
+                        this.decisionTimer = diff === 0 ? (10 + Math.random() * 8) : (diff >= 2 ? (3 + Math.random() * 4) : (4 + Math.random() * 6));
                         const nextAttack = this.botComboQueue.shift();
                         bot.action(nextAttack);
                     }
@@ -172,7 +182,7 @@
 
                 this.decisionTimer--;
                 if (this.decisionTimer <= 0) {
-                    this.decisionTimer = diff === 0 ? (10 + Math.random() * 8) : (4 + Math.random() * 6);
+                    this.decisionTimer = diff === 0 ? (10 + Math.random() * 8) : (diff >= 2 ? (3 + Math.random() * 4) : (4 + Math.random() * 6));
                     
                     if (absDist > 260) {
                         const rnd = Math.random();

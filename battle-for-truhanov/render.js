@@ -175,6 +175,7 @@
                 
                 CTX.fillStyle = `rgba(0, 0, 0, ${0.25 + darkAlpha * 0.75})`; 
                 CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
+                if (state.finishHimStage) { CTX.fillStyle = 'rgba(150,10,30,0.28)'; CTX.fillRect(0, 0, CANVAS.width, CANVAS.height); }
                 CTX.restore();
                 
                 if (darkAlpha < 1) {
@@ -187,15 +188,15 @@
                 CTX.fillStyle = lvl.ground; CTX.fillRect(0, GROUND_Y, CANVAS.width, CANVAS.height - GROUND_Y);
                 if (darkAlpha > 0) {
                     CTX.fillStyle = `rgba(0, 0, 0, ${darkAlpha})`; CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
+                    if (state.finishHimStage) { CTX.fillStyle = 'rgba(150,10,30,0.28)'; CTX.fillRect(0, 0, CANVAS.width, CANVAS.height); }
                 } else {
                     CTX.strokeStyle = 'rgba(255,255,255,0.12)'; CTX.lineWidth = 3; CTX.beginPath(); CTX.moveTo(0, GROUND_Y); CTX.lineTo(CANVAS.width, GROUND_Y); CTX.stroke();
                 }
             }
         }
-        function showCombo(count) {
-            if (count < 2) return;
-            const comboDiv = document.getElementById('combo-display'); comboDiv.innerText = `COMBO x${count}`; comboDiv.style.display = 'block';
-            setTimeout(() => { comboDiv.style.display = 'none' }, 800);
+        function showCombo(attacker) {
+            if (!attacker || attacker.comboCounter < 2) return;
+            state.comboPopup = { count: attacker.comboCounter, timer: 55, x: attacker.x + attacker.width / 2 };
         }
         function updateHUD() {
             if (!state.player || !state.bot) return;
@@ -203,6 +204,9 @@
             const p2HpPct = (state.bot.hp / state.bot.maxHp) * 100;
             document.getElementById('hp-p1').style.width = `${p1HpPct}%`; document.getElementById('sp-p1').style.width = `${state.player.sp}%`;
             document.getElementById('hp-p2').style.width = `${p2HpPct}%`; document.getElementById('sp-p2').style.width = `${state.bot.sp}%`;
+            const p1Bar = document.getElementById('hp-p1'); const p2Bar = document.getElementById('hp-p2');
+            if (p1Bar) p1Bar.style.animation = p1HpPct < 25 ? 'hpDangerFlash 0.6s infinite' : 'none';
+            if (p2Bar) p2Bar.style.animation = p2HpPct < 25 ? 'hpDangerFlash 0.6s infinite' : 'none';
             setTimeout(() => {
                 if (state.player) document.getElementById('hp-delay-p1').style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
                 if (state.bot) document.getElementById('hp-delay-p2').style.width = `${(state.bot.hp / state.bot.maxHp) * 100}%`;

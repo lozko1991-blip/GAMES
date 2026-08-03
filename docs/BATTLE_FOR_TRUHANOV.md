@@ -111,6 +111,16 @@
 - `gameLoop()` — `hitstopFrames` (стоп-кадри при ударах) → зменшення лічильника → `requestAnimationFrame`.
 - Потік раундів: `roundNum`, `p1Wins`/`p2Wins`, таймер 99, кінець матчу (`isMatchEnding`), магазин і купівля (coins/upgrades/skins/weapons).
 
+## MK-Style combat juice (серпень 2026, Phases 1-4)
+
+- **Комбо-попуп**: `showCombo(attacker)` (render.js) ставить `state.comboPopup = {count, timer:55, x}`; `gameLoop()` малює canvas-попуп «N HIT COMBO!» (30px italic, pop-scale 1.35→1, fade; жовтий→оранжевий→червоний на 5/8 комбо).
+- **KO-анонсер**: жовтий «KO!» через `#fight-announcer` + `AudioSys.announce("KO")` (saw 52→20 Гц + square 78 + noise) в обох шляхах завершення раунду.
+- **Slow-mo на KO**: `state.slowMoTimer = 70`; у `gameLoop()` `skipSim = inSlowMo && frameCount % 3 !== 0` — симуляція (input/AI/фізика) пропускається кожні 2 з 3 кадрів, малювання — завжди; чорна віньєтка slow-mo.
+- **Finish HIM драма**: червона пульсуюча віньєтка (`rgba(130,0,25,0.5*pulse)`) + червоний шар у `drawScene()`; victory pose — руки вгору «V» (гілка `'victory'` у `animateSkeleton`); slow-mo скидається при старті гри/раунду.
+- **Буфер вводу**: `Fighter.inputBuffer` (9 кадрів) — удар гравця, натиснутий під час блокування атаки бота, виконується одразу після відновлення (запис у `action()`, виконання в `update()`).
+- **AI whiff-punish**: бот карає промах гравця (`attackTimer<=6 && !hitBox.active`, дистанція 100–210; шанс 0.15/0.35/0.55 за складність); агресивність HARD: `decisionTimer = 3 + rand*4`, jump-in punish 0.65.
+- **HUD-спалах HP**: CSS `hpDangerFlash` на hp-p1/hp-p2 при HP < 25% (updateHUD); анонсер отримав `announcerPop 0.35s`.
+
 ## validate.js — як працює перевірка
 
 1. Регуляркою витягує порядок `<script src="...">` з index.html.

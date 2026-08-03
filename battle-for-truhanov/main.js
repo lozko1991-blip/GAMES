@@ -33,8 +33,14 @@ window.showScreen = showScreen;
             if (state.hitstopFrames > 0) { state.hitstopFrames--; requestAnimationFrame(gameLoop); return }
             state.frameCount++;
             CTX.setTransform(1, 0, 0, 1, 0, 0);
-            CTX.clearRect(0, 0, CANVAS.width, CANVAS.height); processInput(); if (state.difficulty !== 'pvp' && !state.isOnline) { AI_ENGINE.update(state.bot, state.player); }
-            state.player.update(); state.bot.update(); checkCollisions(); spawnWeather(LEVELS[state.currentLevelIndex]);
+            CTX.clearRect(0, 0, CANVAS.width, CANVAS.height);
+            const inSlowMo = state.slowMoTimer > 0;
+            if (inSlowMo) state.slowMoTimer--;
+            const skipSim = inSlowMo && state.frameCount % 3 !== 0;
+            if (!skipSim) {
+                processInput(); if (state.difficulty !== 'pvp' && !state.isOnline) { AI_ENGINE.update(state.bot, state.player); }
+                state.player.update(); state.bot.update(); checkCollisions(); spawnWeather(LEVELS[state.currentLevelIndex]);
+            }
             CTX.save();
             if (state.hitZoom && state.hitZoom.timer > 0) {
                 const z = state.hitZoom;
@@ -49,12 +55,39 @@ window.showScreen = showScreen;
             }
             drawScene(state.currentLevelIndex);
             if (state.particles.length > 120) { state.particles.splice(0, state.particles.length - 120) }
-            for (let i = state.particles.length - 1; i >= 0; i--) { const part = state.particles[i]; part.update(); part.draw(); if (part.life <= 0) state.particles.splice(i, 1) }
+            for (let i = state.particles.length - 1; i >= 0; i--) {
+                const part = state.particles[i];
+                if (!skipSim) { part.update(); if (part.life <= 0) { state.particles.splice(i, 1); continue } }
+                part.draw();
+            }
             state.player.draw(); if (state.fatalityAnimation) { drawFatalityAnim() } else { state.bot.draw() }
             state.projectiles.forEach(p => p.draw());
             for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
                 const ft = state.floatingTexts[i]; ft.y += ft.vy; ft.alpha -= 0.02; if (ft.alpha <= 0) { state.floatingTexts.splice(i, 1); continue }
                 CTX.save(); CTX.globalAlpha = ft.alpha; CTX.font = "italic bold 16px monospace"; CTX.fillStyle = ft.color; CTX.strokeStyle = '#000'; CTX.lineWidth = 3; CTX.strokeText(ft.text, ft.x, ft.y); CTX.fillText(ft.text, ft.x, ft.y); CTX.restore();
+            }
+            if (state.comboPopup) {
+                const cp = state.comboPopup; cp.timer--;
+                const popScale = 1 + 0.35 * (cp.timer / 55);
+                const alpha = cp.timer > 20 ? 1 : cp.timer / 20;
+                const cpx = Math.max(160, Math.min(CANVAS.width - 160, cp.x));
+                CTX.save(); CTX.globalAlpha = alpha; CTX.translate(cpx, 85); CTX.scale(popScale, popScale);
+                CTX.font = "italic bold 30px monospace"; CTX.textAlign = 'center';
+                const comboCol = cp.count >= 8 ? '#ff2a00' : (cp.count >= 5 ? '#ff8800' : '#ffcc00');
+                CTX.strokeStyle = '#000'; CTX.lineWidth = 7; CTX.strokeText(`${cp.count} HIT COMBO!`, 0, 0);
+                CTX.fillStyle = comboCol; CTX.fillText(`${cp.count} HIT COMBO!`, 0, 0);
+            if (state.slowMoTimer > 0 || state.finishHimStage) {
+                const vign = CTX.createRadialGradient(CANVAS.width / 2, CANVAS.height / 2, CANVAS.height * 0.35, CANVAS.width / 2, CANVAS.height / 2, CANVAS.height * 0.95);
+                if (state.finishHimStage) {
+                    const pulse = 0.5 + Math.sin(state.frameCount * 0.15) * 0.15;
+                    vign.addColorStop(0, 'rgba(90,0,10,0)'); vign.addColorStop(1, `rgba(130,0,25,${0.5 * pulse})`);
+                } else {
+                    vign.addColorStop(0, 'rgba(0,0,0,0)'); vign.addColorStop(1, 'rgba(0,0,0,0.65)');
+                }
+                CTX.fillStyle = vign; CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
+            }
+            CTX.restore();
+                if (cp.timer <= 0) state.comboPopup = null;
             }
             if (state.toastyTimer > 0) {
                 state.toastyTimer--; CTX.save(); CTX.font = "italic bold 24px monospace"; CTX.fillStyle = "#ffcc00"; CTX.strokeStyle = "#ff0055"; CTX.lineWidth = 3;
@@ -97,7 +130,7 @@ window.showScreen = showScreen;
             }
             
             state.p1Wins = 0; state.p2Wins = 0; state.roundNum = 1; state.finishHimStage = false; state.fatalityAnimation = null;
-            state.isMatchEnding = false; state.screenShake = 0; state.hitstopFrames = 0; state.toastyTimer = 0; state.controlGestures = {}; state.frameCount = 0; state.hitZoom = null;
+            state.isMatchEnding = false; state.screenShake = 0; state.hitstopFrames = 0; state.toastyTimer = 0; state.controlGestures = {}; state.frameCount = 0; state.hitZoom = null; state.comboPopup = null; state.slowMoTimer = 0;
             state.particles = []; state.projectiles = []; state.floatingTexts = [];
             clearTimeout(state.finishHimTimeout); clearInterval(state.timerInterval);
             showScreen('none'); document.getElementById('fs-toggle-btn').classList.add('hidden'); startNewRoundSequence();
@@ -105,7 +138,7 @@ window.showScreen = showScreen;
         function startNewRoundSequence() {
             clearTimeout(state.finishHimTimeout); clearInterval(state.timerInterval);
             state.isMatchEnding = false; state.finishHimStage = false; state.fatalityAnimation = null; state.timer = 180; state.keys = {};
-            state.screenShake = 0; state.hitstopFrames = 0; state.toastyTimer = 0; state.particles = []; state.projectiles = []; state.floatingTexts = []; state.hitZoom = null;
+            state.screenShake = 0; state.hitstopFrames = 0; state.toastyTimer = 0; state.particles = []; state.projectiles = []; state.floatingTexts = []; state.hitZoom = null; state.comboPopup = null; state.slowMoTimer = 0;
             state.controlGestures = {};
             document.getElementById('timer').innerText = state.timer;
             
@@ -200,6 +233,11 @@ window.showScreen = showScreen;
                     if (state.finishHimStage) {
                         state.finishHimStage = false; loser.hp = 0; loser.state = 'dead'; state.isMatchEnding = true;
                         if (state.player.hp > 0) state.p1Wins++; else state.p2Wins++;
+                        if (state.p1Wins === 2 || state.p2Wins === 2) { if (roundWinner) roundWinner.state = 'victory' }
+                        state.slowMoTimer = 70;
+                        const koAnn = document.getElementById('fight-announcer'); koAnn.innerText = "KO!"; koAnn.style.color = '#ffdd00'; koAnn.style.textShadow = '0 0 25px #ff8800,4px 4px #000'; koAnn.style.display = 'block';
+                        AudioSys.announce("KO");
+                        setTimeout(() => { if (koAnn) koAnn.style.display = 'none' }, 1200);
                         setTimeout(() => { state.isRunning = false; showRoundResults(roundWinner) }, 1200);
                     }
                 }, 5000);
@@ -209,6 +247,11 @@ window.showScreen = showScreen;
             if (state.player.hp > 0 && state.bot.hp <= 0) { state.p1Wins++ } else { state.p2Wins++ }
             updateRoundNodes();
             const loser = state.player.hp <= 0 ? state.player : state.bot; loser.state = 'dead';
+            if (state.p1Wins === 2 || state.p2Wins === 2) { if (roundWinner) roundWinner.state = 'victory' }
+            state.slowMoTimer = 70;
+            const koAnn = document.getElementById('fight-announcer'); koAnn.innerText = "KO!"; koAnn.style.color = '#ffdd00'; koAnn.style.textShadow = '0 0 25px #ff8800,4px 4px #000'; koAnn.style.display = 'block';
+            AudioSys.announce("KO");
+            setTimeout(() => { if (koAnn) koAnn.style.display = 'none' }, 1200);
             setTimeout(() => { state.isRunning = false; showRoundResults(roundWinner) }, 1200);
         }
         function endRoundByTime() {
