@@ -7,7 +7,7 @@ const BALL_MASS = 0.43; // кг
 const BALL_RADIUS = 0.11; // метри (стандартний м'яч розміру 5)
 const BALL_CROSS_SECTION = Math.PI * BALL_RADIUS * BALL_RADIUS;
 const BALL_DRAG_COEFFICIENT = 0.25; // аеродинамічний опір
-const BALL_MAGNUS_COEFFICIENT = 0.16; // коефіцієнт підкрутки
+const BALL_MAGNUS_COEFFICIENT = 0.19; // коефіцієнт підкрутки
 
 // Розміри воріт
 const GOAL_WIDTH = 7.32; // метри

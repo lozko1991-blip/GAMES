@@ -31,7 +31,7 @@
 
 ## config.js — константи та дані
 
-- Фізика: `PHYSICS_GRAVITY = 9.81`, `BALL_MASS = 0.43`, `BALL_RADIUS = 0.11`, `GOAL_WIDTH = 7.32`, `GOAL_HEIGHT = 2.44`, `PENALTY_SPOT_Z = 11.0`.
+- Фізика: `PHYSICS_GRAVITY = 9.81`, `BALL_MASS = 0.43`, `BALL_RADIUS = 0.11`, `GOAL_WIDTH = 7.32`, `GOAL_HEIGHT = 2.44`, `PENALTY_SPOT_Z = 11.0`, `BALL_MAGNUS_COEFFICIENT = 0.19` (підкрутка м'яча).
 - `DIFFICULTY_PRESETS` — EASY / MEDIUM / HARD / LEGEND: `{ reactionDelay, diveSpeed, predictionError, mistakeChance }`.
 - `LEVEL_PRESETS` — палітри/параметри рівнів (стадіони).
 - `safeStorage` — обгортка localStorage з `getItem(key)` / `setItem(key, value)` (безпечна обробка недоступності сховища).
@@ -57,6 +57,7 @@
 - `init()`, `resume()` — ініціалізація/відновлення AudioContext.
 - Звуки: `playKick()`, `playPostHit()` (стійка/штанга), `playNetRustle()` (сітка), `playWhistle()` (свисток), `playKeeperSave()`, `playGoalCheer()`, `playMissGroan()`.
 - Фон: `startAmbient()`, `stopAmbient()`; налаштування `setSoundEnabled(val)`, `setAmbientEnabled(val)`; `createNoiseNode(duration)`.
+- Хвиля трансляції: `crowdSwell(boost = 0.30)` — плавний підйом гучності натовпу (до `base + boost` за 0.5 с, спад за 3.2 с) після голу/сейву.
 
 ## multiplayer.js (PeerJS)
 
@@ -112,6 +113,15 @@
 
 ### Кар'єра
 - `getPlayerPrestige()` (`pm_prestige`), `renderCareerScreen()`; трансфери клубів: перевірка `requiredPrestige`, сплата `transferFee`, запис `pm_selected_club`.
+- Форма воротаря: `this.keeperForm` (випадкова ±5% на кожен рівень) — у `applyLevel` впливає на `reactionDelay` (×`2 − form`) та `diveSpeed` (×`form`) воротаря.
+- Стрічка новин: `NEWS_DB` (12 заголовків) → у `renderCareerScreen()` виводить 3 випадкові у `#career-news-ticker`; там же показ форми наступного воротаря (`#career-keeper-form`).
+
+### Трансляція та «сок» (відчуття FIFA)
+- Після гола/сейву — `showCustomHitText('ГОООЛ!'/«СЕЙВ!») + gameAudio.crowdSwell(...)` у `triggerShotResult()`.
+- Камера розбігу: у станах `'runup'`/`'kick'` плавний dolly-під'їзд (Z → 13.2/12.4, Y → 1.7) через `this.camera.position.coordinateZ/Y`.
+- Рикошет від кулака воротаря (`saveResult.type === 'punch'`) — воротар падає у позу `dive_low_right`/`dive_low_left` (за напрямком відбиття).
+- Гол у топ-корнер (у межах 1.1 м від верхнього кута): `_lastShotTopCorner` → плашка `TOP CORNER! ×2` і подвійна нагорода за гол.
+- Шкала сили удару (`#hud-power-fill`) змінює колір: бірюза → жовта (>55%) → червона (>85%).
 
 ### Колекція карток
 - `getOwnedCards()` / `saveOwnedCards()` (`pm_owned_cards`), `renderCollectionDeck()`, `triggerPackOpening()` (відкриття пакунків), екіпірування картки → `pm_equipped_card` (за замовчуванням `'c_palazhchenko'`).

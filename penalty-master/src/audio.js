@@ -357,6 +357,27 @@ class AudioManager {
     /*
     ====================================================
     Function
+    crowdSwell()
+    Призначення: Тимчасово підсилює гул натовпу (гол / сейв).
+    ====================================================
+    */
+    crowdSwell(boost = 0.30) {
+        if (!this.soundEnabled || !this.audioCtx || !this.gainAmbient) return;
+        const time = this.audioCtx.currentTime;
+        const base = 0.08;
+        try {
+            this.gainAmbient.gain.cancelScheduledValues(time);
+            this.gainAmbient.gain.setValueAtTime(this.gainAmbient.gain.value, time);
+            this.gainAmbient.gain.linearRampToValueAtTime(base + boost, time + 0.5);
+            this.gainAmbient.gain.linearRampToValueAtTime(base, time + 3.2);
+        } catch (e) {
+            console.warn('crowdSwell error: ', e);
+        }
+    }
+
+    /*
+    ====================================================
+    Function
     stopAmbient()
     Призначення: Зупиняє фоновий гул.
     ====================================================

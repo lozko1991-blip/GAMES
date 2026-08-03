@@ -292,6 +292,7 @@ class PenaltyMasterGame {
         this.levelGoalsScored = 0;  // goals in this level session
         this.levelShotsInLevel = 0;
         this.lastShotIsGoal = false;
+        this.keeperForm = 1.0; // Форма воротаря поточного рівня (±5%)
         
         // Camera flashes simulation for stadium audience
         this.audienceFlashes = [];
@@ -370,6 +371,15 @@ class PenaltyMasterGame {
 
         this.goalkeeperAI.setDifficulty(DIFFICULTY_PRESETS[lvl.difficulty]);
 
+        // Форма воротаря: випадкова ±5% на кожен рівень (впливає на реакцію та швидкість стрибка)
+        this.keeperForm = 0.95 + Math.random() * 0.10;
+        const basePreset = DIFFICULTY_PRESETS[lvl.difficulty];
+        this.goalkeeperAI.setDifficulty({
+            reactionDelay: basePreset.reactionDelay * (2 - this.keeperForm),
+            diveSpeed: basePreset.diveSpeed * this.keeperForm,
+            predictionError: basePreset.predictionError
+        });
+
         const lvlEl = document.getElementById('hud-level');
         if (lvlEl) lvlEl.innerText = `Рівень ${lvl.id}: ${lvl.name}`;
         const progEl = document.getElementById('hud-level-progress');
@@ -442,7 +452,12 @@ class PenaltyMasterGame {
         const isRunUpStarted = this.gameState !== 'aiming';
         gameControls.update(realDeltaTime, isRunUpStarted, this.gameState);
 
-        document.getElementById('hud-power-fill').style.width = gameControls.power + '%';
+        const powerFillEl = document.getElementById('hud-power-fill');
+        if (powerFillEl) {
+            powerFillEl.style.width = gameControls.power + '%';
+            const pCol = gameControls.power > 85 ? '#ff3355' : (gameControls.power > 55 ? '#ffcc00' : '#00ffcc');
+            if (powerFillEl._pCol !== pCol) { powerFillEl._pCol = pCol; powerFillEl.style.background = `linear-gradient(to top, ${pCol}, ${pCol}cc)`; }
+        }
 
         this.goalNet.update(scaledDeltaTime);
 
@@ -646,7 +661,11 @@ class PenaltyMasterGame {
                     console.warn('Error reading PAC stat: ', e);
                 }
                 const runSpeed = 3.6 + (pacStat / 100) * 2.0; // від 3.6 до 5.6
-                
+
+                // Трансляційна камера: плавний наїзд під час розбігу
+                this.camera.position.coordinateZ += (13.2 - this.camera.position.coordinateZ) * 1.5 * scaledDeltaTime;
+                this.camera.position.coordinateY += (1.7 - this.camera.position.coordinateY) * 1.5 * scaledDeltaTime;
+
                 const distanceVector = new Vector3(0, 0, PENALTY_SPOT_Z).subtract(this.player.position);
                 const distanceVal = distanceVector.length();
 
@@ -668,6 +687,9 @@ class PenaltyMasterGame {
             case 'kick': {
                 this.runupProgress += scaledDeltaTime * 4.0;
                 this.player.setPose('kick_strike');
+
+                // Додатковий наїзд камери в момент удару
+                this.camera.position.coordinateZ += (12.4 - this.camera.position.coordinateZ) * 2.0 * scaledDeltaTime;
 
                 const slideVector = new Vector3(0, 0, -1.2);
                 this.player.position = this.player.position.add(slideVector.scale(scaledDeltaTime));
@@ -783,6 +805,9 @@ class PenaltyMasterGame {
                         const newVelZ = -(Math.abs(bv.coordinateZ) * restitution + 2.0);
                         this.ball.velocity = new Vector3(newVelX, newVelY, newVelZ);
                         this.ball.angularVelocity = new Vector3((Math.random() - 0.5) * 8.0, kv.coordinateX * -0.4, (Math.random() - 0.5) * 4.0);
+                        // Розтягнута поза воротаря у бік відбиття (dive stretch)
+                        const deflDir = this.ball.position.coordinateX >= this.goalkeeper.position.coordinateX;
+                        this.goalkeeper.setPose(deflDir ? 'dive_low_right' : 'dive_low_left');
                         gameAudio.playKeeperSave();
                         this.triggerShotResult(false, 'ВІДБИТО!');
                     }
@@ -928,6 +953,8 @@ class PenaltyMasterGame {
                         const inGoalX = Math.abs(bx) < (GOAL_WIDTH / 2 - 0.03);
                         const inGoalY = by < (GOAL_HEIGHT - 0.03) && by > 0.05;
                         if (inGoalX && inGoalY) {
+                            // Топ-корнер: м'яч у верхньому куті воріт → подвійна нагорода
+                            this._lastShotTopCorner = Math.abs(bx) > GOAL_WIDTH / 2 - 1.1 && by > GOAL_HEIGHT - 1.1;
                             this._roundEnded = true;
                             this.gameState = 'result';
                             this.timeScale = 1.0;
@@ -1187,6 +1214,10 @@ class PenaltyMasterGame {
             if (this.ball.didHitTarget) {
                 earned += 25;
             }
+            if (this._lastShotTopCorner) {
+                earned *= 2;
+                this.showCustomHitText('TOP CORNER! ×2', '#ff5e9c');
+            }
 
             // Застосовуємо множник монет поточного клубу
             try {
@@ -1266,6 +1297,14 @@ class PenaltyMasterGame {
 
         banner.classList.add('active');
 
+        if (isGoal) {
+            this.showCustomHitText('ГОООЛ!', '#ffd700');
+            if (window.gameAudio) gameAudio.crowdSwell(0.30);
+        } else if (messageText.includes('СЕЙВ') || messageText.includes('ВІДБИТО')) {
+            this.showCustomHitText('СЕЙВ!', '#00e5ff');
+            if (window.gameAudio) gameAudio.crowdSwell(0.12);
+        }
+
         const triggerCutscene = isGoal || messageText.includes('СЕЙВ') || messageText.includes('ВІДБИТО');
         if (triggerCutscene) {
             this.startCutscene(isGoal);
@@ -1294,6 +1333,7 @@ class PenaltyMasterGame {
         this.ball.reset();
         this.goalkeeperAI.reset();
         gameControls.reset();
+        this._lastShotTopCorner = false;
 
         // Reactivate goal targets
         this.targets.forEach(t => t.active = true);
@@ -3136,6 +3176,21 @@ function getPlayerPrestige() {
     return parseInt(safeStorage.getItem('pm_prestige')) || 0;
 }
 
+const NEWS_DB = [
+    'Шахтар відкрив футбольну академію на Трухановому острові',
+    'Київські двори: рекордна серія пенальті — 37 голів поспіль',
+    'Тренер збірної: «Бийте в дев\'ятку — і суперник ніколи не вгадає»',
+    'Воротар Динамо почав тренування з козацьким шаблем',
+    'УФФ запускає турнір дворових команд «Битва районів»',
+    'Стадіон «Лос-Анджелес Арена» продає квитки на фінал ЧС-2026',
+    'Полісся підписало контракт з маскою вовка на 5 сезонів',
+    'Вчені підтвердили: підкручений м\'яч летить на 12% точніше',
+    'Легендарний воротар дав майстер-клас: «Головне — руки, а не ноги»',
+    'Футбольні буксіри: нова епідемія у Києві — всі б\'ють у штангу',
+    'Арбітри ЧС-2026 пройшли курси з жартів: «Свисток — це сила»',
+    'Збірна України провела тренування під дощем з бурштиновим м\'ячем'
+];
+
 function renderCareerScreen() {
     const prestige = getPlayerPrestige();
     const currentClubId = safeStorage.getItem('pm_selected_club') || 'polissya';
@@ -3144,6 +3199,19 @@ function renderCareerScreen() {
     document.getElementById('career-club-logo').innerText = currentClub.logo;
     document.getElementById('career-club-name').innerText = currentClub.name;
     document.getElementById('career-prestige-display').innerText = prestige;
+
+    // Стрічка новин: 3 випадкові заголовки
+    const tickerEl = document.getElementById('career-news-ticker');
+    if (tickerEl) {
+        const shuffled = NEWS_DB.slice().sort(() => Math.random() - 0.5);
+        tickerEl.innerHTML = shuffled.slice(0, 3).map(n => `▸ ${n}`).join('<br>');
+    }
+    const formEl = document.getElementById('career-keeper-form');
+    if (formEl) {
+        const formPct = activeGameInstance ? Math.round(activeGameInstance.keeperForm * 100) : 100;
+        formEl.innerText = `${formPct}%`;
+        formEl.style.color = formPct >= 100 ? '#00ffcc' : '#ff9955';
+    }
 
     const container = document.getElementById('career-transfer-list');
     container.innerHTML = '';
