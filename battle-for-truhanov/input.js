@@ -46,6 +46,18 @@
             updateWeaponHUD();
             showFloatingText(player.weaponSelected.toUpperCase(), player.x + 15, player.y - 25, '#ffcc00');
         }
+        function maybeFatalBlow(player) {
+            if (!player) return false;
+            const used = player.id === 'p1' ? state.p1FatalBlowUsed : state.p2FatalBlowUsed;
+            if (used || player.hp <= 0 || player.hp >= player.maxHp * 0.3) return false;
+            if (player.id === 'p1') state.p1FatalBlowUsed = true; else state.p2FatalBlowUsed = true;
+            player.action('fatal_blow');
+            AudioSys.superHit();
+            state.screenShake = Math.max(state.screenShake, 20);
+            showFloatingText("FATAL BLOW!", player.x + 15, player.y - 40, '#ff00ff');
+            if (state.isOnline && state.isHost) sendNetData({ type: 'fatal_blow', playerId: player.id });
+            return true;
+        }
         function tapAction(player, actionName) {
             if (!player) return;
             if (actionName === 'sky_figures') {
@@ -82,6 +94,7 @@
                 } else {
                     if (actionName === 'special') {
                         if (player.sp >= 100) player.action('super');
+                        else if (maybeFatalBlow(player)) return;
                         else if (state.keys['ArrowDown'] || state.keys['s'] || state.keys['S']) player.action('special_rise');
                         else player.action('projectile');
                     }
@@ -102,6 +115,7 @@
             }
             else if (actionName === 'special') {
                 if (player.sp >= 100) player.action('super');
+                else if (maybeFatalBlow(player)) return;
                 else if (state.keys['ArrowDown'] || state.keys['s'] || state.keys['S']) player.action('special_rise');
                 else {
                     const opp = state.bot;

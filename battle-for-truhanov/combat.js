@@ -65,6 +65,18 @@
                 });
             }
             if (state.finishHimStage) { executeFatality(attacker, defender); return }
+            if (defender.attackState === 5 && type !== 'throw' && type !== 'lasso_pull' && type !== 'lasso_strike') {
+                defender.hp = Math.max(0, defender.hp - dmg);
+                defender.flashTimer = 2;
+                state.hitstopFrames = Math.max(state.hitstopFrames, 4);
+                createBloodSplatter(defender.x + defender.width / 2, defender.y + 45, attacker.isLeft, 1);
+                showFloatingText("ARMOR!", defender.x + 30, defender.y - 30, '#cc66ff');
+                AudioSys.punch();
+                updateHUD();
+                return;
+            }
+            const krushing = defender.attackState > 0 && !defender.isBlocking && (type === 'uppercut' || type === 'super' || type === 'greatsword' || type === 'hook');
+            if (krushing) { dmg = Math.round(dmg * 2); state.hitstopFrames = Math.max(state.hitstopFrames, 14); state.screenShake = Math.max(state.screenShake, 18); }
             const pushDir = attacker.isLeft ? 1 : -1;
             let finalDmg = dmg; let blocked = false;
             if (defender.state === 'launched' && !defender.isBlocking) {
@@ -79,7 +91,8 @@
                 createImpactBurst(defender.x + defender.width / 2, defender.y + 40, '#ffffff', attacker.isLeft ? 1 : -1); AudioSys.punch();
                 state.screenShake = Math.max(state.screenShake, 6); state.hitstopFrames = Math.max(state.hitstopFrames, 4);
             } else if (defender.isBlocking && type !== 'projectile' && type !== 'throw') {
-                finalDmg = Math.max(1, Math.floor(dmg * 0.2)); blocked = true; AudioSys.block(); createBlockSparks(defender.x + defender.width / 2, defender.y + 55);
+                const chipTypes = ['super', 'greatsword', 'sword', 'spear', 'nunchucks', 'sausage', 'lasso_pull', 'lasso_strike'];
+                finalDmg = chipTypes.includes(type) ? Math.max(1, Math.floor(dmg * 0.15)) : 0; blocked = true; AudioSys.block(); createBlockSparks(defender.x + defender.width / 2, defender.y + 55);
                 state.hitstopFrames = Math.max(state.hitstopFrames, 4); state.screenShake = Math.max(state.screenShake, 4);
                 const wBonus = (type === 'greatsword' ? 4 : type === 'sword' || type === 'spear' ? 3 : type === 'super' || type === 'heavy_kick' ? 2 : 0);
                 defender.vx = pushDir * (3.2 + wBonus); // Push opponent back on block, heavier weapons push further
@@ -124,6 +137,16 @@
                     AudioSys.superHit(); defender.state = 'knockdown'; defender.knockdownTimer = 72; defender.vy = -4.6; defender.vx = pushDir * 5.0; state.screenShake = 12; state.hitstopFrames = 7; showFloatingText("TRIP!", defender.x + 30, defender.y + 20, '#ff00ff');
                     createImpactBurst(defender.x + defender.width / 2, defender.y + 92, '#ff00ff', attacker.isLeft ? 1 : -1);
                 } else if (type === 'throw') {
+                    if (defender.attackState === 6) {
+                        attacker.attackState = 0; attacker.attackTimer = 0; attacker.hitRegistered = true; attacker.hitBox.active = false; attacker.recoveryTimer = 8; attacker.attackRecovery = 0; attacker.state = 'idle';
+                        defender.attackState = 0; defender.attackTimer = 0; defender.hitRegistered = true; defender.hitBox.active = false; defender.recoveryTimer = 8; defender.attackRecovery = 0; defender.state = 'idle';
+                        attacker.vx = -pushDir * 5.0; defender.vx = pushDir * 5.0;
+                        AudioSys.superHit(); state.screenShake = Math.max(state.screenShake, 8); state.hitstopFrames = Math.max(state.hitstopFrames, 8);
+                        showFloatingText("TECH!", defender.x + 30, defender.y - 40, '#00ffff');
+                        createImpactBurst(defender.x + defender.width / 2, defender.y + 40, '#00ffff', attacker.isLeft ? 1 : -1);
+                        triggerHaptic(50);
+                        return;
+                    }
                     AudioSys.superHit(); defender.state = 'hitstun'; defender.hitstunTimer = 18; defender.vx = pushDir * 12.0; defender.vy = -1.0; state.screenShake = 10; state.hitstopFrames = 7; showFloatingText("THROWN!", defender.x + 20, defender.y - 6, '#ffffff');
                     createImpactBurst(defender.x + defender.width / 2, defender.y + 44, '#ffffff', attacker.isLeft ? 1 : -1);
                 } else if (type === 'super') {
@@ -181,9 +204,14 @@
                 }
                 triggerHaptic(45);
             }
+            if (krushing) showFloatingText("KRUSHING BLOW!", defender.x + 30, defender.y - 70, '#ff6600');
             defender.hp -= finalDmg; if (defender.hp < 0) defender.hp = 0;
+            if (!defender.fatalBlowNotified && defender.hp > 0 && defender.hp < defender.maxHp * 0.3) {
+                defender.fatalBlowNotified = true;
+                showFloatingText("FATAL BLOW READY!", defender.x + 15, defender.y - 60, '#ff00ff');
+            }
             if (!blocked) {
-                attacker.comboCounter++; attacker.comboResetTimer = 85; showCombo(attacker);
+                attacker.comboCounter++; attacker.comboResetTimer = 85; showCombo(attacker.comboCounter);
                 if (attacker.comboCounter === 4 && state.toastyTimer <= 0) { state.toastyTimer = 80 }
                 if (attacker.id === 'p1') {
                     state.coins += 1; // Basic hit reward

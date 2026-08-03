@@ -240,6 +240,8 @@
                             p2.lassoTargetX = packet.p2.lassoTargetX;
                             p2.lassoTargetY = packet.p2.lassoTargetY;
                             p2.lassoType = packet.p2.lassoType;
+                            if (packet.p2.fatalBlowBoost !== undefined) p2.fatalBlowBoost = packet.p2.fatalBlowBoost;
+                            if (packet.p2.fatalBlowUsed !== undefined) state.p2FatalBlowUsed = packet.p2.fatalBlowUsed;
                         }
                     } else {
                         const p1 = state.player;
@@ -265,6 +267,8 @@
                             p1.lassoTargetX = packet.p1.lassoTargetX;
                             p1.lassoTargetY = packet.p1.lassoTargetY;
                             p1.lassoType = packet.p1.lassoType;
+                            if (packet.p1.fatalBlowBoost !== undefined) p1.fatalBlowBoost = packet.p1.fatalBlowBoost;
+                            if (packet.p1.fatalBlowUsed !== undefined) state.p1FatalBlowUsed = packet.p1.fatalBlowUsed;
                         }
                         
                         if (p2 && packet.p2) {
@@ -287,6 +291,8 @@
                             p2.lassoTargetX = packet.p2.lassoTargetX;
                             p2.lassoTargetY = packet.p2.lassoTargetY;
                             p2.lassoType = packet.p2.lassoType;
+                            if (packet.p2.fatalBlowBoost !== undefined) p2.fatalBlowBoost = packet.p2.fatalBlowBoost;
+                            if (packet.p2.fatalBlowUsed !== undefined) state.p2FatalBlowUsed = packet.p2.fatalBlowUsed;
                         }
                         
                         if (packet.timer !== undefined) {
@@ -321,6 +327,18 @@
                         }
                     }
                     break;
+
+                case 'fatal_blow':
+                    {
+                        const fbPlayer = (packet.playerId === 'p1') ? state.player : state.bot;
+                        if (fbPlayer && !state.isHost) {
+                            if (packet.playerId === 'p1') state.p1FatalBlowUsed = true; else state.p2FatalBlowUsed = true;
+                            fbPlayer.action('fatal_blow');
+                            state.screenShake = Math.max(state.screenShake, 20);
+                            showFloatingText("FATAL BLOW!", fbPlayer.x + 15, fbPlayer.y - 40, '#ff00ff');
+                        }
+                    }
+                    break;
             }
         }
 
@@ -350,7 +368,9 @@
                         lassoActive: state.player.lassoActive,
                         lassoTargetX: state.player.lassoTargetX,
                         lassoTargetY: state.player.lassoTargetY,
-                        lassoType: state.player.lassoType
+                        lassoType: state.player.lassoType,
+                        fatalBlowBoost: state.player.fatalBlowBoost,
+                        fatalBlowUsed: state.p1FatalBlowUsed
                     },
                     p2: {
                         x: state.bot.x,
@@ -371,7 +391,9 @@
                         lassoActive: state.bot.lassoActive,
                         lassoTargetX: state.bot.lassoTargetX,
                         lassoTargetY: state.bot.lassoTargetY,
-                        lassoType: state.bot.lassoType
+                        lassoType: state.bot.lassoType,
+                        fatalBlowBoost: state.bot.fatalBlowBoost,
+                        fatalBlowUsed: state.p2FatalBlowUsed
                     },
                     timer: state.timer
                 });
@@ -396,7 +418,9 @@
                         lassoActive: state.bot.lassoActive,
                         lassoTargetX: state.bot.lassoTargetX,
                         lassoTargetY: state.bot.lassoTargetY,
-                        lassoType: state.bot.lassoType
+                        lassoType: state.bot.lassoType,
+                        fatalBlowBoost: state.bot.fatalBlowBoost,
+                        fatalBlowUsed: state.p2FatalBlowUsed
                     }
                 });
             }

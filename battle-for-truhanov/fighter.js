@@ -14,7 +14,6 @@
                 this.skeleton = { headY: 0, lArmAngle: 0, rArmAngle: 0, lLegAngle: 0, rLegAngle: 0, lFArmAngle: 0.35, rFArmAngle: 0.35, lShinAngle: 0.25, rShinAngle: 0.25 };
                 this.hitBox = { x: 0, y: 0, w: 0, h: 0, active: false, dmg: 0, type: 'punch' };
                 this.comboCounter = 0; this.comboResetTimer = 0;
-                this.inputBuffer = null;
                 this.hitRegistered = false;
                 this.weaponCharge = 0; this.weaponTimer = 0; this.weaponSelected = 'none'; this.weaponActiveType = null;
                 this.weaponAmmoTimer = 0; this.weaponCooldownTimer = 0; this.weaponState = 'ready';
@@ -29,6 +28,8 @@
                 this.lassoTargetX = 0; this.lassoTargetY = 0;
                 this.lassoType = null;
                 this.flashTimer = 0; this.recoveryTimer = 0; this.attackRecovery = 0;
+                this.bufferedAction = null; this.bufferTimer = 0;
+                this.fatalBlowBoost = false; this.armorTimer = 0; this.fatalBlowNotified = false;
                 this.squashTimer = 0; this.squashAmount = 0;
                 this.bounceCount = 0; this.hitstunTilt = 0; this.hitstunHead = -6;
             }
@@ -122,7 +123,7 @@
                         },
                         isLeft: this.isLeft
                     });
-                    if (this.dashTimer <= 0) { this.state = 'idle'; }
+                    if (this.dashTimer <= 0) { this.state = 'idle'; this.recoveryTimer = 3; }
                 } else if (this.state === 'hitstun' || this.state === 'dazed') {
                     this.hitstunTimer--;
                     if (this.hitstunTimer <= 0) { this.state = 'idle'; this.hat.on = true; }
@@ -218,7 +219,7 @@
                             this.hitBox.dmg = this.weaponDamage || 8.8;
                             this.hitBox.type = this.weaponHitType || 'sword';
                         } else if (this.attackState === 5) {
-                            this.hitBox.w = 110; this.hitBox.x = this.isLeft ? this.x + this.width : this.x - this.hitBox.w; this.hitBox.y = this.y + 10; this.hitBox.h = 110; this.hitBox.dmg = 18; this.hitBox.type = 'super';
+                            this.hitBox.w = this.fatalBlowBoost ? 135 : 110; this.hitBox.x = this.isLeft ? this.x + this.width : this.x - this.hitBox.w; this.hitBox.y = this.y + 10; this.hitBox.h = 110; this.hitBox.dmg = this.fatalBlowBoost ? 30 : 18; this.hitBox.type = 'super';
                         } else if (this.attackState === 14) {
                             this.hitBox.w = 220; this.hitBox.x = this.isLeft ? this.x + this.width : this.x - this.hitBox.w; this.hitBox.y = this.y + 30; this.hitBox.h = 45; this.hitBox.dmg = 8; this.hitBox.type = 'lasso_pull';
                         } else if (this.attackState === 15) {
@@ -227,8 +228,15 @@
                     }
                     if (this.attackTimer <= 0) {
                         this.attackState = 0;
+                        this.fatalBlowBoost = false;
+                        const wasHit = this.hitRegistered;
                         this.hitRegistered = false;
-                        if (this.attackRecovery > 0) { this.recoveryTimer = this.attackRecovery; this.attackRecovery = 0; }
+                        if (this.attackRecovery > 0) {
+                            this.recoveryTimer = wasHit ? this.attackRecovery : Math.max(6, Math.round(this.attackRecovery * 1.6));
+                            this.attackRecovery = 0;
+                        } else if (!wasHit) {
+                            this.recoveryTimer = 6;
+                        }
                     }
                 }
                 if (this.attackState === 7 || this.attackState === 16 || this.attackState === 4 || this.attackState === 5 || this.state === 'launched' || this.state === 'dash' || (this.weaponTimer > 0 && this.vx !== 0)) {
@@ -263,13 +271,14 @@
                 if (this.flashTimer > 0) this.flashTimer--;
                 if (this.recoveryTimer > 0) this.recoveryTimer--;
                 if (this.squashTimer > 0) this.squashTimer--;
-                if (this.inputBuffer) {
-                    if (this.attackState === 0 && this.recoveryTimer <= 0 && this.state !== 'hitstun' && this.state !== 'launched' && this.state !== 'knockdown' && this.state !== 'dead' && this.state !== 'dazed') {
-                        const buf = this.inputBuffer; this.inputBuffer = null; this.action(buf.type);
-                    } else {
-                        this.inputBuffer.frames--;
-                        if (this.inputBuffer.frames <= 0) this.inputBuffer = null;
-                    }
+                if (this.armorTimer > 0) this.armorTimer--;
+                if (this.bufferedAction && this.attackState === 0 && this.recoveryTimer <= 0 && this.state !== 'hitstun' && this.state !== 'dazed' && this.state !== 'dead') {
+                    const buffered = this.bufferedAction;
+                    this.bufferedAction = null; this.bufferTimer = 0;
+                    this.action(buffered);
+                } else if (this.bufferTimer > 0) {
+                    this.bufferTimer--;
+                    if (this.bufferTimer <= 0) this.bufferedAction = null;
                 }
                 this.animateSkeleton();
             }
@@ -314,9 +323,6 @@
                 } else if (this.state === 'dazed') {
                     targetHeadY = Math.sin(time * 2.5) * 3; targetLArm = 1.0 + Math.sin(time * 1.2) * 0.3; targetRArm = -1.0 - Math.sin(time * 1.2) * 0.3; targetLLeg = 0.15; targetRLeg = -0.15;
                     targetLFArm = 0.8 + Math.sin(time * 1.2) * 0.15; targetRFArm = 0.8 - Math.sin(time * 1.2) * 0.15; targetLShin = 0.4; targetRShin = 0.4;
-                } else if (this.state === 'victory') {
-                    targetHeadY = -4; targetLArm = -1.9 * dir; targetRArm = 1.9 * dir; targetLLeg = 0.05; targetRLeg = -0.05;
-                    targetLFArm = 0.5; targetRFArm = 0.5; targetLShin = 0.25; targetRShin = 0.25;
                 } else if (this.state === 'dead') {
                     targetHeadY = 15; targetLArm = 1.5; targetRArm = -1.5; targetLLeg = 0.2; targetRLeg = -0.2; targetRot = (Math.PI / 2) * dir;
                     targetLFArm = 0.95; targetRFArm = 0.95; targetLShin = 0.7; targetRShin = 0.7;
@@ -1139,10 +1145,10 @@
             }
             action(type) {
                 const canCancel = this.attackState === 1 && this.hitRegistered && ['special_slide', 'special_rise', 'projectile', 'super', 'uppercut', 'sweep'].indexOf(type) >= 0;
-                if ((this.attackState > 0 && !canCancel) || this.recoveryTimer > 0 || this.state === 'hitstun' || this.state === 'dead' || this.state === 'dazed') {
-                    if (this.state !== 'hitstun' && this.state !== 'launched' && this.state !== 'knockdown' && this.state !== 'dead' && this.state !== 'dazed' && ['punch', 'kick', 'hook', 'heavy_kick', 'sweep', 'uppercut', 'throw', 'super', 'flip', 'projectile', 'jump_punch', 'jump_kick', 'backflip'].indexOf(type) >= 0) {
-                        this.inputBuffer = { type: type, frames: 9 };
-                    }
+                if (this.state === 'hitstun' || this.state === 'dead' || this.state === 'dazed') return;
+                if ((this.attackState > 0 && !canCancel) || this.recoveryTimer > 0) {
+                    this.bufferedAction = type;
+                    this.bufferTimer = 4;
                     return;
                 }
                 this.hitRegistered = false;
@@ -1202,6 +1208,7 @@
                 else if (type === 'special_slide' || type === 'sweep') { this.attackState = 4; this.attackTimer = 28; this.vx = this.isLeft ? 13 : -13; AudioSys.whoosh() }
                 else if (type === 'throw') { this.attackState = 6; this.attackTimer = 26; AudioSys.whoosh(); this.vx = this.isLeft ? 4.2 : -4.2 }
                 else if (type === 'super' && this.sp >= 100) { this.attackState = 5; this.attackTimer = 38; this.sp = 0; AudioSys.superHit() }
+                else if (type === 'fatal_blow') { this.attackState = 5; this.attackTimer = 48; this.fatalBlowBoost = true; this.armorTimer = 60; AudioSys.superHit() }
                 else if (type === 'weapon_pipe_light') {
                     this.attackState = 10; this.attackTimer = 18; AudioSys.whoosh();
                     const w = this.weaponSelected;

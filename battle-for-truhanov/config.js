@@ -16,6 +16,7 @@
         let state = {
             currentLevelIndex: 0, difficulty: 1, isRunning: false, player: null, bot: null, keys: {}, timer: 99, timerInterval: null,
             particles: [], projectiles: [], floatingTexts: [], roundNum: 1, p1Wins: 0, p2Wins: 0, isMatchEnding: false,
+            p1FatalBlowUsed: false, p2FatalBlowUsed: false,
             finishHimStage: false, finishHimTimeout: null, screenShake: 0, hitstopFrames: 0, toastyTimer: 0, fatalityAnimation: null,
             controlGestures: {}, inputLock: false, frameCount: 0, hintTimeout: null,
             isOnline: false, isHost: false, netReady: false, opponentCharId: null, peer: null, netConn: null,
