@@ -838,4 +838,64 @@ input:checked + .slider:before {
     }
 }
 
+/* ===== Міні-ігри: мобільний геймпад (тільки на тач-пристроях) ===== */
+@media (hover: none), (pointer: coarse) {
+    #matrix-btn-brake, #matrix-btn-boost, #matrix-btn-jump, #matrix-btn-slide, #matrix-btn-shoot,
+    #basket-btn-left, #basket-btn-right, #basket-btn-jump,
+    #shoot-btn-aim-left, #shoot-btn-aim-right, #shoot-btn-up, #shoot-btn-down, #shoot-btn-kick,
+    #pc-btn-aim-left, #pc-btn-aim-right, #pc-btn-up, #pc-btn-down, #pc-btn-kick {
+        position: fixed !important;
+        z-index: 900;
+        min-width: 66px;
+        min-height: 58px;
+        margin: 0 !important;
+        padding: 8px 10px !important;
+        border-radius: 14px;
+        font-size: 0.75rem;
+        line-height: 1.2;
+        background: rgba(8, 6, 16, 0.88);
+        backdrop-filter: blur(2px);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+        -webkit-touch-callout: none;
+        touch-action: none;
+        user-select: none;
+    }
+
+    /* Баскетбол: зліва — рух + стрибок */
+    #basket-btn-left  { left: 16px; bottom: 16px; }
+    #basket-btn-right { left: 94px; bottom: 16px; }
+    #basket-btn-jump  { left: 16px; bottom: 86px; }
+
+    /* Matrix Run: зліва — гальмо/ривок/стрибок/слайд, справа — удар */
+    #matrix-btn-brake { left: 16px; bottom: 16px; }
+    #matrix-btn-boost { left: 94px; bottom: 16px; }
+    #matrix-btn-jump  { left: 16px; bottom: 86px; }
+    #matrix-btn-slide { left: 94px; bottom: 86px; }
+    #matrix-btn-shoot { right: 16px; bottom: 16px; }
+
+    /* Shoot Mode: D-pad зліва, удар справа */
+    #shoot-btn-up         { left: 94px;  bottom: 156px; }
+    #shoot-btn-aim-left   { left: 16px;  bottom: 86px; }
+    #shoot-btn-aim-right  { left: 172px; bottom: 86px; }
+    #shoot-btn-down       { left: 94px;  bottom: 16px; }
+    #shoot-btn-kick       { right: 16px; bottom: 16px; }
+
+    /* Penalty Challenge: D-pad зліва, удар справа */
+    #pc-btn-up         { left: 94px;  bottom: 156px; }
+    #pc-btn-aim-left   { left: 16px;  bottom: 86px; }
+    #pc-btn-aim-right  { left: 172px; bottom: 86px; }
+    #pc-btn-down       { left: 94px;  bottom: 16px; }
+    #pc-btn-kick       { right: 16px; bottom: 16px; }
+
+    /* Кнопки «вихід» — у правий верхній кут, щоб не заважали геймпаду */
+    #btn-matrix-back, #btn-basketball-back, #btn-shoot-back, #btn-pc-back {
+        position: fixed !important;
+        top: 12px;
+        right: 12px;
+        z-index: 900;
+        padding: 8px 14px !important;
+        font-size: 0.8rem;
+    }
+}
+
 

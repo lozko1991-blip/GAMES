@@ -67,6 +67,10 @@ class BasketballGame {
         this.aimPower = 350; // speed magnitude
         this.isAimingKeyboard = false;
         this.isMouseDragging = false;
+
+        // Заряджений стрибок (утримуй Space — відпусти = стрибок-кидок)
+        this.isChargingJump = false;
+        this.jumpCharge = 0;
         
         // Stats
         this.baskets = 0;
@@ -88,12 +92,11 @@ class BasketballGame {
             if (!this.isPlaying) return;
             this.keysPressed[e.code] = true;
 
-            // Space key Down: Jump (if not already jumping), or build shooting power if aiming with keyboard
+            // Space key Down: start charging jump shot (release to jump+shoot)
             if (e.code === 'Space') {
-                if (this.ball.state === 'held' && !this.player.isJumping) {
-                    this.player.velocityY = -380;
-                    this.player.isJumping = true;
-                    this.ball.isJumpShot = true;
+                if (this.ball.state === 'held' && !this.player.isJumping && !this.isChargingJump) {
+                    this.isChargingJump = true;
+                    this.jumpCharge = 0;
                 }
                 e.preventDefault();
             }
@@ -122,6 +125,10 @@ class BasketballGame {
         this.keyupHandler = (e) => {
             if (!this.isPlaying) return;
             this.keysPressed[e.code] = false;
+            // Відпускання Space — стрибок-кидок із зарядженою силою
+            if (e.code === 'Space' && this.isChargingJump) {
+                this._releaseJump();
+            }
         };
 
         // Mouse Drag to Shoot
@@ -131,9 +138,9 @@ class BasketballGame {
             const mouseX = (e.clientX - rect.left) * (this.width / rect.width);
             const mouseY = (e.clientY - rect.top) * (this.height / rect.height);
 
-            // Click near player/ball to start drag
+            // Click near player/ball to start drag (120px — зручно і мишкою, і пальцем)
             const dist = Math.hypot(mouseX - this.ball.x, mouseY - this.ball.y);
-            if (dist < 40) {
+            if (dist < 120) {
                 this.isMouseDragging = true;
                 this.isAimingKeyboard = false;
             }
@@ -271,11 +278,26 @@ class BasketballGame {
     }
 
     jump() {
-        if (!this.player.isJumping) {
-            this.player.velocityY = -380;
-            this.player.isJumping = true;
-            this.ball.isJumpShot = true;
+        if (!this.player.isJumping && !this.isChargingJump) {
+            this.isChargingJump = true;
+            this.jumpCharge = 0;
+            this._releaseJump();
         }
+    }
+
+    _releaseJump() {
+        // Якщо м'яч уже полетів (напр., drag під час зарядки) — просто скидаємо зарядку
+        if (this.ball.state !== 'held') {
+            this.isChargingJump = false;
+            this.jumpCharge = 0;
+            return;
+        }
+        const charge = 0.55 + (this.jumpCharge / 100) * 0.65;
+        this.player.velocityY = -380 * charge;
+        this.player.isJumping = true;
+        this.ball.isJumpShot = true;
+        this.isChargingJump = false;
+        this.jumpCharge = 0;
     }
 
     start() {
@@ -305,6 +327,8 @@ class BasketballGame {
         this.ball.trail = [];
         this.swishActive = true;
         this.isMouseDragging = false;
+        this.isChargingJump = false;
+        this.jumpCharge = 0;
         
         // Aiming guide defaults
         if (!this.isAimingKeyboard) {
@@ -365,6 +389,11 @@ class BasketballGame {
         }
         if (this.keysPressed['ArrowRight'] || this.keysPressed['KeyD']) {
             this.movePlayer(this.player.speed * dt);
+        }
+
+        // Зарядка стрибка (утримування Space)
+        if (this.isChargingJump) {
+            this.jumpCharge = Math.min(100, this.jumpCharge + 240 * dt);
         }
 
         // Player Jump Physics
@@ -793,6 +822,18 @@ class BasketballGame {
             this.ctx.moveTo(this.ball.x, this.ball.y - this.ball.radius);
             this.ctx.lineTo(this.ball.x, this.ball.y + this.ball.radius);
             this.ctx.stroke();
+        }
+
+        // Шкала сили зарядженого стрибка (над гравцем)
+        if (this.isChargingJump) {
+            const bx = this.player.x;
+            const by = this.groundY - this.player.y - this.player.height - 18;
+            const barW = 60, barH = 8;
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+            this.ctx.fillRect(bx - barW / 2, by, barW, barH);
+            const col = this.jumpCharge > 75 ? '#ff3366' : (this.jumpCharge > 40 ? '#ffcc00' : '#00ffcc');
+            this.ctx.fillStyle = col;
+            this.ctx.fillRect(bx - barW / 2, by, barW * this.jumpCharge / 100, barH);
         }
 
         // Draw Particles

@@ -69,6 +69,10 @@
 
 `class MatrixRunGame { constructor(canvas, onWin, onFail, clubPreset) }` — міні-гра-випробування у кар'єрі клубу. `onWin`/`onFail` — колбеки результату, `clubPreset` — клуб кар'єри.
 
+- Керування: Space/W/↑ — стрибок, S/↓ — слайд, F/E — удар м'ячем, ← — гальмо, → — ривок; свайп по канвасу (вгору — стрибок, вниз — слайд).
+- Швидкість: плавна інерція (`_curMult` добирає 0.5/1.0/1.6), базова зростає до +60% до фінішу (400 м).
+- Перешкоди чергуються групами (hurdle/spike ↔ laser/breakable) — `_lastSpawnGroup` гарантує прохідність.
+
 ## basketball.js — `BasketballGame`
 
 Міні-гра «баскетбол» (нагорода за матч). Клас `BasketballGame(canvas, onClose)`.
@@ -77,7 +81,12 @@
 - Управління: `bindEvents()` / `unbindEvents()`, `movePlayer(amount)`, `jump()`, `shootKeyboard()` / `shootBall()`.
 - М'яч: `resetBall()`, `positionBallOnPlayer()`; стани `ball.state`: `'held'` → `'flying'` → `'scored'` / `'missed'`.
 - Інше: `resetWind()` (вітер), `spawnTrailParticle(x, y, color)`, `checkCollisions()`, `handleScore()` / `handleMiss()` (із `setTimeout`), `spawnConfetti(color, count)`.
+- Керування: A/D або ←/→ — рух, утримування Space — заряджений стрибок-кидок (`jumpCharge` 0..100, шкала сили над гравцем), F/Enter — кидок, миша/тач — drag-приціл (зона 120px мишкою / 180px тачем).
 - Активний м'яч із магазину: `pm_equipped_ball` (за замовчуванням `'classic'`).
+
+## shootMode.js — `PlayerShootGame` (режим «Стрілець»)
+
+Режим «Стрілець» — `PlayerShootGame` (стрілялка по статуєтках навпроти воріт). Приціл: стрілки/WASD, drag по канвасу (тач); удар — Space (заряд). Ретикул + пунктирна траєкторія польоту з жовтим маркером кінцевої точки (симуляція 160 кроків із `PHYSICS_GRAVITY`).
 
 ## penaltyChallenge.js — `PenaltyChallengeGame` (режим «Пенальті-виклик»)
 

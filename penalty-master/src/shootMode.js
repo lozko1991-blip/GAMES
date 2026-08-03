@@ -64,6 +64,9 @@ class PlayerShootGame {
         // обробники (будемо знімати — мають ref)
         this._onKeyDown = this._handleKeyDown.bind(this);
         this._onKeyUp   = this._handleKeyUp.bind(this);
+        this._onTouchStart = this._handleTouchStart.bind(this);
+        this._onTouchMove  = this._handleTouchMove.bind(this);
+        this._drag = null;
     }
 
     /* ================================================== START / LOOP / STOP */
@@ -126,6 +129,8 @@ class PlayerShootGame {
     _bindEvents() {
         window.addEventListener('keydown', this._onKeyDown);
         window.addEventListener('keyup',   this._onKeyUp);
+        this.canvas.addEventListener('touchstart', this._onTouchStart, { passive: false });
+        this.canvas.addEventListener('touchmove',  this._onTouchMove,  { passive: false });
 
         const btnLeft   = document.getElementById('shoot-btn-aim-left');
         const btnRight  = document.getElementById('shoot-btn-aim-right');
@@ -150,6 +155,30 @@ class PlayerShootGame {
     _unbindEvents() {
         window.removeEventListener('keydown', this._onKeyDown);
         window.removeEventListener('keyup',   this._onKeyUp);
+        this.canvas.removeEventListener('touchstart', this._onTouchStart);
+        this.canvas.removeEventListener('touchmove',  this._onTouchMove);
+        this._drag = null;
+    }
+
+    // Drag по канвасу — пряме переміщення прицілу (зручно на смартфоні)
+    _handleTouchStart(e) {
+        if (this.gameState !== 'aiming') return;
+        const t = e.touches[0];
+        this._drag = { x: t.clientX, y: t.clientY };
+        if (e.cancelable) e.preventDefault();
+    }
+
+    _handleTouchMove(e) {
+        if (!this._drag || this.gameState !== 'aiming') return;
+        const t = e.touches[0];
+        const dx = t.clientX - this._drag.x;
+        const dy = t.clientY - this._drag.y;
+        this._drag = { x: t.clientX, y: t.clientY };
+        const maxX = GOAL_WIDTH / 2 + 2.8;
+        const maxY = GOAL_HEIGHT + 1.8;
+        this.aimX = Math.max(-maxX, Math.min(maxX, this.aimX - dx * 0.014));
+        this.aimY = Math.max(0.05, Math.min(maxY, this.aimY + dy * 0.011));
+        if (e.cancelable) e.preventDefault();
     }
 
     _handleKeyDown(e) {
@@ -395,6 +424,42 @@ class PlayerShootGame {
             ctx.stroke();
             ctx.restore();
         }
+
+        // Пунктирна траєкторія польоту м'яча (симуляція з гравітацією)
+        ctx.save();
+        ctx.setLineDash([6, 6]);
+        ctx.lineWidth = 1.4 * ((p ? p.scale : 300) / 300);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+        const start = this.camera.project(this.ball.position, w, h);
+        ctx.beginPath();
+        if (start) ctx.moveTo(start.x, start.y);
+        let sx = this.ball.position.coordinateX;
+        let sy = this.ball.position.coordinateY;
+        let sz = this.ball.position.coordinateZ;
+        let vx = speedX, vy = speedY, vz = speedZ;
+        const dt = 1 / 60;
+        let endPt = null;
+        for (let i = 0; i < 160; i++) {
+            vy -= PHYSICS_GRAVITY * dt;
+            sx += vx * dt; sy += vy * dt; sz += vz * dt;
+            if (sz <= 0.05 || sy < BALL_RADIUS) { endPt = new Vector3(sx, sy, sz); break; }
+            if (i % 2 === 0) {
+                const pp = this.camera.project(new Vector3(sx, sy, sz), w, h);
+                if (pp) ctx.lineTo(pp.x, pp.y);
+            }
+        }
+        ctx.stroke();
+        // Маркер кінця траєкторії (точка влучання в сітку/землю)
+        if (endPt) {
+            const pe = this.camera.project(endPt, w, h);
+            if (pe) {
+                ctx.fillStyle = '#ffcc44';
+                ctx.beginPath();
+                ctx.arc(pe.x, pe.y, 4 * (pe.scale / 300), 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        ctx.restore();
     }
 
     /* ================================================== HUD */

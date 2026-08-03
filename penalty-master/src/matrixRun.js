@@ -52,6 +52,10 @@ class MatrixRunGame {
         this.coinSpawnTimer = 0;
         this.lastTime = 0;
 
+        // Плавна інерція швидкості (гальмо/норма/ривок) та чергування груп перешкод
+        this._curMult = 1.0;
+        this._lastSpawnGroup = undefined;
+
         this.initMatrixStreams();
         this.bindEvents();
     }
@@ -138,6 +142,25 @@ class MatrixRunGame {
             btnBoost.onmousedown = startBoost;
             btnBoost.onmouseup = endBoost;
         }
+
+        // Свайп по канвасу: вгору — стрибок, вниз — слайд
+        this._swipeStartY = null;
+        this._swipeStartHandler = (e) => {
+            if (!this.isPlaying) return;
+            this._swipeStartY = e.touches[0].clientY;
+            if (e.cancelable) e.preventDefault();
+        };
+        this._swipeMoveHandler = (e) => {
+            if (!this.isPlaying || this._swipeStartY === null) return;
+            const dy = this._swipeStartY - e.touches[0].clientY;
+            if (Math.abs(dy) > 42) {
+                if (dy > 0) { this.jump(); } else { this.slide(); }
+                this._swipeStartY = null;
+            }
+            if (e.cancelable) e.preventDefault();
+        };
+        this.canvas.addEventListener('touchstart', this._swipeStartHandler, { passive: false });
+        this.canvas.addEventListener('touchmove', this._swipeMoveHandler, { passive: false });
     }
 
     unbindEvents() {
@@ -156,6 +179,12 @@ class MatrixRunGame {
         if (btnShoot) { btnShoot.onclick = null; btnShoot.ontouchstart = null; }
         if (btnBrake) { btnBrake.ontouchstart = null; btnBrake.ontouchend = null; btnBrake.onmousedown = null; btnBrake.onmouseup = null; }
         if (btnBoost) { btnBoost.ontouchstart = null; btnBoost.ontouchend = null; btnBoost.onmousedown = null; btnBoost.onmouseup = null; }
+
+        if (this.canvas) {
+            this.canvas.removeEventListener('touchstart', this._swipeStartHandler);
+            this.canvas.removeEventListener('touchmove', this._swipeMoveHandler);
+        }
+        this._swipeStartY = null;
 
         this.keysPressed = {};
     }
@@ -219,8 +248,17 @@ class MatrixRunGame {
     }
 
     spawnObstacle() {
-        const types = ['hurdle', 'spike', 'laser', 'breakable'];
-        const type = types[Math.floor(Math.random() * types.length)];
+        // Гарантія прохідності: чергуємо групи перешкод
+        // (стрибкові: hurdle/spike) ↔ (спеціальні: laser/breakable) — жодних двох однакових підряд
+        const groups = [['hurdle', 'spike'], ['laser', 'breakable']];
+        let g;
+        if (this._lastSpawnGroup === undefined || Math.random() < 0.75) {
+            g = (this._lastSpawnGroup === undefined) ? (Math.random() < 0.5 ? 0 : 1) : ((this._lastSpawnGroup + 1) % 2);
+        } else {
+            g = this._lastSpawnGroup;
+        }
+        this._lastSpawnGroup = g;
+        const type = groups[g][Math.floor(Math.random() * groups[g].length)];
 
         let obs = {
             x: this.width + 50,
@@ -316,19 +354,23 @@ class MatrixRunGame {
     }
 
     update(dt) {
-        // Розраховуємо швидкість бігу та положення гравця залежно від стрілок
-        let speedMultiplier = 1.0;
+        // Плавна інерція: множник не змінюється стрибком, а плавно добирається
+        let targetMult = 1.0;
         if (this.keysPressed['ArrowLeft'] || this.keysPressed['KeyA']) {
-            speedMultiplier = 0.5; // Гальмування / Додатковий час на роздуми
+            targetMult = 0.5; // Гальмування / Додатковий час на роздуми
         } else if (this.keysPressed['ArrowRight'] || this.keysPressed['KeyD']) {
-            speedMultiplier = 1.6; // Прискорення / Ривок вперед
+            targetMult = 1.6; // Прискорення / Ривок вперед
         }
+        this._curMult += (targetMult - this._curMult) * 8 * dt;
+        const speedMultiplier = this._curMult;
 
         // Плавний нахил/зсув гравця залежно від швидкості
-        const targetX = (speedMultiplier === 0.5) ? 65 : ((speedMultiplier === 1.6) ? 165 : 100);
+        const targetX = (targetMult === 0.5) ? 65 : ((targetMult === 1.6) ? 165 : 100);
         this.player.x += (targetX - this.player.x) * 6.5 * dt;
 
-        const currentRunSpeed = this.speed * speedMultiplier;
+        // Прогресія швидкості з дистанцією: до +60% до фінішу (400 м)
+        const baseSpeed = this.speed * (1 + Math.min(0.6, this.distance / 400 * 0.6));
+        const currentRunSpeed = baseSpeed * speedMultiplier;
 
         // Накопичення дистанції
         this.distance += currentRunSpeed * 0.05 * dt;
