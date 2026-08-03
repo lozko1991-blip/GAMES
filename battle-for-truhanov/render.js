@@ -78,7 +78,7 @@
                 CTX.beginPath(); CTX.moveTo(560 - scrollOffset * 0.5, 160); CTX.quadraticCurveTo(675 - scrollOffset * 0.3, 110, 820 - scrollOffset * 0.15, 132); CTX.stroke();
                 CTX.fillStyle = 'rgba(10,25,18,0.55)';
                 for (let i = 0; i < 7; i++) { CTX.fillRect(20 + i * 155 - scrollOffset * (0.08 + i * 0.005), horizon - 48 - (i % 2) * 12, 26, 48 + (i % 3) * 10) }
-                CTX.fillStyle = 'rgba(18, 35, 28, 0.65)'; CTX.fillRect(0, 330, CANVAS.width, 30);
+                CTX.fillStyle = 'rgba(18, 35, 28, 0.65)'; CTX.fillRect(0, 330, LOGICAL_W, 30);
             } else if (lvl.district === 'khreshchatyk') {
                 drawBackgroundGlow(720 - scrollOffset * 0.1, 100, 110, 'rgba(255,120,70,0.28)', 1);
                 CTX.fillStyle = 'rgba(20, 12, 28, 0.95)';
@@ -91,8 +91,8 @@
                     CTX.fillStyle = 'rgba(20, 12, 28, 0.95)';
                 }
                 CTX.strokeStyle = 'rgba(255,255,255,0.15)'; CTX.lineWidth = 6; CTX.beginPath();
-                CTX.moveTo(0, 360); CTX.lineTo(CANVAS.width, 360); CTX.stroke();
-                CTX.fillStyle = 'rgba(40, 20, 20, 0.85)'; CTX.fillRect(0, 330, CANVAS.width, 40);
+                CTX.moveTo(0, 360); CTX.lineTo(LOGICAL_W, 360); CTX.stroke();
+                CTX.fillStyle = 'rgba(40, 20, 20, 0.85)'; CTX.fillRect(0, 330, LOGICAL_W, 40);
             } else if (lvl.district === 'hidropark') {
                 drawBackgroundGlow(220, 105, 70, 'rgba(90,220,170,0.24)', 1);
                 CTX.fillStyle = 'rgba(10, 38, 24, 0.8)';
@@ -101,21 +101,21 @@
                     CTX.fillRect(x, 130 + (i % 3) * 4, 22, 145);
                     CTX.beginPath(); CTX.arc(x + 12, 120, 34, 0, Math.PI * 2); CTX.fill();
                 }
-                CTX.fillStyle = 'rgba(20,120,170,0.18)'; CTX.fillRect(0, 255, CANVAS.width, 70);
-                CTX.fillStyle = 'rgba(45, 75, 28, 0.75)'; CTX.fillRect(0, 330, CANVAS.width, 30);
+                CTX.fillStyle = 'rgba(20,120,170,0.18)'; CTX.fillRect(0, 255, LOGICAL_W, 70);
+                CTX.fillStyle = 'rgba(45, 75, 28, 0.75)'; CTX.fillRect(0, 330, LOGICAL_W, 30);
                 CTX.fillStyle = 'rgba(255,255,255,0.08)'; CTX.beginPath(); CTX.ellipse(600 - scrollOffset * 0.2, 145, 42, 42, 0, 0, Math.PI * 2); CTX.fill();
             } else if (lvl.district === 'shuliavka') {
                 drawBackgroundGlow(680, 85, 80, 'rgba(160,160,255,0.2)', 1);
                 CTX.fillStyle = 'rgba(12,12,18,0.92)';
-                CTX.fillRect(0, 150, CANVAS.width, 160);
+                CTX.fillRect(0, 150, LOGICAL_W, 160);
                 CTX.fillStyle = 'rgba(28,28,36,0.96)';
                 CTX.fillRect(40 - scrollOffset * 0.18, 120, 260, 36);
                 CTX.fillRect(620 - scrollOffset * 0.14, 115, 250, 38);
                 CTX.fillStyle = 'rgba(255,255,255,0.08)';
-                CTX.fillRect(0, 330, CANVAS.width, 30);
+                CTX.fillRect(0, 330, LOGICAL_W, 30);
                 CTX.strokeStyle = 'rgba(180,180,190,0.5)'; CTX.lineWidth = 4;
-                CTX.beginPath(); CTX.moveTo(0, 145); CTX.lineTo(CANVAS.width, 120); CTX.stroke();
-                CTX.beginPath(); CTX.moveTo(0, 180); CTX.lineTo(CANVAS.width, 170); CTX.stroke();
+                CTX.beginPath(); CTX.moveTo(0, 145); CTX.lineTo(LOGICAL_W, 120); CTX.stroke();
+                CTX.beginPath(); CTX.moveTo(0, 180); CTX.lineTo(LOGICAL_W, 170); CTX.stroke();
             } else if (lvl.district === 'kneu') {
                 drawBackgroundGlow(250, 110, 70, 'rgba(90,120,255,0.18)', 1);
                 CTX.fillStyle = 'rgba(10,16,34,0.92)'; CTX.fillRect(120 - scrollOffset * 0.08, 130, 520, 150);
@@ -123,7 +123,7 @@
                 CTX.fillRect(220 - scrollOffset * 0.08, 110, 320, 20);
                 for (let i = 0; i < 6; i++) { CTX.fillRect(170 + i * 82 - scrollOffset * 0.08, 160, 18, 90) }
                 for (let i = 0; i < 8; i++) { CTX.fillRect(160 + i * 60 - scrollOffset * 0.05, 220, 16, 12) }
-                CTX.fillStyle = 'rgba(255,215,80,0.25)'; CTX.fillRect(110, 330, CANVAS.width, 30);
+                CTX.fillStyle = 'rgba(255,215,80,0.25)'; CTX.fillRect(110, 330, LOGICAL_W, 30);
             } else if (lvl.district === 'borschaga') {
                 drawBackgroundGlow(780, 100, 80, 'rgba(255,80,120,0.18)', 1);
                 CTX.fillStyle = 'rgba(16,16,20,0.96)';
@@ -134,25 +134,25 @@
                     for (let w = 0; w < 10; w++) { CTX.fillRect(bx + 12 + (w % 3) * 28, 115 + Math.floor(w / 3) * 28, 10, 10) }
                     CTX.fillStyle = 'rgba(16,16,20,0.96)';
                 }
-                CTX.fillStyle = 'rgba(255,120,0,0.16)'; CTX.fillRect(0, 325, CANVAS.width, 35);
+                CTX.fillStyle = 'rgba(255,120,0,0.16)'; CTX.fillRect(0, 325, LOGICAL_W, 35);
                 CTX.strokeStyle = 'rgba(255,170,80,0.25)'; CTX.lineWidth = 3;
-                CTX.beginPath(); CTX.moveTo(0, 200); CTX.lineTo(CANVAS.width, 195); CTX.stroke();
+                CTX.beginPath(); CTX.moveTo(0, 200); CTX.lineTo(LOGICAL_W, 195); CTX.stroke();
             }
             CTX.restore();
         }
         function spawnWeather(lvl) {
             if (lvl.weather === 'rain' && Math.random() < 0.52) {
-                addParticle(new Particle(Math.random() * CANVAS.width, 0, -2.5, 10 + Math.random() * 4, 1, 'rgba(160,200,240,0.48)', 60, 'rain'));
+                addParticle(new Particle(Math.random() * LOGICAL_W, 0, -2.5, 10 + Math.random() * 4, 1, 'rgba(160,200,240,0.48)', 60, 'rain'));
             } else if (lvl.weather === 'leaves' && Math.random() < 0.08) {
-                addParticle(new Particle(Math.random() * CANVAS.width, 0, -1 - Math.random() * 2.5, 1.2 + Math.random() * 2, 3.5 + Math.random() * 3, 'rgba(200,120,60,0.75)', 185, 'leaves'));
+                addParticle(new Particle(Math.random() * LOGICAL_W, 0, -1 - Math.random() * 2.5, 1.2 + Math.random() * 2, 3.5 + Math.random() * 3, 'rgba(200,120,60,0.75)', 185, 'leaves'));
             } else if (lvl.weather === 'chestnuts' && Math.random() < 0.05) {
-                addParticle(new Particle(Math.random() * CANVAS.width, 0, -0.6 - Math.random(), 2 + Math.random() * 3, 4.5, '#5c3d2e', 160, 'chestnuts'));
+                addParticle(new Particle(Math.random() * LOGICAL_W, 0, -0.6 - Math.random(), 2 + Math.random() * 3, 4.5, '#5c3d2e', 160, 'chestnuts'));
             } else if (lvl.weather === 'diplomas' && Math.random() < 0.05) {
-                addParticle(new Particle(Math.random() * CANVAS.width, 0, -1 - Math.random(), 1 + Math.random() * 2, 3.5, '#ffffff', 150, 'diplomas'));
+                addParticle(new Particle(Math.random() * LOGICAL_W, 0, -1 - Math.random(), 1 + Math.random() * 2, 3.5, '#ffffff', 150, 'diplomas'));
             } else if (lvl.weather === 'wind' && Math.random() < 0.14) {
-                addParticle(new Particle(CANVAS.width, Math.random() * GROUND_Y, -5.5 - Math.random() * 3, 0, 1.5 + Math.random() * 1.5, 'rgba(255,255,255,0.09)', 120, 'wind'));
+                addParticle(new Particle(LOGICAL_W, Math.random() * GROUND_Y, -5.5 - Math.random() * 3, 0, 1.5 + Math.random() * 1.5, 'rgba(255,255,255,0.09)', 120, 'wind'));
             } else if (lvl.weather === 'snow' && Math.random() < 0.12) {
-                addParticle(new Particle(Math.random() * CANVAS.width, 0, -0.5 - Math.random() * 0.8, 0.6 + Math.random() * 1.2, 1.5 + Math.random() * 1.5, 'rgba(255,255,255,0.85)', 240, 'snow'));
+                addParticle(new Particle(Math.random() * LOGICAL_W, 0, -0.5 - Math.random() * 0.8, 0.6 + Math.random() * 1.2, 1.5 + Math.random() * 1.5, 'rgba(255,255,255,0.85)', 240, 'snow'));
             }
         }
         function drawScene(lvlIndex) {
@@ -167,28 +167,28 @@
                 CTX.save();
                 CTX.imageSmoothingEnabled = false;
                 const iw = lvl.img.naturalWidth; const ih = lvl.img.naturalHeight;
-                const scale = Math.max(CANVAS.width / iw, CANVAS.height / ih);
+                const scale = Math.max(LOGICAL_W / iw, LOGICAL_H / ih);
                 const dw = iw * scale; const dh = ih * scale;
-                const dx = (CANVAS.width - dw) / 2 - scrollOffset * 0.5;
-                const dy = (CANVAS.height - dh) / 2;
+                const dx = (LOGICAL_W - dw) / 2 - scrollOffset * 0.5;
+                const dy = (LOGICAL_H - dh) / 2;
                 CTX.drawImage(lvl.img, 0, 0, iw, ih, dx, dy, dw, dh);
                 
                 CTX.fillStyle = `rgba(0, 0, 0, ${0.25 + darkAlpha * 0.75})`; 
-                CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
+                CTX.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
                 CTX.restore();
                 
                 if (darkAlpha < 1) {
-                    CTX.strokeStyle = 'rgba(255,255,255,0.12)'; CTX.lineWidth = 3; CTX.beginPath(); CTX.moveTo(0, GROUND_Y); CTX.lineTo(CANVAS.width, GROUND_Y); CTX.stroke();
+                    CTX.strokeStyle = 'rgba(255,255,255,0.12)'; CTX.lineWidth = 3; CTX.beginPath(); CTX.moveTo(0, GROUND_Y); CTX.lineTo(LOGICAL_W, GROUND_Y); CTX.stroke();
                 }
             } else {
                 const skyGrad = CTX.createLinearGradient(0, 0, 0, GROUND_Y); skyGrad.addColorStop(0, lvl.sky[0]); skyGrad.addColorStop(1, lvl.sky[1]);
-                CTX.fillStyle = skyGrad; CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
+                CTX.fillStyle = skyGrad; CTX.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
                 drawLevelBackdrop(lvl, scrollOffset);
-                CTX.fillStyle = lvl.ground; CTX.fillRect(0, GROUND_Y, CANVAS.width, CANVAS.height - GROUND_Y);
+                CTX.fillStyle = lvl.ground; CTX.fillRect(0, GROUND_Y, LOGICAL_W, LOGICAL_H - GROUND_Y);
                 if (darkAlpha > 0) {
-                    CTX.fillStyle = `rgba(0, 0, 0, ${darkAlpha})`; CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
+                    CTX.fillStyle = `rgba(0, 0, 0, ${darkAlpha})`; CTX.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
                 } else {
-                    CTX.strokeStyle = 'rgba(255,255,255,0.12)'; CTX.lineWidth = 3; CTX.beginPath(); CTX.moveTo(0, GROUND_Y); CTX.lineTo(CANVAS.width, GROUND_Y); CTX.stroke();
+                    CTX.strokeStyle = 'rgba(255,255,255,0.12)'; CTX.lineWidth = 3; CTX.beginPath(); CTX.moveTo(0, GROUND_Y); CTX.lineTo(LOGICAL_W, GROUND_Y); CTX.stroke();
                 }
             }
         }

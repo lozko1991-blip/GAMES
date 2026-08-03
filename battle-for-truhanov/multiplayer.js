@@ -56,7 +56,7 @@
             state.peer.on('open', (id) => {
                 state.isHost = true;
                 updateOnlineStatus(`Ви зайшли в Лобі ${num} як ХОСТ. Очікування суперника...`);
-                showFloatingText(`ЛОБІ ${num}: ХОСТ`, CANVAS.width / 2 - 80, CANVAS.height / 2, '#00ffcc');
+                showFloatingText(`ЛОБІ ${num}: ХОСТ`, LOGICAL_W / 2 - 80, LOGICAL_H / 2, '#00ffcc');
             });
             
             state.peer.on('connection', (conn) => {
@@ -79,7 +79,7 @@
                         state.isHost = false;
                         state.netConn = state.peer.connect(lobbyId);
                         setupConnection();
-                        showFloatingText(`ЛОБІ ${num}: ГІСТЬ`, CANVAS.width / 2 - 80, CANVAS.height / 2, '#ffcc00');
+                        showFloatingText(`ЛОБІ ${num}: ГІСТЬ`, LOGICAL_W / 2 - 80, LOGICAL_H / 2, '#ffcc00');
                     });
                     
                     state.peer.on('error', (guestErr) => {
@@ -447,7 +447,7 @@
                         navigator.clipboard.writeText(code).then(() => {
                             updateOnlineStatus("Код кімнати " + code + " скопійовано!");
                             if (typeof showFloatingText === 'function') {
-                                showFloatingText("СКОПІЙОВАНО!", CANVAS.width / 2 - 50, CANVAS.height / 2, '#00ffcc');
+                                showFloatingText("СКОПІЙОВАНО!", LOGICAL_W / 2 - 50, LOGICAL_H / 2, '#00ffcc');
                             }
                         }).catch(err => {
                             console.error("Could not copy:", err);

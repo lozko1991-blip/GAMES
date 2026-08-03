@@ -32,8 +32,8 @@ window.showScreen = showScreen;
             if (!state.isRunning) return; if (!state.player || !state.bot) return;
             if (state.hitstopFrames > 0) { state.hitstopFrames--; requestAnimationFrame(gameLoop); return }
             state.frameCount++;
-            CTX.setTransform(1, 0, 0, 1, 0, 0);
-            CTX.clearRect(0, 0, CANVAS.width, CANVAS.height); processInput(); if (state.difficulty !== 'pvp' && !state.isOnline) { AI_ENGINE.update(state.bot, state.player); }
+            CTX.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0);
+            CTX.clearRect(0, 0, LOGICAL_W, LOGICAL_H); processInput(); if (state.difficulty !== 'pvp' && !state.isOnline) { AI_ENGINE.update(state.bot, state.player); }
             state.player.update(); state.bot.update(); checkCollisions(); spawnWeather(LEVELS[state.currentLevelIndex]);
             CTX.save();
             if (state.hitZoom && state.hitZoom.timer > 0) {
@@ -58,7 +58,7 @@ window.showScreen = showScreen;
             }
             if (state.toastyTimer > 0) {
                 state.toastyTimer--; CTX.save(); CTX.font = "italic bold 24px monospace"; CTX.fillStyle = "#ffcc00"; CTX.strokeStyle = "#ff0055"; CTX.lineWidth = 3;
-                const slideInX = CANVAS.width - Math.min(140, state.toastyTimer * 5); CTX.strokeText("TOASTY!", slideInX, CANVAS.height - 40); CTX.fillText("TOASTY!", slideInX, CANVAS.height - 40); CTX.restore();
+                const slideInX = LOGICAL_W - Math.min(140, state.toastyTimer * 5); CTX.strokeText("TOASTY!", slideInX, LOGICAL_H - 40); CTX.fillText("TOASTY!", slideInX, LOGICAL_H - 40); CTX.restore();
             }
             CTX.restore();
             updateWeaponHUD();
@@ -168,7 +168,8 @@ window.showScreen = showScreen;
             const announcer = document.getElementById('fight-announcer'); announcer.innerText = `ROUND ${state.roundNum}`; announcer.style.color = "#fff"; announcer.style.textShadow = "0 0 15px rgba(255,0,85,0.8),2px 2px #000"; announcer.style.display = 'block';
             AudioSys.announce(`ROUND ${state.roundNum}`);
             
-            CTX.clearRect(0, 0, CANVAS.width, CANVAS.height);
+            CTX.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0);
+            CTX.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
             drawScene(state.currentLevelIndex);
             state.player.draw(); state.bot.draw();
 
@@ -237,7 +238,7 @@ window.showScreen = showScreen;
                 state.coins += earned;
                 localStorage.setItem('truhanov_coins', state.coins.toString());
                 const bonusText = state.winStreak > 0 ? `+${earned} COINS (x${multiplier.toFixed(1)} STREAK!)` : `+${earned} COINS!`;
-                showFloatingText(bonusText, CANVAS.width / 2 - 85, CANVAS.height / 2 - 50, '#00ffcc');
+                showFloatingText(bonusText, LOGICAL_W / 2 - 85, LOGICAL_H / 2 - 50, '#00ffcc');
             }
             const resScreen = document.getElementById('screen-result'); const title = document.getElementById('result-title'); const desc = document.getElementById('result-desc'); const nextBtn = document.getElementById('btn-next');
             resScreen.classList.remove('hidden'); document.getElementById('hud').style.display = 'none'; document.getElementById('timer-box').style.display = 'none';

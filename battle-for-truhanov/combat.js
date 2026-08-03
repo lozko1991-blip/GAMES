@@ -2,7 +2,7 @@
             const p1 = state.player; const p2 = state.bot; if (!p1 || !p2) return;
             for (let i = state.projectiles.length - 1; i >= 0; i--) {
                 const proj = state.projectiles[i]; proj.update();
-                if (proj.x < -40 || proj.x > CANVAS.width + 40 || proj.y > GROUND_Y + 10) { state.projectiles.splice(i, 1); continue }
+                if (proj.x < -40 || proj.x > LOGICAL_W + 40 || proj.y > GROUND_Y + 10) { state.projectiles.splice(i, 1); continue }
                 
                 // Ground collision for sky hazards
                 if ((proj.type === 'debris' || proj.type === 'lightning_bolt') && proj.y >= GROUND_Y) {
@@ -115,7 +115,7 @@
                     defender.hitstunTimer = 48;
                     defender.vx = 0;
                     defender.vy = 0;
-                    defender.x = Math.max(0, Math.min(CANVAS.width - defender.width, attacker.x + (attacker.isLeft ? 65 : -65)));
+                    defender.x = Math.max(0, Math.min(LOGICAL_W - defender.width, attacker.x + (attacker.isLeft ? 65 : -65)));
                     state.screenShake = Math.max(state.screenShake, 10);
                     state.hitstopFrames = Math.max(state.hitstopFrames, 6);
                     showFloatingText("PULL!", defender.x + 30, defender.y - 10, '#ffee00');

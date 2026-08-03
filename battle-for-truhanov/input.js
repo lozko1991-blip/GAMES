@@ -62,7 +62,7 @@
             if (!player) return;
             if (actionName === 'sky_figures') {
                 for (let s = 0; s < 4; s++) {
-                    const spawnX = 50 + Math.random() * (CANVAS.width - 100);
+                    const spawnX = 50 + Math.random() * (LOGICAL_W - 100);
                     const color = ['#ff0055', '#00ffcc', '#ffcc00', '#00ff00'][Math.floor(Math.random() * 4)];
                     const vy = 4.5 + Math.random() * 2;
                     state.projectiles.push(new Projectile(spawnX, -20, 0, color, 'debris', null, vy));
@@ -131,7 +131,7 @@
             if (!player) return;
             if (actionName === 'lightning_strike') {
                 const randVal = Math.random();
-                let strikeX = Math.random() * CANVAS.width;
+                let strikeX = Math.random() * LOGICAL_W;
                 const p1 = state.player;
                 const p2 = state.bot;
                 if (p1 && p2) {

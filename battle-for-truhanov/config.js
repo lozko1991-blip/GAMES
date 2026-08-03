@@ -1,5 +1,7 @@
         const CANVAS = document.getElementById('gameCanvas');
         const CTX = CANVAS.getContext('2d');
+        const LOGICAL_W = 960, LOGICAL_H = 540;
+        const RENDER_SCALE = CANVAS.width / LOGICAL_W;
         const GROUND_Y = 450;
         const GRAVITY = 0.55;
         // Safely load economy items from LocalStorage

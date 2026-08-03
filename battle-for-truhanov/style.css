@@ -37,12 +37,22 @@ html {
             text-align: center;
             transition: display 0.2s
         }
+        #game-stage {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            max-width: 1400px;
+            margin: 0 auto
+        }
         #game-wrapper {
             position: relative;
             width: 96vw;
             aspect-ratio: 16/9;
-            max-width: 960px;
-            max-height: 540px;
+            max-width: 1280px;
+            max-height: 720px;
+            flex: 0 1 auto;
             box-shadow: 0 0 50px rgba(0, 0, 0, 0.95);
             border: 3px solid #3a1a2a;
             border-radius: 12px;
@@ -55,14 +65,16 @@ html {
         }
         @supports (width: 100dvw) {
             #game-wrapper {
-                width: min(96dvw, 960px);
-                max-height: min(540px, 90dvh)
+                width: min(96dvw, 1280px);
+                max-height: min(720px, 90dvh)
             }
         }
         @media (min-aspect-ratio: 16/9) {
             #game-wrapper {
                 width: 160vh;
-                height: 90vh
+                height: 90vh;
+                max-width: 1280px;
+                max-height: 720px
             }
         }
         #game-wrapper.fullscreen-active {
@@ -415,47 +427,44 @@ html {
             box-shadow: 0 0 10px rgba(255, 0, 85, 0.45)
         }
         .weapon-panel {
-            position: absolute;
-            left: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 15;
+            flex: 0 0 auto;
             display: flex;
             flex-direction: column;
             gap: 5px;
+            width: 74px;
             padding: 6px;
             background: rgba(10, 10, 24, 0.62);
             border: 1px solid rgba(0, 240, 255, 0.25);
             border-radius: 10px;
             backdrop-filter: blur(3px);
-            max-height: 88%;
+            max-height: 68vh;
             overflow-y: auto;
             scrollbar-width: none
         }
         .weapon-panel.right {
-            left: auto;
-            right: 8px
+            order: 3
         }
         .weapon-panel::-webkit-scrollbar {
             display: none
         }
         .weapon-panel .wslot {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 7px;
-            width: 118px;
-            padding: 5px 8px;
+            gap: 2px;
+            width: 100%;
+            padding: 4px 2px;
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.16);
             border-radius: 7px;
             color: #fff;
-            font-size: 9px;
+            font-size: 7px;
             font-weight: 800;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             cursor: pointer;
             text-transform: uppercase;
             transition: background 0.12s, border-color 0.12s, transform 0.08s;
-            text-align: left;
+            text-align: center;
             font-family: inherit
         }
         .weapon-panel .wslot:hover {
@@ -486,12 +495,17 @@ html {
             to { box-shadow: 0 0 12px rgba(0, 255, 204, 0.5) }
         }
         .weapon-panel .wicon {
-            font-size: 14px;
+            font-size: 18px;
+            line-height: 1;
             filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))
         }
         .weapon-panel .wname {
             text-shadow: 1px 1px 2px #000;
-            white-space: nowrap
+            white-space: nowrap;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 7px
         }
 
         .dpad-container {
@@ -647,6 +661,32 @@ html {
             }
             #controls-hint, #weapon-controls-hint {
                 display: none !important;
+            }
+            .weapon-panel {
+                position: absolute;
+                bottom: calc(30% + 30px);
+                left: 8px;
+                right: auto;
+                top: auto;
+                flex-direction: row;
+                flex-wrap: wrap;
+                width: 46%;
+                max-height: none;
+                max-width: none;
+                order: 0;
+                z-index: 14;
+                background: rgba(10, 10, 24, 0.7)
+            }
+            .weapon-panel.right {
+                left: auto;
+                right: 8px
+            }
+            .weapon-panel .wslot {
+                width: 46px;
+                padding: 3px 2px
+            }
+            .weapon-panel .wicon {
+                font-size: 14px
             }
         }
         @media (max-width:1024px) and (orientation: landscape) {

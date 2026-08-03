@@ -20,7 +20,9 @@
 
     <h1>Труханів Острів: Шлях Бійця (Kyiv Edition)</h1>
 
-    <div id="game-wrapper">
+        <div id="game-stage">
+            <div id="weapon-panel-p1" class="weapon-panel" style="display:none;"></div>
+            <div id="game-wrapper">
         <button id="fs-toggle-btn" onclick="toggleFullscreen()">⛶ ФУЛСКРІН</button>
         
         <!-- MAIN MENU -->
@@ -397,9 +399,8 @@
             </div>
         </div>
 
-        <canvas id="gameCanvas" width="960" height="540"></canvas>
-
-        <div id="weapon-panel-p1" class="weapon-panel" style="display:none;"></div>
+        <canvas id="gameCanvas" width="1280" height="720"></canvas>
+        </div>
         <div id="weapon-panel-p2" class="weapon-panel right" style="display:none;"></div>
     </div>
 

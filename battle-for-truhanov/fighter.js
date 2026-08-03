@@ -178,9 +178,9 @@
                     if ((this.state === 'launched' || this.state === 'knockdown' || this.state === 'hitstun') && Math.abs(this.vx) > 4) { this.vx = Math.abs(this.vx) * 0.45; this.x = 2; AudioSys.playTone(60, 'triangle', 0.12, 0.22, 30); }
                     else { this.x = 0; }
                 }
-                if (this.x + this.width > CANVAS.width) {
-                    if ((this.state === 'launched' || this.state === 'knockdown' || this.state === 'hitstun') && Math.abs(this.vx) > 4) { this.vx = -Math.abs(this.vx) * 0.45; this.x = CANVAS.width - this.width - 2; AudioSys.playTone(60, 'triangle', 0.12, 0.22, 30); }
-                    else { this.x = CANVAS.width - this.width; }
+                if (this.x + this.width > LOGICAL_W) {
+                    if ((this.state === 'launched' || this.state === 'knockdown' || this.state === 'hitstun') && Math.abs(this.vx) > 4) { this.vx = -Math.abs(this.vx) * 0.45; this.x = LOGICAL_W - this.width - 2; AudioSys.playTone(60, 'triangle', 0.12, 0.22, 30); }
+                    else { this.x = LOGICAL_W - this.width; }
                 }
                 this.hitBox.active = false;
                 if (this.attackState > 0) {
